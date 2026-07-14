@@ -1,0 +1,15 @@
+{
+  "name": "@tile-meld/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "echo \"e2e: Playwright suites are introduced starting Phase 6/8 (see docs/opus-implementation-plan.md Sec 13)\"",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.5"
+  }
+}

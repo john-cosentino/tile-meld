@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tilemeld}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tilemeld}
+      POSTGRES_DB: ${POSTGRES_DB:-tilemeld}
+    ports:
+      - "5432:5432"
+    volumes:
+      - tilemeld-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tilemeld}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-tilemeld}:${POSTGRES_PASSWORD:-tilemeld}@db:5432/${POSTGRES_DB:-tilemeld}
+    ports:
+      - "3000:3000"
+    # No source bind-mount yet: the official Node image's entrypoint
+    # auto-runs a package-manager install against whatever /app it sees,
+    # and a host bind-mount here shadows the image's own node_modules with
+    # the host's (different pnpm store/user context), which triggers a
+    # non-interactive "confirm removal" prompt that fails with no TTY.
+    # apps/server has no long-running process worth hot-reloading yet
+    # (Fastify lands in Phase 4); revisit live-reload bind-mounting with
+    # per-package named volumes once there is.
+
+volumes:
+  tilemeld-db-data:
