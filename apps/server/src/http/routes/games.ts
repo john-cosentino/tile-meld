@@ -57,7 +57,7 @@ export function registerGameRoutes(app: AppInstance): void {
         }
         throw err;
       }
-      if (loaded.settled) broadcastTurnActionResult(app.io, gameId, loaded.settled);
+      if (loaded.settled) broadcastTurnActionResult(app, app.io, gameId, loaded.settled);
 
       reply.code(200).send(buildWireGameView(loaded, seat.seatIndex));
     },

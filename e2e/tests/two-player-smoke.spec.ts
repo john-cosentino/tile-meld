@@ -111,3 +111,21 @@ test("click/tap tile selection and move -- the keyboard/tap-accessible alternati
   await activePage.getByRole("button", { name: "Undo" }).click();
   await expect(activePage.getByRole("heading", { name: "Your rack (14)" })).toBeVisible();
 });
+
+test("chat: a message sent from one browser appears in both (game-scoped, live)", async ({
+  browser,
+}) => {
+  const { activePage, waitingPage } = await startTwoPlayerGame(browser);
+
+  await activePage.getByPlaceholder("Say something…").fill("hello from the active player");
+  await activePage.getByRole("button", { name: "Send" }).click();
+
+  // The broadcast includes the sender, not just the other browser -- both
+  // must see it.
+  await expect(activePage.getByText("hello from the active player")).toBeVisible({
+    timeout: 10000,
+  });
+  await expect(waitingPage.getByText("hello from the active player")).toBeVisible({
+    timeout: 10000,
+  });
+});

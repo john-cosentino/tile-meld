@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f6fb4" />
+    <!-- iOS ignores the manifest's icons; it needs its own link tag, and
+         requires the site be added to the Home Screen before Web Push can
+         work at all (docs/opus-implementation-plan.md §8.4). -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" href="/icon-192.png" type="image/png" />
+    <link rel="manifest" href="/manifest.json" />
     <title>Tile Meld</title>
   </head>
   <body>

@@ -21,6 +21,7 @@ import {
   runningInitialMeldTotal,
   validateProposedTurn,
 } from "../tabletop/hintEngine.js";
+import { ChatPanel } from "../chat/ChatPanel.js";
 
 function parseZoneId(id: string): Destination | undefined {
   if (id === "rack") return { zone: "rack" };
@@ -226,6 +227,11 @@ export function TabletopPage() {
             {game.banner} <button onClick={game.dismissBanner}>Dismiss</button>
           </div>
         )}
+        {game.warningToast && (
+          <div className="warning-banner" role="status">
+            ⏰ {game.warningToast} <button onClick={game.dismissWarningToast}>Dismiss</button>
+          </div>
+        )}
         {actionError && (
           <div className="error-banner" role="alert">
             {actionError}
@@ -301,6 +307,8 @@ export function TabletopPage() {
             </span>
           )}
         </div>
+
+        <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
       </div>
     </DndContext>
   );

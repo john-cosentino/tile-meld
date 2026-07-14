@@ -10,7 +10,7 @@ import {
 import type { AppInstance } from "../http/types.js";
 import { SESSION_COOKIE_NAME } from "../security/session.js";
 import { findActiveSessionByToken } from "../db/repositories/sessions.js";
-import { findGameSeatForPlayer } from "../db/repositories/games.js";
+import { findGameSeatForPlayer, listGameSeatPlayerIds } from "../db/repositories/games.js";
 import { buildWireGameView } from "../db/redact.js";
 import { postChatMessage } from "../db/repositories/chatMessages.js";
 import {
@@ -23,8 +23,13 @@ import {
   type TurnActionResult,
 } from "../game/turnActions.js";
 import type { Warned } from "../game/deadlineSweep.js";
+import { sendPushToPlayer } from "../push/pushSender.js";
 import { readCookie } from "./cookies.js";
+import { createRateLimiter } from "./rateLimit.js";
 import type { RealtimeServer } from "./types.js";
+
+const CHAT_RATE_LIMIT_MAX = 10;
+const CHAT_RATE_LIMIT_WINDOW_MS = 10_000;
 
 // Socket.IO gateway -- docs/opus-implementation-plan.md §7.3. All game-
 // mutating logic lives in game/turnActions.ts; this module is purely
@@ -49,8 +54,15 @@ function emitError(socket: Socket, code: string, message: string): void {
  * to send identically to every recipient: a TurnEvent never carries hidden
  * tile identities by construction (§6.3), so no per-socket redaction is
  * needed here the way it is for `game:state`.
+ *
+ * Also fires true-background push notifications (§8.4) for the exact 4
+ * triggers the plan specifies -- turn started, timed out, game over (the
+ * 15-min warning is `broadcastWarning`, below). Push is fire-and-forget:
+ * socket broadcasts to *connected* clients must never wait on a push
+ * provider round trip, and `sendPushToPlayer` already never throws.
  */
 export function broadcastTurnActionResult(
+  app: AppInstance,
   io: RealtimeServer,
   gameId: string,
   result: TurnActionResult,
@@ -83,16 +95,80 @@ export function broadcastTurnActionResult(
   } else if (result.nextTurn) {
     io.to(room).emit("turn:started", result.nextTurn);
   }
+
+  void notifyPushForTransition(app, gameId, result).catch((err: unknown) => {
+    app.log.error(err, "push notify failed for turn transition");
+  });
 }
 
-export function broadcastWarning(io: RealtimeServer, warned: Warned): void {
+async function notifyPushForTransition(
+  app: AppInstance,
+  gameId: string,
+  result: TurnActionResult,
+): Promise<void> {
+  const seatPlayerIds = await listGameSeatPlayerIds(app.db, gameId);
+
+  if (result.event.type === "timed_out") {
+    const playerId = seatPlayerIds.get(result.event.seatIndex);
+    if (playerId) {
+      await sendPushToPlayer(app, playerId, {
+        title: "Turn timed out",
+        body: "You were timed out and drew penalty tiles.",
+        gameId,
+        tag: `timeout:${gameId}`,
+      });
+    }
+  }
+
+  if (result.gameEnd.ended) {
+    await Promise.all(
+      [...seatPlayerIds.values()].map((playerId) =>
+        sendPushToPlayer(app, playerId, {
+          title: "Game over",
+          body: "A game you're in has ended.",
+          gameId,
+          tag: `game-over:${gameId}`,
+        }),
+      ),
+    );
+  } else if (result.nextTurn) {
+    const playerId = seatPlayerIds.get(result.nextTurn.seatIndex);
+    if (playerId) {
+      await sendPushToPlayer(app, playerId, {
+        title: "Your turn!",
+        body: "It's your turn in Tile Meld.",
+        gameId,
+        tag: `turn:${gameId}`,
+      });
+    }
+  }
+}
+
+export function broadcastWarning(app: AppInstance, io: RealtimeServer, warned: Warned): void {
   io.to(gameRoom(warned.gameId)).emit("turn:warning", {
     seatIndex: warned.seatIndex,
     remainingMs: warned.remainingMs,
   });
+
+  void notifyPushForWarning(app, warned).catch((err: unknown) => {
+    app.log.error(err, "push notify failed for turn warning");
+  });
+}
+
+async function notifyPushForWarning(app: AppInstance, warned: Warned): Promise<void> {
+  const seatPlayerIds = await listGameSeatPlayerIds(app.db, warned.gameId);
+  const playerId = seatPlayerIds.get(warned.seatIndex);
+  if (!playerId) return;
+  await sendPushToPlayer(app, playerId, {
+    title: "15 minutes left",
+    body: "Your turn in Tile Meld ends soon.",
+    gameId: warned.gameId,
+    tag: `warning:${warned.gameId}`,
+  });
 }
 
 async function handleAction(
+  app: AppInstance,
   socket: Socket,
   io: RealtimeServer,
   gameId: string,
@@ -101,7 +177,7 @@ async function handleAction(
 ): Promise<void> {
   try {
     const result = await run();
-    broadcastTurnActionResult(io, gameId, result);
+    broadcastTurnActionResult(app, io, gameId, result);
     ack?.({ ok: true, ...result });
   } catch (err) {
     if (err instanceof ActionError) {
@@ -117,6 +193,7 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
   const io: RealtimeServer = new Server(app.server, {
     cors: { origin: app.env.CORS_ORIGIN ?? false, credentials: true },
   });
+  const chatRateLimiter = createRateLimiter(CHAT_RATE_LIMIT_MAX, CHAT_RATE_LIMIT_WINDOW_MS);
 
   io.use((socket, next) => {
     void (async () => {
@@ -148,7 +225,7 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
         await socket.join(gameRoom(gameId));
         try {
           const loaded = await catchUpAndLoad(app, gameId);
-          if (loaded.settled) broadcastTurnActionResult(io, gameId, loaded.settled);
+          if (loaded.settled) broadcastTurnActionResult(app, io, gameId, loaded.settled);
           const payload = buildWireGameView(loaded, seat.seatIndex);
           socket.emit("game:state", payload);
           ack?.({ ok: true, ...payload });
@@ -169,6 +246,7 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
         if (!parsed.success) return emitError(socket, "invalid", "malformed turn:commit payload");
         const { gameId, expectedVersion, turnId, arrangement, idempotencyKey } = parsed.data;
         await handleAction(
+          app,
           socket,
           io,
           gameId,
@@ -192,6 +270,7 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
         if (!parsed.success) return emitError(socket, "invalid", "malformed turn:draw payload");
         const { gameId, expectedVersion, turnId, idempotencyKey } = parsed.data;
         await handleAction(
+          app,
           socket,
           io,
           gameId,
@@ -207,6 +286,7 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
         if (!parsed.success) return emitError(socket, "invalid", "malformed turn:pass payload");
         const { gameId, expectedVersion, turnId, idempotencyKey } = parsed.data;
         await handleAction(
+          app,
           socket,
           io,
           gameId,
@@ -222,6 +302,7 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
         if (!parsed.success) return emitError(socket, "invalid", "malformed turn:resign payload");
         const { gameId, idempotencyKey } = parsed.data;
         await handleAction(
+          app,
           socket,
           io,
           gameId,
@@ -237,13 +318,17 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
         if (!parsed.success) return emitError(socket, "invalid", "malformed chat:send payload");
         const { gameId, body } = parsed.data;
 
+        if (!chatRateLimiter.tryConsume(playerId)) {
+          return emitError(socket, "rate_limited", "sending messages too quickly -- slow down");
+        }
+
         const seat = await findGameSeatForPlayer(app.db, gameId, playerId);
         if (!seat) return emitError(socket, "forbidden", "not a seat holder in this game");
 
         // Any request or socket action that touches a game settles an
         // overdue deadline first (§8.1), chat included.
         const loaded = await catchUpAndLoad(app, gameId);
-        if (loaded.settled) broadcastTurnActionResult(io, gameId, loaded.settled);
+        if (loaded.settled) broadcastTurnActionResult(app, io, gameId, loaded.settled);
         if (loaded.status === "completed") {
           return emitError(socket, "conflict", "chat is read-only after the game has ended");
         }

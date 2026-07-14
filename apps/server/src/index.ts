@@ -18,8 +18,9 @@ app
     // build an app for HTTP/socket testing never get a stray background
     // interval running underneath them.
     startBackgroundSweeps(app, {
-      onTimeout: (settled) => broadcastTurnActionResult(app.io, settled.gameId, settled.result),
-      onWarning: (warned) => broadcastWarning(app.io, warned),
+      onTimeout: (settled) =>
+        broadcastTurnActionResult(app, app.io, settled.gameId, settled.result),
+      onWarning: (warned) => broadcastWarning(app, app.io, warned),
     });
   })
   .catch((err: unknown) => {

@@ -356,3 +356,18 @@ export async function listGameSeatPlayerIds(
     .execute();
   return new Map(rows.map((row) => [row.seat_index, row.player_id]));
 }
+
+/** Maps every seat in a game to its display-name snapshot -- used to
+ * label chat history without loading full game state (racks, table,
+ * pool) just to read a name. */
+export async function listGameSeatDisplayNames(
+  db: Kysely<Database> | Transaction<Database>,
+  gameId: string,
+): Promise<Map<number, string>> {
+  const rows = await db
+    .selectFrom("game_seats")
+    .select(["seat_index", "display_name"])
+    .where("game_id", "=", gameId)
+    .execute();
+  return new Map(rows.map((row) => [row.seat_index, row.display_name]));
+}

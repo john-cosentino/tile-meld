@@ -12,6 +12,7 @@
   --color-accent: #2f6fb4;
   --color-danger: #b3261e;
   --color-success: #2e7d43;
+  --color-warning: #8a6314;
   --radius-md: 0.5rem;
   --radius-lg: 0.9rem;
   --space-1: 0.25rem;
@@ -208,6 +209,14 @@ button.danger {
   background: color-mix(in srgb, var(--color-danger) 12%, var(--color-bg));
   border: 1px solid var(--color-danger);
   color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.warning-banner {
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-bg));
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
   border-radius: var(--radius-md);
   padding: var(--space-3);
 }

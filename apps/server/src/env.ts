@@ -11,6 +11,13 @@ const EnvSchema = z.object({
       "SESSION_TOKEN_HMAC_SECRET must be at least 32 characters -- generate with: openssl rand -hex 32",
     ),
   CORS_ORIGIN: z.string().optional(),
+  // Web Push is a progressive enhancement (§8.4: "never rely on push for
+  // correctness") -- all three are optional, and push sending is simply
+  // disabled (not an error) when any is missing. Generate a keypair with
+  // `npx web-push generate-vapid-keys`.
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

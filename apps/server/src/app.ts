@@ -16,6 +16,8 @@ import { registerHealthRoutes } from "./http/routes/health.js";
 import { registerIdentityRoutes } from "./http/routes/identity.js";
 import { registerRoomRoutes } from "./http/routes/rooms.js";
 import { registerGameRoutes } from "./http/routes/games.js";
+import { registerChatRoutes } from "./http/routes/chat.js";
+import { registerPushRoutes } from "./http/routes/push.js";
 import { attachRealtimeGateway } from "./realtime/gateway.js";
 
 export type BuildAppOptions = {
@@ -58,6 +60,8 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
   registerIdentityRoutes(app);
   registerRoomRoutes(app);
   registerGameRoutes(app);
+  registerChatRoutes(app);
+  registerPushRoutes(app);
 
   // Attaches to the same underlying http.Server Fastify owns -- Socket.IO
   // doesn't need the server to be listening yet, just constructed, so this

@@ -43,9 +43,26 @@ export const TurnResignPayloadSchema = z.object({
   idempotencyKey: IdempotencyKeySchema,
 });
 
+// Strips ASCII control characters (other than newline) before length/
+// emptiness are re-checked -- a message that was *only* control characters
+// must not slip through as "non-empty" just because it passed the raw
+// length check before sanitizing.
+const CHAT_BODY_MAX = 500;
+function sanitizeChatText(value: string): string {
+  // Deliberately matching control characters, to strip them.
+  // eslint-disable-next-line no-control-regex
+  return value.replace(/[\x00-\x09\x0b\x0c\x0e-\x1f\x7f]/g, "").trim();
+}
+
 export const ChatSendPayloadSchema = z.object({
   gameId: z.string(),
-  body: z.string().trim().min(1).max(500),
+  body: z
+    .string()
+    .trim()
+    .min(1)
+    .max(CHAT_BODY_MAX)
+    .transform(sanitizeChatText)
+    .pipe(z.string().min(1).max(CHAT_BODY_MAX)),
 });
 
 // Server -> client event payloads (not validated, since the server
@@ -86,6 +103,17 @@ export const ChatMessageEventSchema = z.object({
   createdAt: z.string(),
 });
 
+// GET /api/games/:id/chat -- history, in chronological order. Same shape
+// as ChatMessageEventSchema plus a stable `id` for React list keys, since
+// the live chat:message socket event never needs one (it's appended, not
+// reconciled against a list).
+export const ChatHistoryMessageSchema = ChatMessageEventSchema.extend({
+  id: z.string(),
+});
+export const ChatHistoryResponseSchema = z.object({
+  messages: z.array(ChatHistoryMessageSchema),
+});
+
 export const SocketErrorEventSchema = z.object({
   code: z.string(),
   message: z.string(),
@@ -103,3 +131,5 @@ export type TurnDrawPayload = z.infer<typeof TurnDrawPayloadSchema>;
 export type TurnPassPayload = z.infer<typeof TurnPassPayloadSchema>;
 export type TurnResignPayload = z.infer<typeof TurnResignPayloadSchema>;
 export type ChatSendPayload = z.infer<typeof ChatSendPayloadSchema>;
+export type ChatHistoryMessage = z.infer<typeof ChatHistoryMessageSchema>;
+export type ChatHistoryResponse = z.infer<typeof ChatHistoryResponseSchema>;

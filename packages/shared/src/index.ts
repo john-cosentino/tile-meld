@@ -7,4 +7,5 @@ export * from "./schemas/game.js";
 export * from "./schemas/identity.js";
 export * from "./schemas/rooms.js";
 export * from "./schemas/realtime.js";
+export * from "./schemas/push.js";
 export * from "./branding.js";

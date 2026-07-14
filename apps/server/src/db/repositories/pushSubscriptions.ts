@@ -29,12 +29,29 @@ export async function listPushSubscriptionsForPlayer(
     .execute();
 }
 
-/** Delete on 410 Gone, per docs/opus-implementation-plan.md §8.4. */
+/** Delete on 410 Gone, per docs/opus-implementation-plan.md §8.4. Used by
+ * the push sender's own cleanup, where the server already knows the
+ * record is legitimate -- not player-facing, so not scoped by player. */
 export async function removePushSubscription(
   db: Kysely<Database> | Transaction<Database>,
   endpoint: string,
 ): Promise<void> {
   await db.deleteFrom("push_subscriptions").where("endpoint", "=", endpoint).execute();
+}
+
+/** Player-facing unsubscribe: scoped by player_id so a player can only
+ * ever delete their own subscription, even if they somehow knew or
+ * guessed another player's endpoint. */
+export async function removePushSubscriptionForPlayer(
+  db: Kysely<Database> | Transaction<Database>,
+  playerId: string,
+  endpoint: string,
+): Promise<void> {
+  await db
+    .deleteFrom("push_subscriptions")
+    .where("endpoint", "=", endpoint)
+    .where("player_id", "=", playerId)
+    .execute();
 }
 
 export async function recordPushFailure(

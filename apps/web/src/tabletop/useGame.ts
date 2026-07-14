@@ -43,9 +43,11 @@ export function useGame(gameId: string) {
   const [view, setView] = useState<RedactedGameView | undefined>(undefined);
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
   const [banner, setBanner] = useState<string | undefined>(undefined);
+  const [warningToast, setWarningToast] = useState<string | undefined>(undefined);
   const [notFound, setNotFound] = useState(false);
   const viewRef = useRef(view);
   viewRef.current = view;
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const refetch = useCallback(async () => {
     try {
@@ -90,8 +92,23 @@ export function useGame(gameId: string) {
       const mine = viewRef.current?.self.seatIndex === payload.seatIndex;
       announce(mine ? "It's your turn." : `Turn started for seat ${payload.seatIndex + 1}.`);
     }
-    function onTurnWarning(): void {
-      announce("15 minutes remain on the current turn.");
+    function onTurnWarning(payload: {
+      readonly seatIndex: number;
+      readonly remainingMs: number;
+    }): void {
+      const mine = viewRef.current?.self.seatIndex === payload.seatIndex;
+      const minutes = Math.max(1, Math.round(payload.remainingMs / 60_000));
+      const message = mine
+        ? `${minutes} minute(s) left on your turn.`
+        : `${minutes} minute(s) left on seat ${payload.seatIndex + 1}'s turn.`;
+      announce(message);
+      // A visible, dismissible banner alongside the aria-live announcement
+      // -- always-available in-app notification per §8.4, not just for
+      // screen-reader users. Auto-clears so it doesn't linger indefinitely
+      // if the player never dismisses it.
+      setWarningToast(message);
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+      warningTimerRef.current = setTimeout(() => setWarningToast(undefined), 15_000);
     }
     function onGameOver(payload: { readonly winnerSeatIndex: number }): void {
       const mine = viewRef.current?.self.seatIndex === payload.winnerSeatIndex;
@@ -124,6 +141,7 @@ export function useGame(gameId: string) {
       socket.off("turn:warning", onTurnWarning);
       socket.off("game:over", onGameOver);
       socket.off("error", onSocketError);
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     };
   }, [gameId, refetch, announce]);
 
@@ -182,12 +200,15 @@ export function useGame(gameId: string) {
   );
 
   const dismissBanner = useCallback(() => setBanner(undefined), []);
+  const dismissWarningToast = useCallback(() => setWarningToast(undefined), []);
 
   return {
     view,
     connectionState,
     banner,
     dismissBanner,
+    warningToast,
+    dismissWarningToast,
     notFound,
     commit,
     draw,

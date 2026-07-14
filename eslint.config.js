@@ -2,6 +2,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintConfigPrettier from "eslint-config-prettier";
+import globals from "globals";
 
 export default tseslint.config(
   {
@@ -69,6 +70,16 @@ export default tseslint.config(
           })),
         },
       ],
+    },
+  },
+  {
+    // The Service Worker (docs/opus-implementation-plan.md §8.4) runs in
+    // its own global scope -- `self` is the ServiceWorkerGlobalScope, not
+    // `window`. Plain JS (no bundler/TS step), served as-is from
+    // apps/web/public.
+    files: ["apps/web/public/sw.js"],
+    languageOptions: {
+      globals: globals.serviceworker,
     },
   },
   eslintConfigPrettier,

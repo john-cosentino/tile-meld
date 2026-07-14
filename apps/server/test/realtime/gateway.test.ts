@@ -188,6 +188,55 @@ describe("realtime gateway", () => {
     expect(message.senderDisplay).toBe("P0");
   });
 
+  it("chat:send strips control characters from the body", async () => {
+    const { gameId, players } = await dealDeterministicGame(app!.db, 2);
+    const hostSocket = await connect(players[0]!.cookie);
+    await joinGame(hostSocket, gameId);
+
+    const messagePromise = once<{ body: string }>(hostSocket, "chat:message");
+    // \x07 (bell) is a control character the schema strips; the
+    // space around it is ordinary and must survive.
+    hostSocket.emit("chat:send", { gameId, body: "hi\x07 there" });
+    const message = await messagePromise;
+    expect(message.body).toBe("hi there");
+  });
+
+  it("chat:send is rejected once the game has ended", async () => {
+    const { gameId, players } = await dealDeterministicGame(app!.db, 2);
+    const hostSocket = await connect(players[0]!.cookie);
+    const guestSocket = await connect(players[1]!.cookie);
+    await Promise.all([joinGame(hostSocket, gameId), joinGame(guestSocket, gameId)]);
+
+    const overPromise = once(hostSocket, "game:over");
+    guestSocket.emit("turn:resign", { gameId, idempotencyKey: "resign-before-chat" });
+    await overPromise;
+
+    const errorPromise = once<{ code: string }>(hostSocket, "error");
+    hostSocket.emit("chat:send", { gameId, body: "still here?" });
+    const err = await errorPromise;
+    expect(err.code).toBe("conflict");
+  });
+
+  it("chat:send is rate-limited after too many messages in a short window", async () => {
+    const { gameId, players } = await dealDeterministicGame(app!.db, 2);
+    const hostSocket = await connect(players[0]!.cookie);
+    await joinGame(hostSocket, gameId);
+
+    // The limit is 10 messages / 10s (see realtime/rateLimit.ts) -- send 10
+    // real ones (each awaited so it's actually accepted server-side before
+    // continuing), then expect the 11th to be rejected.
+    for (let i = 0; i < 10; i++) {
+      const messagePromise = once(hostSocket, "chat:message");
+      hostSocket.emit("chat:send", { gameId, body: `msg ${i}` });
+      await messagePromise;
+    }
+
+    const errorPromise = once<{ code: string }>(hostSocket, "error");
+    hostSocket.emit("chat:send", { gameId, body: "one too many" });
+    const err = await errorPromise;
+    expect(err.code).toBe("rate_limited");
+  });
+
   it("presence:ping acks", async () => {
     const { players } = await dealDeterministicGame(app!.db, 2);
     const hostSocket = await connect(players[0]!.cookie);

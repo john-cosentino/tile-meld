@@ -11,14 +11,19 @@ import {
   GetRoomResponseSchema,
   ReadyResponseSchema,
   RedactedGameViewSchema,
+  ChatHistoryResponseSchema,
+  VapidPublicKeyResponseSchema,
   type CreateRoomRequest,
   type JoinRoomRequest,
   type QuickJoinRequest,
   type GetRoomResponse,
   type PublicRoomsResponse,
   type RedactedGameView,
+  type ChatHistoryResponse,
+  type PushSubscribeRequest,
+  type VapidPublicKeyResponse,
 } from "@tile-meld/shared";
-import type { z } from "zod";
+import { z } from "zod";
 
 // A thin, typed wrapper around fetch for the Fastify HTTP API. Every
 // response is parsed through its Zod schema -- not just for compile-time
@@ -102,4 +107,15 @@ export const api = {
 
   getGame: (gameId: string): Promise<RedactedGameView> =>
     request("GET", `/games/${gameId}`, RedactedGameViewSchema),
+
+  getGameChat: (gameId: string): Promise<ChatHistoryResponse> =>
+    request("GET", `/games/${gameId}/chat`, ChatHistoryResponseSchema),
+
+  vapidPublicKey: (): Promise<VapidPublicKeyResponse> =>
+    request("GET", "/push/vapid-public-key", VapidPublicKeyResponseSchema),
+
+  subscribePush: (body: PushSubscribeRequest) => request("POST", "/push/subscribe", z.void(), body),
+
+  unsubscribePush: (endpoint: string) =>
+    request("DELETE", `/push/subscribe?endpoint=${encodeURIComponent(endpoint)}`, z.void()),
 };

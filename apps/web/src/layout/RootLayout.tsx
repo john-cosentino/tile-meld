@@ -1,6 +1,7 @@
 import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider.js";
 import { PRODUCT_NAME } from "@tile-meld/shared";
+import { NotificationsControl } from "../push/NotificationsControl.js";
 
 export function RootLayout() {
   const { state } = useAuth();
@@ -32,20 +33,27 @@ export function RootLayout() {
       </a>
       <header
         className="row"
-        style={{ padding: "var(--space-4)", borderBottom: "1px solid var(--color-border)" }}
+        style={{
+          padding: "var(--space-4)",
+          borderBottom: "1px solid var(--color-border)",
+          justifyContent: "space-between",
+        }}
       >
-        <Link
-          to="/"
-          style={{ fontWeight: 700, textDecoration: "none", color: "var(--color-text)" }}
-        >
-          {PRODUCT_NAME}
-        </Link>
-        <nav className="row" aria-label="Main navigation">
-          <Link to="/lobby">Public Lobby</Link>
-          <Link to="/rooms/new">Create Room</Link>
-          <Link to="/rooms/join">Join by Code</Link>
-          <Link to="/recovery">Recovery</Link>
-        </nav>
+        <div className="row">
+          <Link
+            to="/"
+            style={{ fontWeight: 700, textDecoration: "none", color: "var(--color-text)" }}
+          >
+            {PRODUCT_NAME}
+          </Link>
+          <nav className="row" aria-label="Main navigation">
+            <Link to="/lobby">Public Lobby</Link>
+            <Link to="/rooms/new">Create Room</Link>
+            <Link to="/rooms/join">Join by Code</Link>
+            <Link to="/recovery">Recovery</Link>
+          </nav>
+        </div>
+        <NotificationsControl />
       </header>
       {state.newRecoverySecret && (
         <div

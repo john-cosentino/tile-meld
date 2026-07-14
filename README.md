@@ -5,15 +5,21 @@ See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
 
-**Status:** Phase 6 (web client) — a full game is now playable end-to-end in
-the browser. `apps/web` is a React + Vite app: identity/recovery bootstrap,
-create/join/public-lobby/waiting-room flows, and a tabletop with structured
-set containers, a sortable rack, a client-side rules-hint engine (imports
-`packages/engine` directly, never authoritative), and both drag-and-drop and
-click/tap tile interactions -- wired to the Socket.IO turn lifecycle and the
-durable deadline scheduler from Phase 5, on top of the HTTP identity/rooms
-layer (Phase 4) and the Postgres persistence layer and pure engine from
-earlier phases. Chat and Web Push notifications land in Phase 7.
+**Status:** Phase 7 (chat + notifications) — a full game is playable
+end-to-end in the browser, now with a game-scoped chat panel (persisted,
+rate-limited, sanitized, read-only once a game ends) and Web Push
+notifications (Service Worker + VAPID) for your-turn / 15-minute-warning /
+timed-out / game-over, layered on top of the always-available in-app
+indicators from Phase 6. Push is a progressive enhancement everywhere: with
+no VAPID keypair configured, or no browser support, or permission denied,
+the app degrades cleanly to in-app-only with no errors. `apps/web` (React +
+Vite): identity/recovery bootstrap, create/join/public-lobby/waiting-room
+flows, and a tabletop with structured set containers, a sortable rack, a
+client-side rules-hint engine (imports `packages/engine` directly, never
+authoritative), and both drag-and-drop and click/tap tile interactions --
+wired to the Socket.IO turn lifecycle and the durable deadline scheduler from
+Phase 5, on top of the HTTP identity/rooms layer (Phase 4) and the Postgres
+persistence layer and pure engine from earlier phases.
 
 To run the full stack locally: `pnpm --filter @tile-meld/server run dev` (API,
 port 3000) and `pnpm --filter @tile-meld/web run dev` (Vite, port 5173 --
