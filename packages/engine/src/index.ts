@@ -32,3 +32,38 @@ export {
   validateSet,
 } from "./sets.js";
 export { checkConservation } from "./conservation.js";
+
+export {
+  type SeatStatus,
+  type Seat,
+  type TableSet,
+  type GameStatus,
+  type GameState,
+  type TurnInvalidReason,
+  type ValidTurnResult,
+  type InvalidTurnResult,
+  type TurnValidationResult,
+  type TurnEvent,
+  type GameEndReason,
+  type GameEndCheck,
+  type ScoreEntry,
+  type GameEndResult,
+  type TransitionResult,
+} from "./game-types.js";
+
+export {
+  JOKER_RACK_PENALTY,
+  rackFaceValue,
+  setFaceValue,
+  detectGameEnd,
+  score,
+} from "./scoring.js";
+
+export {
+  validateTurn,
+  applyCommit,
+  applyDraw,
+  applyPass,
+  applyTimeout,
+  applyResign,
+} from "./turns.js";
