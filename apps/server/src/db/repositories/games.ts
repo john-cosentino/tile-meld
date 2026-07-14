@@ -159,6 +159,16 @@ export async function loadGameState(
   );
   const pool = resolveTiles(remainingPoolIds);
 
+  let deadlineAt: Date | null = null;
+  if (gameRow.current_turn_id) {
+    const turnRow = await db
+      .selectFrom("turns")
+      .select("deadline_at")
+      .where("id", "=", gameRow.current_turn_id)
+      .executeTakeFirst();
+    deadlineAt = turnRow?.deadline_at ?? null;
+  }
+
   return {
     gameId: gameRow.id,
     table,
@@ -167,6 +177,8 @@ export async function loadGameState(
     activeSeat: gameRow.active_seat,
     consecutivePasses: gameRow.consecutive_passes,
     status: gameRow.status,
+    deadlineAt,
+    turnId: gameRow.current_turn_id,
     version: gameRow.version,
   };
 }

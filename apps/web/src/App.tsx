@@ -1,12 +1,33 @@
-// Phase 0 placeholder. The real lobby/tabletop/chat UI, branding/design
-// tokens, and the local-draft turn engine are built starting in Phase 6 --
-// see docs/opus-implementation-plan.md §10, Phase 6.
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthProvider.js";
+import { AnnouncerProvider } from "./announcer/AnnouncerProvider.js";
+import { RootLayout } from "./layout/RootLayout.js";
+import { HomePage } from "./pages/HomePage.js";
+import { CreateRoomPage } from "./pages/CreateRoomPage.js";
+import { JoinRoomPage } from "./pages/JoinRoomPage.js";
+import { PublicLobbyPage } from "./pages/PublicLobbyPage.js";
+import { WaitingRoomPage } from "./pages/WaitingRoomPage.js";
+import { TabletopPage } from "./pages/TabletopPage.js";
+import { RecoveryPage } from "./pages/RecoveryPage.js";
 
 export function App() {
   return (
-    <main>
-      <h1>Tile Meld</h1>
-      <p>Phase 0 scaffold placeholder.</p>
-    </main>
+    <AuthProvider>
+      <AnnouncerProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<RootLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/rooms/new" element={<CreateRoomPage />} />
+              <Route path="/rooms/join" element={<JoinRoomPage />} />
+              <Route path="/lobby" element={<PublicLobbyPage />} />
+              <Route path="/rooms/:roomId" element={<WaitingRoomPage />} />
+              <Route path="/games/:gameId" element={<TabletopPage />} />
+              <Route path="/recovery" element={<RecoveryPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AnnouncerProvider>
+    </AuthProvider>
   );
 }

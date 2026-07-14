@@ -75,6 +75,12 @@ describe("GET /api/games/:id", () => {
     expect(view.opponents).toHaveLength(1);
     expect(view.opponents[0].rackCount).toBe(14);
     expect(view.poolCount).toBe(106 - 2 * 14);
+    // deadlineAt must be present on the very first snapshot, not only
+    // after a turn:started socket event -- otherwise a client loading the
+    // tabletop fresh (or the dashboard, for a game it isn't socket-joined
+    // to) has no way to render a countdown.
+    expect(typeof view.deadlineAt).toBe("string");
+    expect(new Date(view.deadlineAt).getTime()).toBeGreaterThan(Date.now());
 
     await app.close();
   });

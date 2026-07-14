@@ -46,6 +46,11 @@ export const RedactedGameViewSchema = z.object({
   activeSeat: z.number().int(),
   consecutivePasses: z.number().int(),
   status: GameStatusSchema,
+  /** ISO timestamp of the active turn's deadline, or null once the game
+   * has completed. */
+  deadlineAt: z.string().nullable(),
+  /** The active turn's id, or null once the game has completed. */
+  turnId: z.string().nullable(),
   self: RedactedSelfViewSchema,
   opponents: z.array(RedactedSeatViewSchema),
 });

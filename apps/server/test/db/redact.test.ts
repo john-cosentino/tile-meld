@@ -37,6 +37,8 @@ function game(
     activeSeat: 0,
     consecutivePasses: 0,
     status: "active",
+    deadlineAt: null,
+    turnId: null,
     ...overrides,
   };
 }

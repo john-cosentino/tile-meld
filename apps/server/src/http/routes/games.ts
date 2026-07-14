@@ -1,10 +1,10 @@
-import { RedactedGameViewSchema, type RedactedGameView } from "@tile-meld/shared";
+import { RedactedGameViewSchema } from "@tile-meld/shared";
 import { z } from "zod";
 import type { AppInstance } from "../types.js";
 import { requireSession } from "../auth.js";
 import { sendError, type ErrorCode } from "../errors.js";
 import { findGameSeatForPlayer } from "../../db/repositories/games.js";
-import { redactGameFor } from "../../db/redact.js";
+import { buildWireGameView } from "../../db/redact.js";
 import { roomActionLimit } from "../rateLimits.js";
 import { ActionError, catchUpAndLoad } from "../../game/turnActions.js";
 import { broadcastTurnActionResult } from "../../realtime/gateway.js";
@@ -59,17 +59,7 @@ export function registerGameRoutes(app: AppInstance): void {
       }
       if (loaded.settled) broadcastTurnActionResult(app.io, gameId, loaded.settled);
 
-      const redacted = redactGameFor(loaded, seat.seatIndex);
-      // The engine/redaction layer deliberately returns `readonly` arrays
-      // throughout (immutability discipline for state objects); Zod's
-      // inferred type is mutable. Purely a compile-time distinction that
-      // doesn't affect JSON serialization -- safe to assert here, at the
-      // serialization boundary only.
-      reply.code(200).send({
-        ...redacted,
-        gameId: loaded.gameId,
-        version: loaded.version,
-      } as RedactedGameView);
+      reply.code(200).send(buildWireGameView(loaded, seat.seatIndex));
     },
   );
 }

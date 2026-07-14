@@ -5,16 +5,20 @@ See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
 
-**Status:** Phase 5 (real-time gameplay, durable deadlines, concurrency) — no
-gameplay UI yet, but the server (`apps/server`) now plays a full game
-end-to-end over the wire: a Socket.IO gateway drives the turn lifecycle
-(commit/draw/pass/resign) through the pure engine in atomic, optimistically-
-concurrent transactions, with idempotent retries and a durable, embedded
-deadline scheduler (no in-memory timers, no separate worker) that survives a
-restart and settles overdue turns on the next sweep or the next thing that
-touches the game. Sits on top of the HTTP identity/rooms layer (Phase 4) and
-the Postgres persistence layer and pure engine from earlier phases. The web
-client (`apps/web`) lands in Phase 6.
+**Status:** Phase 6 (web client) — a full game is now playable end-to-end in
+the browser. `apps/web` is a React + Vite app: identity/recovery bootstrap,
+create/join/public-lobby/waiting-room flows, and a tabletop with structured
+set containers, a sortable rack, a client-side rules-hint engine (imports
+`packages/engine` directly, never authoritative), and both drag-and-drop and
+click/tap tile interactions -- wired to the Socket.IO turn lifecycle and the
+durable deadline scheduler from Phase 5, on top of the HTTP identity/rooms
+layer (Phase 4) and the Postgres persistence layer and pure engine from
+earlier phases. Chat and Web Push notifications land in Phase 7.
+
+To run the full stack locally: `pnpm --filter @tile-meld/server run dev` (API,
+port 3000) and `pnpm --filter @tile-meld/web run dev` (Vite, port 5173 --
+proxies `/api` and `/socket.io` to the API server) in separate terminals,
+then open `http://localhost:5173`.
 
 ## Prerequisites
 

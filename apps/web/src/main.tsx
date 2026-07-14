@@ -1,6 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.js";
+import { applyBrandingTokens } from "./styles/applyBrandingTokens.js";
+import "./styles/global.css";
+
+applyBrandingTokens();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

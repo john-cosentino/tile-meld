@@ -56,6 +56,26 @@ export const PublicRoomsResponseSchema = z.object({
 export const ReadyRequestSchema = z.object({
   ready: z.boolean(),
 });
+export const ReadyResponseSchema = z.object({
+  ready: z.boolean(),
+});
+
+export const RoomMemberSummarySchema = z.object({
+  playerId: z.string(),
+  displayName: z.string(),
+  isReady: z.boolean(),
+});
+export const GetRoomResponseSchema = z.object({
+  roomId: z.string(),
+  code: z.string(),
+  visibility: VisibilitySchema,
+  capacity: z.number().int(),
+  turnLimitHours: z.number().int(),
+  status: z.enum(["open", "in_game", "between_games", "closed", "abandoned"]),
+  hostPlayerId: z.string().nullable(),
+  members: z.array(RoomMemberSummarySchema),
+  latestGameId: z.string().nullable(),
+});
 
 export const LeaveResponseSchema = z.object({
   newHostPlayerId: z.string().nullable(),
@@ -75,5 +95,8 @@ export type PublicRoomsQuery = z.infer<typeof PublicRoomsQuerySchema>;
 export type PublicRoomSummary = z.infer<typeof PublicRoomSummarySchema>;
 export type PublicRoomsResponse = z.infer<typeof PublicRoomsResponseSchema>;
 export type ReadyRequest = z.infer<typeof ReadyRequestSchema>;
+export type ReadyResponse = z.infer<typeof ReadyResponseSchema>;
 export type LeaveResponse = z.infer<typeof LeaveResponseSchema>;
 export type StartOrRematchResponse = z.infer<typeof StartOrRematchResponseSchema>;
+export type RoomMemberSummary = z.infer<typeof RoomMemberSummarySchema>;
+export type GetRoomResponse = z.infer<typeof GetRoomResponseSchema>;

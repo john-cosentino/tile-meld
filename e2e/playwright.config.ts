@@ -11,11 +11,18 @@ import { defineConfig, devices } from "@playwright/test";
 // actual Safari (desktop macOS and iOS) are a required release-gate step
 // documented in the deployment runbook (Sec 12), not something this CI
 // config can claim to cover.
+// Assumes both the Fastify API server (port 3000, migrated Postgres) and
+// the Vite web dev server (port 5173, proxying /api and /socket.io to
+// 3000 -- see apps/web/vite.config.ts) are already running. Auto-starting
+// both plus a throwaway database is a CI-harness concern that belongs to
+// Phase 8 ("full E2E, accessibility, and CI hardening"), not this phase's
+// first smoke test.
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
   reporter: "html",
   use: {
+    baseURL: "http://localhost:5173",
     trace: "on-first-retry",
   },
   projects: [

@@ -11,7 +11,7 @@ import type { AppInstance } from "../http/types.js";
 import { SESSION_COOKIE_NAME } from "../security/session.js";
 import { findActiveSessionByToken } from "../db/repositories/sessions.js";
 import { findGameSeatForPlayer } from "../db/repositories/games.js";
-import { redactGameFor } from "../db/redact.js";
+import { buildWireGameView } from "../db/redact.js";
 import { postChatMessage } from "../db/repositories/chatMessages.js";
 import {
   ActionError,
@@ -149,8 +149,7 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
         try {
           const loaded = await catchUpAndLoad(app, gameId);
           if (loaded.settled) broadcastTurnActionResult(io, gameId, loaded.settled);
-          const redacted = redactGameFor(loaded, seat.seatIndex);
-          const payload = { ...redacted, gameId: loaded.gameId, version: loaded.version };
+          const payload = buildWireGameView(loaded, seat.seatIndex);
           socket.emit("game:state", payload);
           ack?.({ ok: true, ...payload });
         } catch (err) {

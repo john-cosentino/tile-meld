@@ -1,0 +1,213 @@
+/* Layout/typography design tokens -- the tile-color tokens (--tile-color-*)
+   are set at runtime from packages/shared (see applyBrandingTokens.ts), the
+   single source of truth for the palette (§10.4). Everything else here is
+   presentation-only and safe to hand-edit. */
+:root {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-bg: #ffffff;
+  --color-surface: #f4f5f7;
+  --color-border: #d0d4da;
+  --color-text: #1a1d23;
+  --color-text-muted: #5a6270;
+  --color-accent: #2f6fb4;
+  --color-danger: #b3261e;
+  --color-success: #2e7d43;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.9rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #14161a;
+    --color-surface: #1d2027;
+    --color-border: #333844;
+    --color-text: #eef0f3;
+    --color-text-muted: #a2a9b5;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-4);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+button.danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+/* Visible, high-contrast focus ring for keyboard operability (§10.3). */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 3.5rem;
+  padding: 0;
+  background: #fffdf7;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  touch-action: none;
+}
+
+.tile-symbol {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tile-value {
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.drop-zone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-height: 4.5rem;
+  padding: var(--space-2);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.drop-zone.is-over {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.drop-zone.invalid {
+  border-color: var(--color-danger);
+}
+
+.drop-zone.valid {
+  border-color: var(--color-success);
+}
+
+.reorder-controls {
+  display: flex;
+  gap: 2px;
+}
+.reorder-controls button {
+  padding: 0 var(--space-1);
+  min-width: 1.5rem;
+}
+
+.error-banner {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-bg));
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}

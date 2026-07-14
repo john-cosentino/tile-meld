@@ -113,6 +113,8 @@ describe("RedactedGameViewSchema", () => {
       activeSeat: 1,
       consecutivePasses: 0,
       status: "active",
+      deadlineAt: "2026-07-14T12:00:00.000Z",
+      turnId: "turn-1",
       self: {
         seatIndex: 0,
         displayName: "Alice",

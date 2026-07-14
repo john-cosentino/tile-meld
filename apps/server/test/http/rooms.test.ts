@@ -214,6 +214,94 @@ describe("room lifecycle routes", () => {
     });
   });
 
+  describe("GET /api/rooms/:id", () => {
+    it("returns room details, member readiness, host, and the latest game id", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const created = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: host.cookie },
+        payload: { displayName: "Host", capacity: 2, visibility: "private", turnLimitHours: 4 },
+      });
+      const { roomId, code } = created.json();
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      });
+
+      const before = await app.inject({
+        method: "GET",
+        url: `/api/rooms/${roomId}`,
+        headers: { cookie: host.cookie },
+      });
+      expect(before.statusCode).toBe(200);
+      const beforeBody = before.json();
+      expect(beforeBody.hostPlayerId).toBe(host.playerId);
+      expect(beforeBody.status).toBe("open");
+      expect(beforeBody.latestGameId).toBeNull();
+      expect(beforeBody.members).toEqual(
+        expect.arrayContaining([
+          { playerId: host.playerId, displayName: "Host", isReady: false },
+          { playerId: guest.playerId, displayName: "Guest", isReady: false },
+        ]),
+      );
+
+      for (const p of [host, guest]) {
+        await app.inject({
+          method: "POST",
+          url: `/api/rooms/${roomId}/ready`,
+          headers: { cookie: p.cookie },
+          payload: { ready: true },
+        });
+      }
+      const started = await app.inject({
+        method: "POST",
+        url: `/api/rooms/${roomId}/start`,
+        headers: { cookie: host.cookie },
+      });
+      const { gameId } = started.json();
+
+      const after = await app.inject({
+        method: "GET",
+        url: `/api/rooms/${roomId}`,
+        headers: { cookie: guest.cookie },
+      });
+      const afterBody = after.json();
+      expect(afterBody.status).toBe("in_game");
+      expect(afterBody.latestGameId).toBe(gameId);
+
+      await app.close();
+    });
+
+    it("rejects a non-member", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const created = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: host.cookie },
+        payload: { displayName: "Host", capacity: 2, visibility: "private", turnLimitHours: 4 },
+      });
+      const { roomId } = created.json();
+      const outsider = await newPlayer(app);
+
+      const response = await app.inject({
+        method: "GET",
+        url: `/api/rooms/${roomId}`,
+        headers: { cookie: outsider.cookie },
+      });
+      expect(response.statusCode).toBe(403);
+
+      await app.close();
+    });
+  });
+
   describe("GET /api/rooms/public", () => {
     it("lists only open public rooms, with member display names/count/capacity/turn limit, no secrets", async () => {
       const db = await getTestDb();

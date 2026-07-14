@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   CreateRoomRequestSchema,
   CreateRoomResponseSchema,
+  GetRoomResponseSchema,
   JoinRoomRequestSchema,
   JoinRoomResponseSchema,
   LeaveResponseSchema,
@@ -11,6 +12,7 @@ import {
   QuickJoinRequestSchema,
   QuickJoinResponseSchema,
   ReadyRequestSchema,
+  ReadyResponseSchema,
   StartOrRematchResponseSchema,
 } from "@tile-meld/shared";
 import type { AppInstance } from "../types.js";
@@ -30,6 +32,7 @@ import {
 import {
   addRoomMember,
   findRoomMemberByRoomAndPlayer,
+  findRoomMemberById,
   listRoomMembers,
   markRoomMemberLeft,
   resetReadiness,
@@ -153,6 +156,47 @@ export function registerRoomRoutes(app: AppInstance): void {
   );
 
   app.get(
+    "/api/rooms/:id",
+    {
+      schema: { params: ParamsSchema, response: { 200: GetRoomResponseSchema } },
+      preValidation: requireSession,
+      config: { rateLimit: roomActionLimit },
+    },
+    async (request, reply) => {
+      const roomId = request.params.id;
+      const room = await findRoomById(app.db, roomId);
+      if (!room) {
+        sendError(reply, "not_found", "no such room");
+        return;
+      }
+      const member = await requireRoomMember(request, reply, roomId);
+      if (!member) return;
+
+      const [members, hostMember, latestGame] = await Promise.all([
+        listRoomMembers(app.db, roomId),
+        room.host_room_member_id ? findRoomMemberById(app.db, room.host_room_member_id) : undefined,
+        findLatestGameForRoom(app.db, roomId),
+      ]);
+
+      reply.code(200).send({
+        roomId: room.id,
+        code: room.code,
+        visibility: room.visibility,
+        capacity: room.capacity,
+        turnLimitHours: room.turn_limit_hours,
+        status: room.status,
+        hostPlayerId: hostMember?.player_id ?? null,
+        members: members.map((m) => ({
+          playerId: m.player_id,
+          displayName: m.display_name,
+          isReady: m.is_ready,
+        })),
+        latestGameId: latestGame?.id ?? null,
+      });
+    },
+  );
+
+  app.get(
     "/api/rooms/public",
     {
       schema: { querystring: PublicRoomsQuerySchema, response: { 200: PublicRoomsResponseSchema } },
@@ -209,7 +253,11 @@ export function registerRoomRoutes(app: AppInstance): void {
   app.post(
     "/api/rooms/:id/ready",
     {
-      schema: { params: ParamsSchema, body: ReadyRequestSchema },
+      schema: {
+        params: ParamsSchema,
+        body: ReadyRequestSchema,
+        response: { 200: ReadyResponseSchema },
+      },
       preValidation: requireSession,
       config: { rateLimit: roomActionLimit },
     },
