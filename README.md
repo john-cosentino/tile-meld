@@ -5,12 +5,16 @@ See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
 
-**Status:** Phase 4 (HTTP + identity/recovery + rooms/lobby) — no gameplay UI
-yet, but the server (`apps/server`) now actually runs: a Fastify HTTP API
-covering identity/recovery, sessions, and the full room lifecycle (create,
-join, public lobby, quick-join, ready, leave, start, rematch) sits on top of
-the Postgres persistence layer and pure engine from earlier phases. Real-time
-gameplay (Socket.IO, turn commits, the deadline sweep) lands in Phase 5.
+**Status:** Phase 5 (real-time gameplay, durable deadlines, concurrency) — no
+gameplay UI yet, but the server (`apps/server`) now plays a full game
+end-to-end over the wire: a Socket.IO gateway drives the turn lifecycle
+(commit/draw/pass/resign) through the pure engine in atomic, optimistically-
+concurrent transactions, with idempotent retries and a durable, embedded
+deadline scheduler (no in-memory timers, no separate worker) that survives a
+restart and settles overdue turns on the next sweep or the next thing that
+touches the game. Sits on top of the HTTP identity/rooms layer (Phase 4) and
+the Postgres persistence layer and pure engine from earlier phases. The web
+client (`apps/web`) lands in Phase 6.
 
 ## Prerequisites
 

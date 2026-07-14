@@ -16,6 +16,7 @@ import { registerHealthRoutes } from "./http/routes/health.js";
 import { registerIdentityRoutes } from "./http/routes/identity.js";
 import { registerRoomRoutes } from "./http/routes/rooms.js";
 import { registerGameRoutes } from "./http/routes/games.js";
+import { attachRealtimeGateway } from "./realtime/gateway.js";
 
 export type BuildAppOptions = {
   readonly db: Kysely<Database>;
@@ -57,6 +58,15 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
   registerIdentityRoutes(app);
   registerRoomRoutes(app);
   registerGameRoutes(app);
+
+  // Attaches to the same underlying http.Server Fastify owns -- Socket.IO
+  // doesn't need the server to be listening yet, just constructed, so this
+  // can happen here alongside route registration rather than in index.ts.
+  const io = attachRealtimeGateway(app);
+  app.decorate("io", io);
+  app.addHook("onClose", async () => {
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+  });
 
   return app;
 }

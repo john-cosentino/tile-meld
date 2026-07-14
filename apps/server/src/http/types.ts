@@ -4,6 +4,7 @@ import type { Kysely } from "kysely";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import type { Database } from "../db/types.js";
 import type { Env } from "../env.js";
+import type { RealtimeServer } from "../realtime/types.js";
 
 export type AuthenticatedPlayer = { readonly id: string };
 
@@ -11,6 +12,7 @@ declare module "fastify" {
   interface FastifyInstance {
     db: Kysely<Database>;
     env: Env;
+    io: RealtimeServer;
   }
   interface FastifyRequest {
     player?: AuthenticatedPlayer;

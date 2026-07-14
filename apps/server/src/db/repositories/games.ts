@@ -244,7 +244,14 @@ export async function persistTransition(
   const newPoolCursor = gameRow.pool_order.length - newState.pool.length;
   const turnAdvanced = newState.activeSeat !== gameRow.active_seat;
 
-  if (turnAdvanced && gameRow.current_turn_id) {
+  // A transition closes out the current turn row whenever the active seat
+  // actually changed, OR the game ended outright even without the active
+  // seat changing -- e.g. a non-active seat resigning can end a 2-player
+  // game while activeSeat stays put (applyResign only reassigns activeSeat
+  // when the *resigning* seat was the active one). Without the gameEnd
+  // half of this condition, a game could reach `status: "completed"` while
+  // its current turn row is left dangling at status "active" forever.
+  if ((turnAdvanced || result.gameEnd.ended) && gameRow.current_turn_id) {
     await trx
       .updateTable("turns")
       .set({ status: result.event.type, resolved_at: new Date() })
@@ -321,4 +328,19 @@ export async function findGameSeatForPlayer(
     .where("player_id", "=", playerId)
     .executeTakeFirst();
   return row ? { seatIndex: row.seat_index } : undefined;
+}
+
+/** Maps every seat in a game to its player -- used when a game ends to
+ * translate the engine's seat-indexed scores into the player-indexed
+ * room_scores ledger. */
+export async function listGameSeatPlayerIds(
+  db: Kysely<Database> | Transaction<Database>,
+  gameId: string,
+): Promise<Map<number, string>> {
+  const rows = await db
+    .selectFrom("game_seats")
+    .select(["seat_index", "player_id"])
+    .where("game_id", "=", gameId)
+    .execute();
+  return new Map(rows.map((row) => [row.seat_index, row.player_id]));
 }

@@ -1,12 +1,25 @@
-import { NoResultError } from "kysely";
 import { RedactedGameViewSchema, type RedactedGameView } from "@tile-meld/shared";
 import { z } from "zod";
 import type { AppInstance } from "../types.js";
 import { requireSession } from "../auth.js";
-import { sendError } from "../errors.js";
-import { loadGameState, findGameSeatForPlayer } from "../../db/repositories/games.js";
+import { sendError, type ErrorCode } from "../errors.js";
+import { findGameSeatForPlayer } from "../../db/repositories/games.js";
 import { redactGameFor } from "../../db/redact.js";
 import { roomActionLimit } from "../rateLimits.js";
+import { ActionError, catchUpAndLoad } from "../../game/turnActions.js";
+import { broadcastTurnActionResult } from "../../realtime/gateway.js";
+
+// ActionError's socket-oriented codes map onto this route's HTTP error
+// vocabulary; "stale" and "invalid" don't arise for a GET (nothing to be
+// stale/invalid about), but are mapped defensively rather than assumed
+// unreachable.
+const ACTION_ERROR_STATUS: Record<ActionError["code"], ErrorCode> = {
+  not_found: "not_found",
+  forbidden: "forbidden",
+  conflict: "conflict",
+  stale: "conflict",
+  invalid: "invalid_request",
+};
 
 const ParamsSchema = z.object({ id: z.string() });
 
@@ -34,14 +47,17 @@ export function registerGameRoutes(app: AppInstance): void {
 
       let loaded;
       try {
-        loaded = await loadGameState(app.db, gameId);
+        // Any request that touches a game settles an overdue deadline
+        // first (docs/opus-implementation-plan.md §8.1 on-read catch-up).
+        loaded = await catchUpAndLoad(app, gameId);
       } catch (err) {
-        if (err instanceof NoResultError) {
-          sendError(reply, "not_found", "no such game");
+        if (err instanceof ActionError) {
+          sendError(reply, ACTION_ERROR_STATUS[err.code], err.message);
           return;
         }
         throw err;
       }
+      if (loaded.settled) broadcastTurnActionResult(app.io, gameId, loaded.settled);
 
       const redacted = redactGameFor(loaded, seat.seatIndex);
       // The engine/redaction layer deliberately returns `readonly` arrays
