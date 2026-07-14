@@ -1,8 +1,34 @@
-// Phase 0 placeholder. Real game-rules types and pure functions
-// (validateSet, applyCommit, score, etc.) are implemented in Phase 1/2.
-// This package must stay free of React, DB, network, Date.now(), and
-// Math.random() -- see docs/opus-implementation-plan.md §4.2/§4.3.
+// Public API of the pure, server-authoritative game-rules engine.
+// No React, DB, network, Date.now(), or Math.random() -- see
+// docs/opus-implementation-plan.md §4.2/§4.3. Time and randomness are
+// always injected by the caller.
 
-export function ping(): string {
-  return "engine";
-}
+export {
+  COLORS,
+  MIN_VALUE,
+  MAX_VALUE,
+  type Color,
+  type Value,
+  type Tile,
+  type NumberedTile,
+  type JokerTile,
+  type JokerAssignment,
+  type RandomInt,
+  type SetInvalidReason,
+  type RunValidationResult,
+  type GroupValidationResult,
+  type SetValidationResult,
+  type ConservationResult,
+} from "./types.js";
+
+export { createTileCatalog, hasDuplicateTileIds } from "./tiles.js";
+export { shuffle } from "./shuffle.js";
+export {
+  MIN_SET_LENGTH,
+  MAX_RUN_LENGTH,
+  MAX_GROUP_LENGTH,
+  validateRun,
+  validateGroup,
+  validateSet,
+} from "./sets.js";
+export { checkConservation } from "./conservation.js";
