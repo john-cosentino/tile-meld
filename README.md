@@ -5,7 +5,9 @@ See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
 
-**Status:** Phase 0 (repo scaffold & tooling) — no gameplay yet.
+**Status:** Phase 3 (persistence & migrations) — no gameplay UI yet; the
+pure engine (`packages/engine`) and the server's Postgres persistence layer
+(`apps/server/src/db`) are implemented and tested.
 
 ## Prerequisites
 
@@ -20,13 +22,17 @@ this repo is built under.
 corepack enable
 pnpm install
 cp .env.example .env
+docker compose up -d db          # or a local, non-Docker PostgreSQL 16
+pnpm --filter @tile-meld/server run migrate
 pnpm run typecheck
 pnpm run lint
 pnpm run test
 ```
 
-A local PostgreSQL 16 instance is required starting in Phase 3; until then,
-`pnpm install` / `typecheck` / `lint` / `test` do not need a database.
+`apps/server`'s tests are DB integration tests -- they need a running
+PostgreSQL 16 reachable via `DATABASE_URL` (see `.env.example`) and migrated
+to latest. `pnpm run typecheck` and `pnpm run lint` do not need a database;
+`packages/engine`/`packages/shared`/`apps/web` tests don't either.
 
 ## Quick start (with Docker)
 
