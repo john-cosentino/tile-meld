@@ -30,6 +30,33 @@ export async function listRoomMembers(
     .execute();
 }
 
+/** Current (not-left) membership for a specific player in a room, if any --
+ * the basis for room-scoped authorization checks. */
+export async function findRoomMemberByRoomAndPlayer(
+  db: Kysely<Database> | Transaction<Database>,
+  roomId: string,
+  playerId: string,
+): Promise<RoomMemberRow | undefined> {
+  return db
+    .selectFrom("room_members")
+    .selectAll()
+    .where("room_id", "=", roomId)
+    .where("player_id", "=", playerId)
+    .where("left_at", "is", null)
+    .executeTakeFirst();
+}
+
+export async function findRoomMemberById(
+  db: Kysely<Database> | Transaction<Database>,
+  roomMemberId: string,
+): Promise<RoomMemberRow | undefined> {
+  return db
+    .selectFrom("room_members")
+    .selectAll()
+    .where("id", "=", roomMemberId)
+    .executeTakeFirst();
+}
+
 export async function setRoomMemberReady(
   db: Kysely<Database> | Transaction<Database>,
   roomMemberId: string,

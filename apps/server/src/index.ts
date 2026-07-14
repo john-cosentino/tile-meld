@@ -1,18 +1,15 @@
-// Phase 0/1 placeholder. Fastify + Socket.IO + persistence are wired up
-// starting in Phase 3/4/5 -- see docs/opus-implementation-plan.md §4.2,
-// Phases 3-5. This entry point exists to prove the monorepo wiring
-// (workspace-linked package imports) resolves correctly end to end, now
-// exercising real Phase 1 engine content instead of a placeholder.
+import { buildApp } from "./app.js";
+import { createDb } from "./db/connection.js";
+import { loadEnv } from "./env.js";
 
-import { createTileCatalog } from "@tile-meld/engine";
-import { ping as pingShared } from "@tile-meld/shared";
+const env = loadEnv();
+const db = createDb(env.DATABASE_URL);
+const app = await buildApp({ db, env });
 
-export function bootMessage(): string {
-  const catalogSize = createTileCatalog().length;
-  return `tile-meld server placeholder (engine catalog: ${catalogSize} tiles, ${pingShared()})`;
-}
-
-// Only run when executed directly (not when imported by tests).
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
-  console.log(bootMessage());
-}
+app
+  .listen({ port: env.PORT, host: "0.0.0.0" })
+  .then(() => app.log.info(`tile-meld server listening on port ${env.PORT}`))
+  .catch((err: unknown) => {
+    app.log.error(err);
+    process.exit(1);
+  });

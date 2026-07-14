@@ -1,8 +1,8 @@
-// Phase 0 placeholder. Real Zod DTO schemas for every HTTP/WS message,
-// redacted view types, and the branding/design-token/product-config module
-// are added starting in later phases -- see docs/opus-implementation-plan.md
-// §4.2/§10.4.
+// Public API of packages/shared: Zod DTO schemas + inferred types for every
+// HTTP/WS message, shared by apps/server (for request/response validation)
+// and, later, apps/web (for client-side type-safety). Depends on nothing
+// but zod -- see docs/opus-implementation-plan.md §4.2.
 
-export function ping(): string {
-  return "shared";
-}
+export * from "./schemas/game.js";
+export * from "./schemas/identity.js";
+export * from "./schemas/rooms.js";

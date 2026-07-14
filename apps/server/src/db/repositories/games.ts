@@ -285,3 +285,40 @@ export async function persistTransition(
     .where("id", "=", gameId)
     .execute();
 }
+
+/** The room's most recent game (highest seq), if any -- used to determine
+ * the next rematch's seq number and to check whether a rematch is
+ * currently allowed (the room must be between_games; see room lifecycle
+ * logic in the HTTP layer). */
+export async function findLatestGameForRoom(
+  db: Kysely<Database> | Transaction<Database>,
+  roomId: string,
+): Promise<GameRow | undefined> {
+  return db
+    .selectFrom("games")
+    .selectAll()
+    .where("room_id", "=", roomId)
+    .orderBy("seq", "desc")
+    .limit(1)
+    .executeTakeFirst();
+}
+
+/**
+ * A player's seat in a specific game, if any. Authorization for viewing a
+ * game's redacted state is based on this -- game_seats are immutable
+ * historical records, so this still resolves after the seat's room_member
+ * has left the room or the game has completed.
+ */
+export async function findGameSeatForPlayer(
+  db: Kysely<Database> | Transaction<Database>,
+  gameId: string,
+  playerId: string,
+): Promise<{ readonly seatIndex: number } | undefined> {
+  const row = await db
+    .selectFrom("game_seats")
+    .select(["seat_index"])
+    .where("game_id", "=", gameId)
+    .where("player_id", "=", playerId)
+    .executeTakeFirst();
+  return row ? { seatIndex: row.seat_index } : undefined;
+}

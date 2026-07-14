@@ -5,9 +5,12 @@ See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
 
-**Status:** Phase 3 (persistence & migrations) — no gameplay UI yet; the
-pure engine (`packages/engine`) and the server's Postgres persistence layer
-(`apps/server/src/db`) are implemented and tested.
+**Status:** Phase 4 (HTTP + identity/recovery + rooms/lobby) — no gameplay UI
+yet, but the server (`apps/server`) now actually runs: a Fastify HTTP API
+covering identity/recovery, sessions, and the full room lifecycle (create,
+join, public lobby, quick-join, ready, leave, start, rematch) sits on top of
+the Postgres persistence layer and pure engine from earlier phases. Real-time
+gameplay (Socket.IO, turn commits, the deadline sweep) lands in Phase 5.
 
 ## Prerequisites
 
@@ -33,6 +36,10 @@ pnpm run test
 PostgreSQL 16 reachable via `DATABASE_URL` (see `.env.example`) and migrated
 to latest. `pnpm run typecheck` and `pnpm run lint` do not need a database;
 `packages/engine`/`packages/shared`/`apps/web` tests don't either.
+
+To run the server itself: `pnpm --filter @tile-meld/server run dev` (needs
+`DATABASE_URL` and `SESSION_TOKEN_HMAC_SECRET` set in `.env`, and Postgres
+migrated). `GET /api/health` confirms it's up and can reach the database.
 
 ## Quick start (with Docker)
 
