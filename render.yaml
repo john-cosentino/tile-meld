@@ -1,0 +1,71 @@
+# Render Blueprint (Option A, the primary deploy target -- plan §12.3,
+# Decision D-HOST). Deploy via the Render dashboard: "New" -> "Blueprint",
+# point it at this repo. See docs/deploy-render.md for the full walkthrough,
+# including the env vars marked `sync: false` below that you'll be
+# prompted to fill in during setup.
+#
+# https://render.com/docs/blueprint-spec
+
+databases:
+  - name: tile-meld-db
+    databaseName: tilemeld
+    user: tilemeld
+    # NOT the free Postgres plan -- Render's free Postgres instances
+    # expire (and are deleted) after 30 days, which is never appropriate
+    # for a database anyone is actually relying on. Pick the smallest paid
+    # plan large enough for your data during setup; upgrading later is a
+    # dashboard change, not an app change.
+    plan: basic-256mb
+
+services:
+  - type: web
+    name: tile-meld
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Paid, always-on -- required per Decision D-HOST: a sleeping instance
+    # (the free plan spins down after 15 minutes idle) would delay the
+    # embedded deadline sweep for however long it takes to wake back up,
+    # and preDeployCommand (below) is only available on paid plans anyway.
+    plan: starter
+    healthCheckPath: /api/health
+    # Runs once per deploy, before traffic switches to the new version --
+    # the pre-traffic release step D-MIGRATE requires (plan §12.4). If
+    # this fails, Render halts the deploy and keeps the previous version
+    # serving. WORKDIR in the Dockerfile is already /app/apps/server, so
+    # this is the same command `pnpm run migrate` runs locally, just
+    # against the already-built dist/ output.
+    preDeployCommand: node dist/migrate-cli.js up
+    envVars:
+      # PORT is intentionally absent: Render auto-injects it (defaulting
+      # to 10000) and the app already reads process.env.PORT (env.ts) --
+      # setting it here would fight Render's own port assignment instead
+      # of just using it.
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tile-meld-db
+          property: connectionString
+      # Generated once, automatically, on first deploy -- never typed in
+      # by hand, never appears in this file. Rotating it (e.g. after a
+      # suspected leak) is a dashboard action, not a blueprint change --
+      # see docs/backup-restore.md's "credential rotation" note.
+      - key: SESSION_TOKEN_HMAC_SECRET
+        generateValue: true
+      # No CORS_ORIGIN: the API and the static web app are served from
+      # this same single origin (apps/server/src/app.ts's static-file
+      # serving), so the same-origin default (CORS disabled) is correct,
+      # not a gap -- see app.ts's own comment on this.
+      #
+      # Web Push is a progressive enhancement everywhere (plan §8.4):
+      # leaving these three blank disables it cleanly, no error, in-app
+      # notifications keep working. Fill them in during Blueprint setup
+      # if you want push -- generate a keypair with
+      # `npx web-push generate-vapid-keys` first.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false

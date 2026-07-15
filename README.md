@@ -5,34 +5,34 @@ See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
 
-**Status:** Phase 8 (full E2E, accessibility, and CI hardening) — a full
-game is playable end-to-end in the browser (Phases 0-7), now backed by a
-Playwright suite covering the whole lifecycle across Chromium, Firefox,
-WebKit, and mobile Chrome/Safari viewports: real mouse drag-and-drop, 3-4
-player games, the public lobby and Quick Join, refresh/reconnect and
-cross-device recovery, the invalid-commit penalty, a real turn timeout
-settled by the server's own embedded deadline sweep, and a full room
-lifecycle through resign, rematch, and a fresh game with fresh chat.
-Automated accessibility checks (`@axe-core/playwright`) run against every
-screen and gate on serious/critical violations, which caught and fixed two
-real issues along the way: a WCAG AA color-contrast shortfall on links
-inside error/warning banners, and an invalid ARIA parent-child relationship
-on rack/table tiles (`role="option"` requires a `listbox` ancestor that
-didn't exist; tiles now use `aria-pressed` on a plain button instead, the
-same toggle-button pattern the rack's sort controls already used). CI
-(`.github/workflows/ci.yml`) now runs three jobs: format/lint/typecheck/
-unit-integration-tests/build, the full Playwright matrix (auto-starting
-both the API and web dev servers via `webServer` in
-`e2e/playwright.config.ts`), and a security job (`pnpm audit` plus a Trivy
-scan of the Docker image) -- which caught and fixed a real, then-unpatched
-high-severity SQL-injection vulnerability in `kysely` along the way, too.
+**Status:** Phase 9 (deployment & ops) — the app is feature-complete
+(Phases 0-8) and ready to actually run somewhere real. `apps/server` now
+has a production build (`esbuild`, bundling the workspace's own packages
+in while keeping real npm dependencies external) served by a
+multi-stage `Dockerfile` that assembles a lean, production-only image via
+`pnpm deploy`; the same server process now also serves the built web SPA
+from its own origin (`apps/server/src/app.ts`), so a deploy is one
+container, not two. Graceful shutdown (`SIGTERM` drains sockets, stops the
+deadline sweep, closes the DB pool before exiting) and structured,
+secret-redacted JSON logs are both wired up. Two deploy paths are
+documented and both have been exercised for real, including a full
+two-browser game played end to end through the actual production
+container: `docs/deploy-render.md` (Option A, primary -- a `render.yaml`
+Blueprint) and `docs/deploy-vps.md` (Option B, fallback -- `docker-
+compose.prod.yml` + Caddy for automatic TLS). `docs/backup-restore.md`
+covers both Render's managed point-in-time recovery and a scripted,
+GPG-encrypted `pg_dump` path (`scripts/backup-postgres.sh` /
+`restore-postgres.sh`) for the VPS option -- the restore drill in that doc
+was actually run, not just described, dump-to-fresh-database-with-a-
+verified-marker-row and all.
 
 To run the full stack locally: `pnpm --filter @tile-meld/server run dev` (API,
 port 3000) and `pnpm --filter @tile-meld/web run dev` (Vite, port 5173 --
 proxies `/api` and `/socket.io` to the API server) in separate terminals,
 then open `http://localhost:5173`. The Playwright suite (`e2e/`) doesn't
 need either running manually first -- it starts both itself and reuses
-whatever's already up if you do.
+whatever's already up if you do. To try the actual production build
+locally: `docker compose up` (see "Quick start (with Docker)" below).
 
 ## Prerequisites
 
@@ -70,8 +70,12 @@ docker compose up
 ```
 
 Brings up a PostgreSQL 16 container (`db`) and the server container (`web`,
-built from the root `Dockerfile`). Both paths share the same
-`.env.example` and Postgres schema.
+built from the root `Dockerfile`), open `http://localhost:3000` -- this is
+the actual production build (compiled server + built web app, both served
+from the one container), not a dev-mode process, so it's the closest local
+preview of a real deploy. Both paths share the same `.env.example` and
+Postgres schema. `docker-compose.prod.yml` is a separate file for actually
+deploying (see `docs/deploy-vps.md`), not for local use.
 
 ## Workspace layout
 
@@ -92,9 +96,15 @@ pnpm run format:check  # prettier --check
 pnpm run lint          # eslint
 pnpm run typecheck     # tsc --noEmit across all workspace packages
 pnpm run test          # vitest across all workspace packages
-pnpm run build         # production build (apps/web only; other packages have none)
+pnpm run build         # production build (apps/web + apps/server; packages/* have none --
+                        # consumed as workspace-linked TS source, no compile step needed)
 
 cd e2e && npx playwright test   # full E2E matrix -- Chromium, Firefox, WebKit,
                                  # mobile Chrome, mobile Safari; auto-starts the
                                  # API + web dev servers if neither is running
 ```
+
+## Deployment
+
+See `docs/deploy-render.md` (primary) or `docs/deploy-vps.md` (fallback), and
+`docs/backup-restore.md` for both options' backup/restore procedures.

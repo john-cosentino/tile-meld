@@ -1,0 +1,15 @@
+# Caddy automatically obtains and renews a Let's Encrypt TLS certificate
+# for {$DOMAIN} the first time it starts, as long as DNS for that domain
+# already points at this VPS and ports 80/443 are reachable from the
+# internet -- no manual certbot/renewal setup needed (plan §12.3, Option
+# B: "Caddy for automatic TLS"). See docs/deploy-vps.md.
+{$DOMAIN} {
+	reverse_proxy web:3000
+
+	encode gzip
+
+	# Socket.IO's long-polling fallback and websocket upgrade both go
+	# through the same reverse_proxy directive above -- Caddy proxies the
+	# Upgrade/Connection headers through by default, no special
+	# websocket config needed.
+}

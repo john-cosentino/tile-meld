@@ -24,19 +24,28 @@ services:
       db:
         condition: service_healthy
     environment:
-      NODE_ENV: development
+      # The Dockerfile now runs the compiled production build (Phase 9),
+      # not a dev-mode process, so this is production in every real
+      # sense -- NODE_ENV itself isn't currently branched on anywhere in
+      # apps/server, but setting it accurately still avoids confusion.
+      NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgres://${POSTGRES_USER:-tilemeld}:${POSTGRES_PASSWORD:-tilemeld}@db:5432/${POSTGRES_DB:-tilemeld}
+      # A fixed local-only default so `docker compose up` works with zero
+      # setup -- never reused for an actual deployment (docker-
+      # compose.prod.yml requires a real one via .env instead, with no
+      # fallback).
+      SESSION_TOKEN_HMAC_SECRET: ${SESSION_TOKEN_HMAC_SECRET:-local-dev-only-secret-not-for-production-use}
     ports:
       - "3000:3000"
-    # No source bind-mount yet: the official Node image's entrypoint
-    # auto-runs a package-manager install against whatever /app it sees,
-    # and a host bind-mount here shadows the image's own node_modules with
-    # the host's (different pnpm store/user context), which triggers a
+    # No source bind-mount: the official Node image's entrypoint auto-runs
+    # a package-manager install against whatever /app it sees, and a host
+    # bind-mount here shadows the image's own node_modules with the
+    # host's (different pnpm store/user context), which triggers a
     # non-interactive "confirm removal" prompt that fails with no TTY.
-    # apps/server has no long-running process worth hot-reloading yet
-    # (Fastify lands in Phase 4); revisit live-reload bind-mounting with
-    # per-package named volumes once there is.
+    # This service now runs a compiled build anyway (see the Dockerfile),
+    # so there's nothing to hot-reload -- `pnpm --filter server run dev`
+    # outside Docker remains the fast inner loop for that (see README).
 
 volumes:
   tilemeld-db-data:

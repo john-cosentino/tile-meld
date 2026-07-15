@@ -82,5 +82,14 @@ export default tseslint.config(
       globals: globals.serviceworker,
     },
   },
+  {
+    // Build/tooling scripts run directly under plain Node (no bundler,
+    // no app framework), unlike apps/server/src which always logs via
+    // the injected pino logger rather than raw console.
+    files: ["**/scripts/**/*.mjs"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
   eslintConfigPrettier,
 );

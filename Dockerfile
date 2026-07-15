@@ -4,7 +4,11 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@11.13.0 --activate
 
 # Install dependencies in their own layer so source-only changes don't
-# invalidate the pnpm install cache.
+# invalidate the pnpm install cache. Needs every workspace's package.json
+# (not just apps/server's) because pnpm resolves the whole workspace
+# lockfile at once, and the devDependencies installed here (vite,
+# esbuild, typescript) are needed for the build stage below -- they never
+# make it into the runtime image.
 FROM base AS deps
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/engine/package.json packages/engine/package.json
@@ -14,10 +18,35 @@ COPY apps/web/package.json apps/web/package.json
 COPY e2e/package.json e2e/package.json
 RUN pnpm install --frozen-lockfile
 
-# Phase 0: run the server directly from TypeScript source via tsx. A
-# compiled production build is introduced in a later deployment phase.
-FROM deps AS runtime
+# Builds the static web SPA and the bundled server, then assembles a
+# production-only deployable via `pnpm deploy` (resolves the
+# @tile-meld/engine and @tile-meld/shared workspace:* deps by copying
+# their files in directly, and installs only apps/server's *production*
+# npm dependencies -- none of the devtoolchain used to build this
+# (typescript, vite, esbuild, vitest, eslint) ships in the runtime image).
+# --legacy: the non-legacy deploy path requires
+# inject-workspace-packages=true workspace-wide, which would change how
+# `pnpm install` links workspace packages everywhere (including local dev
+# and CI) just for this one Docker step's benefit -- not worth it for a
+# single deploy target.
+FROM deps AS build
 COPY . .
+RUN pnpm --filter @tile-meld/web run build
+RUN pnpm --filter @tile-meld/server run build
+RUN pnpm --filter @tile-meld/server deploy --prod --legacy /app/deploy/server
+
+FROM base AS runtime
+ENV NODE_ENV=production
+COPY --from=build /app/deploy/server /app/apps/server
+COPY --from=build /app/apps/web/dist /app/apps/web/dist
 WORKDIR /app/apps/server
 EXPOSE 3000
-CMD ["pnpm", "exec", "tsx", "src/index.ts"]
+# Reads $PORT at healthcheck-execution time rather than hardcoding 3000:
+# this same image runs under docker-compose.prod.yml (PORT=3000 always)
+# and Render (auto-injects PORT=10000, overriding whatever's set here --
+# see docs/deploy-render.md), and a hardcoded port would silently
+# "succeed" at pinging the wrong port and never actually detect a hung
+# server on Render.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://localhost:' + (process.env.PORT || 3000) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+CMD ["node", "dist/index.js"]
