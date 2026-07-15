@@ -5,26 +5,34 @@ See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
 
-**Status:** Phase 7 (chat + notifications) — a full game is playable
-end-to-end in the browser, now with a game-scoped chat panel (persisted,
-rate-limited, sanitized, read-only once a game ends) and Web Push
-notifications (Service Worker + VAPID) for your-turn / 15-minute-warning /
-timed-out / game-over, layered on top of the always-available in-app
-indicators from Phase 6. Push is a progressive enhancement everywhere: with
-no VAPID keypair configured, or no browser support, or permission denied,
-the app degrades cleanly to in-app-only with no errors. `apps/web` (React +
-Vite): identity/recovery bootstrap, create/join/public-lobby/waiting-room
-flows, and a tabletop with structured set containers, a sortable rack, a
-client-side rules-hint engine (imports `packages/engine` directly, never
-authoritative), and both drag-and-drop and click/tap tile interactions --
-wired to the Socket.IO turn lifecycle and the durable deadline scheduler from
-Phase 5, on top of the HTTP identity/rooms layer (Phase 4) and the Postgres
-persistence layer and pure engine from earlier phases.
+**Status:** Phase 8 (full E2E, accessibility, and CI hardening) — a full
+game is playable end-to-end in the browser (Phases 0-7), now backed by a
+Playwright suite covering the whole lifecycle across Chromium, Firefox,
+WebKit, and mobile Chrome/Safari viewports: real mouse drag-and-drop, 3-4
+player games, the public lobby and Quick Join, refresh/reconnect and
+cross-device recovery, the invalid-commit penalty, a real turn timeout
+settled by the server's own embedded deadline sweep, and a full room
+lifecycle through resign, rematch, and a fresh game with fresh chat.
+Automated accessibility checks (`@axe-core/playwright`) run against every
+screen and gate on serious/critical violations, which caught and fixed two
+real issues along the way: a WCAG AA color-contrast shortfall on links
+inside error/warning banners, and an invalid ARIA parent-child relationship
+on rack/table tiles (`role="option"` requires a `listbox` ancestor that
+didn't exist; tiles now use `aria-pressed` on a plain button instead, the
+same toggle-button pattern the rack's sort controls already used). CI
+(`.github/workflows/ci.yml`) now runs three jobs: format/lint/typecheck/
+unit-integration-tests/build, the full Playwright matrix (auto-starting
+both the API and web dev servers via `webServer` in
+`e2e/playwright.config.ts`), and a security job (`pnpm audit` plus a Trivy
+scan of the Docker image) -- which caught and fixed a real, then-unpatched
+high-severity SQL-injection vulnerability in `kysely` along the way, too.
 
 To run the full stack locally: `pnpm --filter @tile-meld/server run dev` (API,
 port 3000) and `pnpm --filter @tile-meld/web run dev` (Vite, port 5173 --
 proxies `/api` and `/socket.io` to the API server) in separate terminals,
-then open `http://localhost:5173`.
+then open `http://localhost:5173`. The Playwright suite (`e2e/`) doesn't
+need either running manually first -- it starts both itself and reuses
+whatever's already up if you do.
 
 ## Prerequisites
 
@@ -84,4 +92,9 @@ pnpm run format:check  # prettier --check
 pnpm run lint          # eslint
 pnpm run typecheck     # tsc --noEmit across all workspace packages
 pnpm run test          # vitest across all workspace packages
+pnpm run build         # production build (apps/web only; other packages have none)
+
+cd e2e && npx playwright test   # full E2E matrix -- Chromium, Firefox, WebKit,
+                                 # mobile Chrome, mobile Safari; auto-starts the
+                                 # API + web dev servers if neither is running
 ```

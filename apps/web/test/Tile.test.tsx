@@ -16,21 +16,21 @@ function renderTile(ui: Parameters<typeof Tile>[0]) {
 describe("Tile", () => {
   it("labels a numbered tile with its color name and value -- not color alone (§10.3)", () => {
     renderTile({ tile: { kind: "numbered", tileId: "C1-7-a", color: "C1", value: 7 } });
-    const button = screen.getByRole("option", { name: "Crimson 7" });
+    const button = screen.getByRole("button", { name: "Crimson 7" });
     expect(button).toBeInTheDocument();
   });
 
   it("labels a joker distinctly from any color", () => {
     renderTile({ tile: { kind: "joker", tileId: "J-a" } });
-    expect(screen.getByRole("option", { name: "Joker" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Joker" })).toBeInTheDocument();
   });
 
-  it("reflects selection via aria-selected", () => {
+  it("reflects selection via aria-pressed", () => {
     renderTile({
       tile: { kind: "numbered", tileId: "C2-3-a", color: "C2", value: 3 },
       selected: true,
     });
-    expect(screen.getByRole("option")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "true");
   });
 
   it("calls onActivate when clicked", () => {
@@ -47,7 +47,7 @@ describe("Tile", () => {
         activated = true;
       },
     });
-    fireEvent.click(screen.getByRole("option"));
+    fireEvent.click(screen.getByRole("button"));
     expect(activated).toBe(true);
   });
 });

@@ -63,8 +63,14 @@ export function Tile({
       // onClick -- drag-and-drop and click/tap must both work on the same
       // element (§10.2), not have one silently shadow the other.
       onClick={onActivate}
-      role="option"
-      aria-selected={selected}
+      // Not role="option" -- that role requires an ancestor with
+      // role="listbox" (ARIA 1.2), which DropZone (rack/table containers)
+      // doesn't provide and structurally can't always provide (some
+      // DropZones are also click targets in their own right, role="button"
+      // when a tile is selected elsewhere). aria-pressed on a plain button
+      // has no such parent requirement and is the same toggle-state
+      // pattern Rack.tsx's sort-mode buttons already use.
+      aria-pressed={selected}
       aria-label={label}
       title={label}
     >

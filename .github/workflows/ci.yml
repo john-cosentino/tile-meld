@@ -8,7 +8,7 @@ on:
 
 jobs:
   checks:
-    name: Format, lint, typecheck, unit/integration tests
+    name: Format, lint, typecheck, unit/integration tests, build
     runs-on: ubuntu-latest
     services:
       # Backs apps/server's DB integration tests (introduced in Phase 3).
@@ -52,3 +52,110 @@ jobs:
 
       - name: Unit/integration tests
         run: pnpm run test
+
+      - name: Build
+        run: pnpm run build
+
+  e2e:
+    name: End-to-end (Playwright, full browser/viewport matrix)
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tilemeld
+          POSTGRES_PASSWORD: tilemeld
+          POSTGRES_DB: tilemeld
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tilemeld"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://tilemeld:tilemeld@localhost:5432/tilemeld
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate database
+        run: pnpm --filter @tile-meld/server run migrate
+
+      # --with-deps pulls in the OS-level codec/font libraries each engine
+      # needs (e.g. WebKit's libavif16) -- safe here since GitHub's runners
+      # give real, unprompted sudo, unlike a typical local sandbox.
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      # e2e/playwright.config.ts's `webServer` entries start both the API
+      # server and the Vite dev server automatically (reuseExistingServer
+      # is false in CI, so this always spins up its own fresh pair); the
+      # full 2-page-app suite is otherwise serialized to one worker there
+      # too, for the same real-per-IP-rate-limit reasons noted in that
+      # config -- this job's 60-minute timeout gives that plenty of room
+      # (a local full 5-project run took ~28 minutes).
+      - name: Run Playwright E2E suite (all projects)
+        working-directory: e2e
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+
+  security:
+    name: Dependency audit + Docker image scan (Trivy)
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # high/critical only -- moderate-and-below in transitive dependencies
+      # is common enough noise (and frequently has no available fix yet)
+      # that gating every PR on it would train reviewers to ignore this
+      # step rather than act on it. Escalate the threshold if that stops
+      # being true in practice.
+      - name: Dependency audit
+        run: pnpm audit --audit-level=high
+
+      - name: Build image for scanning
+        run: docker build -t tile-meld:${{ github.sha }} .
+
+      # ignore-unfixed: true -- the same reasoning as the audit-level
+      # choice above, but sharper here: an unfixed base-image CVE can't be
+      # resolved by anything in this repo, so failing on it would be a
+      # permanently-red gate with no available fix rather than a signal
+      # anyone can act on.
+      - name: Scan image (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: tile-meld:${{ github.sha }}
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          exit-code: "1"

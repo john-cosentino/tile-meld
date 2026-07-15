@@ -220,3 +220,15 @@ button.danger {
   border-radius: var(--radius-md);
   padding: var(--space-3);
 }
+
+/* The global `a` rule below sets every link to --color-accent regardless
+   of its surrounding background -- fine almost everywhere, but against
+   these banners' tinted backgrounds it falls short of WCAG AA (4.5:1;
+   accent blue on the error tint measured 4.25:1). Inheriting the banner's
+   own (already-AA) text color keeps links legible here, and reads better
+   next to same-color banner text than an unrelated blue would anyway. */
+.error-banner a,
+.warning-banner a {
+  color: inherit;
+  text-decoration: underline;
+}
