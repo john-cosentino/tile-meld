@@ -1,5 +1,7 @@
 import type { AppInstance } from "../http/types.js";
+import { DEFAULT_BOT_TURN_DELAY_MS } from "../env.js";
 import { settleOverdueTurnIfNeeded, type TurnActionResult } from "./turnActions.js";
+import { runBotTurn } from "./botTurn.js";
 
 // The durable, single-process deadline scheduler -- docs/opus-implementation-
 // plan.md §8.1 (Decision D-SCHED). No in-memory setTimeout, no separate
@@ -107,9 +109,57 @@ export async function runWarningSweepOnce(
   }));
 }
 
+export type BotActed = { readonly gameId: string; readonly result: TurnActionResult };
+
+/**
+ * The durable computer-opponent recovery sweep (docs plan §7). Finds active
+ * games whose current, active turn belongs to a computer seat and is at least
+ * `botDelayMs` old, and runs each bot turn via the same idempotent
+ * `runBotTurn` path the fast-path timer uses. This is the mechanism that makes
+ * the ~1s fast-path timer purely a latency optimization: a process restart
+ * after the human moved (before the bot did), a lost timer, or a bot seat that
+ * simply started a game all get picked up here within one sweep interval.
+ *
+ * No `FOR UPDATE SKIP LOCKED` is needed at this level: `runBotTurn` submits
+ * through commitTurn/drawTurn/passTurn, which lock the games row and enforce
+ * idempotency + version checks, so two concurrent sweeps (or a sweep racing
+ * the fast-path) resolve to exactly one applied action with the rest no-ops.
+ * The candidate query below is a plain, non-locking read.
+ */
+export async function runBotTurnSweepOnce(
+  app: AppInstance,
+  botDelayMs = app.env.BOT_TURN_DELAY_MS ?? DEFAULT_BOT_TURN_DELAY_MS,
+  batchSize = DEFAULT_BATCH_SIZE,
+): Promise<readonly BotActed[]> {
+  const dueBefore = new Date(Date.now() - botDelayMs);
+  const candidates = await app.db
+    .selectFrom("turns")
+    .innerJoin("games", "games.current_turn_id", "turns.id")
+    .innerJoin("game_seats", (join) =>
+      join
+        .onRef("game_seats.game_id", "=", "games.id")
+        .onRef("game_seats.seat_index", "=", "games.active_seat"),
+    )
+    .select(["games.id as gameId"])
+    .where("turns.status", "=", "active")
+    .where("games.status", "=", "active")
+    .where("game_seats.controller_type", "=", "computer")
+    .where("turns.started_at", "<=", dueBefore)
+    .limit(batchSize)
+    .execute();
+
+  const acted: BotActed[] = [];
+  for (const { gameId } of candidates) {
+    const outcome = await runBotTurn(app, gameId, "recovered");
+    if (outcome.kind === "acted") acted.push({ gameId, result: outcome.result });
+  }
+  return acted;
+}
+
 export type SweepHandlers = {
   readonly onTimeout?: (settled: SettledTimeout) => void;
   readonly onWarning?: (warned: Warned) => void;
+  readonly onBotActed?: (acted: BotActed) => void;
 };
 
 /**
@@ -131,6 +181,11 @@ export function startBackgroundSweeps(
     runWarningSweepOnce(app)
       .then((warned) => warned.forEach((w) => handlers.onWarning?.(w)))
       .catch((err: unknown) => app.log.error(err, "warning sweep failed"));
+    // The durable computer-opponent backstop (docs plan §7) runs on the same
+    // single-process interval -- no separate worker, queue, or Redis.
+    runBotTurnSweepOnce(app)
+      .then((acted) => acted.forEach((a) => handlers.onBotActed?.(a)))
+      .catch((err: unknown) => app.log.error(err, "bot-turn sweep failed"));
   }, intervalMs);
   timer.unref();
   return () => clearInterval(timer);

@@ -10,7 +10,11 @@ import {
 import type { AppInstance } from "../http/types.js";
 import { SESSION_COOKIE_NAME } from "../security/session.js";
 import { findActiveSessionByToken } from "../db/repositories/sessions.js";
-import { findGameSeatForPlayer, listGameSeatPlayerIds } from "../db/repositories/games.js";
+import {
+  findGameSeatForPlayer,
+  listGameSeatControllers,
+  listGameSeatPlayerIds,
+} from "../db/repositories/games.js";
 import { buildWireGameView } from "../db/redact.js";
 import { postChatMessage } from "../db/repositories/chatMessages.js";
 import {
@@ -22,6 +26,8 @@ import {
   resignTurn,
   type TurnActionResult,
 } from "../game/turnActions.js";
+import { runBotTurn } from "../game/botTurn.js";
+import { DEFAULT_BOT_TURN_DELAY_MS } from "../env.js";
 import type { Warned } from "../game/deadlineSweep.js";
 import { sendPushToPlayer } from "../push/pushSender.js";
 import { readCookie } from "./cookies.js";
@@ -99,6 +105,42 @@ export function broadcastTurnActionResult(
   void notifyPushForTransition(app, gameId, result).catch((err: unknown) => {
     app.log.error(err, "push notify failed for turn transition");
   });
+
+  // Fast-path computer-opponent trigger (docs plan §7): when a transition hands
+  // the turn to a computer seat, schedule the bot to act after the ~1s UX
+  // delay. This is ONLY a latency optimization -- if the timer is lost (e.g. a
+  // process restart) the durable recovery sweep picks the turn up regardless.
+  if (result.nextTurn) {
+    void maybeScheduleBotTurn(app, io, gameId, result.nextTurn.seatIndex).catch((err: unknown) => {
+      app.log.error(err, "failed to schedule computer-opponent turn");
+    });
+  }
+}
+
+async function maybeScheduleBotTurn(
+  app: AppInstance,
+  io: RealtimeServer,
+  gameId: string,
+  nextSeatIndex: number,
+): Promise<void> {
+  const controllers = await listGameSeatControllers(app.db, gameId);
+  if (controllers.get(nextSeatIndex) !== "computer") return;
+
+  const delayMs = app.env.BOT_TURN_DELAY_MS ?? DEFAULT_BOT_TURN_DELAY_MS;
+  const timer = setTimeout(() => {
+    runBotTurn(app, gameId, "scheduled")
+      .then((outcome) => {
+        // Broadcasting the bot's result hands the turn back to the human; that
+        // seat is not a computer, so this does not recurse into another
+        // schedule. A stale/duplicate attempt is a no-op and broadcasts
+        // nothing.
+        if (outcome.kind === "acted") broadcastTurnActionResult(app, io, gameId, outcome.result);
+      })
+      .catch((err: unknown) => app.log.error(err, "scheduled computer-opponent turn failed"));
+  }, delayMs);
+  // Never keep the process alive for a pending bot delay; recovery covers a
+  // dropped timer.
+  timer.unref();
 }
 
 async function notifyPushForTransition(

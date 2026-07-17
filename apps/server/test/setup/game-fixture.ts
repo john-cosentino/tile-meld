@@ -1,11 +1,12 @@
 import { createTileCatalog, shuffle, type RandomInt, type Tile } from "@tile-meld/engine";
 import type { Kysely } from "kysely";
 import type { Database } from "../../src/db/types.js";
-import { createPlayer } from "../../src/db/repositories/players.js";
+import { createPlayer, ensureComputerPlayer } from "../../src/db/repositories/players.js";
 import { createSession } from "../../src/db/repositories/sessions.js";
 import { createRoom } from "../../src/db/repositories/rooms.js";
 import { addRoomMember, listRoomMembers } from "../../src/db/repositories/roomMembers.js";
 import { dealNewGame } from "../../src/db/repositories/games.js";
+import { COMPUTER_DISPLAY_NAME, COMPUTER_PLAYER_ID } from "../../src/db/botIdentity.js";
 import { SESSION_COOKIE_NAME } from "../../src/security/session.js";
 
 export const TEST_HMAC_SECRET = "test-hmac-secret-at-least-32-characters-long";
@@ -78,6 +79,77 @@ export async function dealDeterministicGame(
     );
 
   return { gameId, roomId: room.id, players, deck };
+}
+
+export type DealtComputerGame = {
+  readonly gameId: string;
+  readonly roomId: string;
+  readonly human: FixturePlayer;
+  readonly humanSeatIndex: number;
+  readonly botSeatIndex: number;
+};
+
+/**
+ * Deals a private 1-human-vs-1-computer game (docs plan §5/§7). Seat 0 is the
+ * human (room host, so the deterministic starting seat), seat 1 is the
+ * credential-less computer player. Used by Phase C orchestration tests.
+ */
+export async function dealComputerGame(
+  db: Kysely<Database>,
+  turnLimitHours: 4 | 8 | 12 | 24 = 4,
+): Promise<DealtComputerGame> {
+  await ensureComputerPlayer(db);
+
+  const humanPlayer = await createPlayer(db, "human-recovery-secret");
+  const { token } = await createSession(db, humanPlayer.id, TEST_HMAC_SECRET, 3_600_000);
+  const human: FixturePlayer = {
+    playerId: humanPlayer.id,
+    token,
+    cookie: `${SESSION_COOKIE_NAME}=${token}`,
+  };
+
+  const { room } = await createRoom(db, {
+    creatorPlayerId: human.playerId,
+    creatorDisplayName: "Human",
+    capacity: 2,
+    visibility: "private",
+    turnLimitHours,
+  });
+  // controller_type is derived from players.kind inside addRoomMember.
+  await addRoomMember(db, room.id, COMPUTER_PLAYER_ID, COMPUTER_DISPLAY_NAME);
+
+  const members = await listRoomMembers(db, room.id);
+  const readyMembers = members.map((m) => ({
+    roomMemberId: m.id,
+    playerId: m.player_id,
+    displayName: m.display_name,
+    controllerType: m.controller_type,
+  }));
+
+  const { gameId } = await db
+    .transaction()
+    .execute((trx) =>
+      dealNewGame(trx, room.id, 1, readyMembers, turnLimitHours, identityRandomInt),
+    );
+
+  return { gameId, roomId: room.id, human, humanSeatIndex: 0, botSeatIndex: 1 };
+}
+
+/** Overwrites a seat's rack with a chosen set of catalog tileIds -- lets a
+ * test put a known melding (or unmeldable) hand in front of the bot without
+ * fighting the deterministic deal. Only the seat's own rack row is touched. */
+export async function setSeatRack(
+  db: Kysely<Database>,
+  gameId: string,
+  seatIndex: number,
+  tileIds: readonly string[],
+): Promise<void> {
+  await db
+    .updateTable("racks")
+    .set({ tiles: [...tileIds] })
+    .where("game_id", "=", gameId)
+    .where("seat_index", "=", seatIndex)
+    .execute();
 }
 
 /**
