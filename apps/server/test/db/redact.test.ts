@@ -24,6 +24,7 @@ function seat(
     status: "active",
     hasInitialMeld: false,
     displayName: `Player ${overrides.seatIndex}`,
+    isComputer: false,
     ...overrides,
   };
 }
@@ -70,6 +71,7 @@ describe("redactGameFor", () => {
         rackCount: 3,
         status: "active",
         hasInitialMeld: false,
+        isComputer: false,
       },
     ]);
     // Belt and suspenders: assert none of the opponent's actual tileIds
@@ -113,6 +115,21 @@ describe("redactGameFor", () => {
   it("throws for a viewer seat index that doesn't exist", () => {
     const g = game({ seats: [seat({ seatIndex: 0, rack: [] })] });
     expect(() => redactGameFor(g, 5)).toThrow();
+  });
+
+  it("marks a computer opponent via isComputer without leaking its rack", () => {
+    const botRack = [numbered("C2", 4), numbered("C2", 5), joker()];
+    const g = game({
+      seats: [
+        seat({ seatIndex: 0, rack: [numbered("C1", 1)] }),
+        seat({ seatIndex: 1, rack: botRack, isComputer: true, displayName: "Computer" }),
+      ],
+    });
+    const view = redactGameFor(g, 0);
+    expect(view.self.isComputer).toBe(false);
+    expect(view.opponents[0]).toMatchObject({ isComputer: true, displayName: "Computer" });
+    const serialized = JSON.stringify(view);
+    for (const tile of botRack) expect(serialized).not.toContain(tile.tileId);
   });
 
   it("reflects resigned status and initial-meld progress for opponents", () => {

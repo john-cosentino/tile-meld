@@ -47,6 +47,18 @@ services:
         fromDatabase:
           name: tile-meld-db
           property: connectionString
+      # Play vs Computer is ON in the deployed configuration (plan §12).
+      # This is the operational kill switch: flip to "false" in the Render
+      # dashboard to stop NEW bot-room creation (in-flight games keep running
+      # and recover normally), then flip back to "true" to re-enable -- no
+      # code change or migration needed.
+      - key: ENABLE_COMPUTER_OPPONENT
+        value: "true"
+      # UX-only delay before the computer takes its turn; not a correctness
+      # mechanism. Omitting it would default to ~1000ms; set explicitly for
+      # visibility.
+      - key: BOT_TURN_DELAY_MS
+        value: "1000"
       # Generated once, automatically, on first deploy -- never typed in
       # by hand, never appears in this file. Rotating it (e.g. after a
       # suspected leak) is a dashboard action, not a blueprint change --

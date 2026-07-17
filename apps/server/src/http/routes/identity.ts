@@ -64,7 +64,10 @@ export function registerIdentityRoutes(app: AppInstance): void {
     async (request, reply) => {
       const { playerId, recoverySecret } = request.body;
       const player = await findPlayerById(app.db, playerId);
-      if (!player) {
+      // A credential-less player (recovery_hash IS NULL -- i.e. the computer
+      // opponent) can never be recovered/authenticated as: there is no secret
+      // to verify. Treated identically to an unknown player.
+      if (!player || player.recovery_hash === null) {
         sendError(reply, "unauthorized", "invalid recovery credentials");
         return;
       }

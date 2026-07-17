@@ -8,7 +8,10 @@ import type { RedactedGameView as WireGameView } from "@tile-meld/shared";
 // a persistence/identity concern, not a rules concern), so this operates
 // on a slightly richer view assembled by the repository layer.
 
-export type SeatWithDisplayName = Seat & { readonly displayName: string };
+export type SeatWithDisplayName = Seat & {
+  readonly displayName: string;
+  readonly isComputer: boolean;
+};
 
 export type PersistedGameView = {
   readonly table: readonly TableSet[];
@@ -34,6 +37,7 @@ export type RedactedSeatView = {
   readonly rackCount: number;
   readonly status: Seat["status"];
   readonly hasInitialMeld: boolean;
+  readonly isComputer: boolean;
 };
 
 export type RedactedSelfView = RedactedSeatView & {
@@ -59,6 +63,7 @@ function toPublicView(seat: SeatWithDisplayName): RedactedSeatView {
     rackCount: seat.rack.length,
     status: seat.status,
     hasInitialMeld: seat.hasInitialMeld,
+    isComputer: seat.isComputer,
   };
 }
 

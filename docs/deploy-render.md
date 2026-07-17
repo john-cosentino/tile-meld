@@ -96,7 +96,40 @@ cookie at once (players get bumped back to the identity-recovery flow, not a bro
 state -- recovery secrets are hashed independently, see `apps/server/src/db/repositories`)
 -- expected fallout for a deliberate rotation, not a bug.
 
-## 8. Backups
+## 8. Play vs Computer (the computer opponent)
+
+The single-player computer opponent ships **enabled** in the deployed configuration.
+`render.yaml` sets `ENABLE_COMPUTER_OPPONENT=true` and `BOT_TURN_DELAY_MS=1000` on the web
+service; see `docs/computer-opponent.md` for the full feature/architecture summary.
+
+- **Operational kill switch.** To disable it, Service dashboard -> **Environment** -> set
+  `ENABLE_COMPUTER_OPPONENT` to `false` -> save (auto-redeploys). That blocks only *new*
+  "Play vs Computer" room creation (the endpoint returns 404); games already in progress
+  keep running and their bot turns still recover. Flip it back to `true` to re-enable. No
+  code change or migration is involved either way.
+- **Rollback.** Because the feature flag is the disable path, a true rollback of the
+  *feature* is the flag, not a schema down-migration: migration `0018` (the
+  controller/computer-player model) is additive and its `down()` is deliberately **not**
+  safe once any computer game exists (it would drop historical rows / violate FKs). If a
+  schema change is ever genuinely required, ship a forward corrective migration
+  (`0019_…`), never `migrate:down` in production -- consistent with the forward-only
+  migration policy (§5 above / Decision D-MIGRATE).
+- **Recovery after a restart/deploy.** A bot turn is driven server-side by a durable timer
+  plus the embedded recovery sweep (`apps/server/src/game/deadlineSweep.ts`), not by the
+  ~1s browser-facing delay. A Render restart or deploy between the human's move and the
+  bot's move cannot strand a game: the sweep picks up the pending computer turn within one
+  interval. No new infrastructure (no Redis/queue/worker) is added for this.
+- **No new services.** The single web service + one Postgres remain sufficient.
+- **Post-deploy verification (do this on both a desktop and a phone browser):** from the
+  home screen, tap **Play vs Computer (beta)**, mark ready, and start. Confirm the computer
+  opponent is clearly identified (a "BOT" badge / "Computer" name), draw or commit a turn,
+  watch the **"Computer is playing…"** state appear and the turn come back to you, and
+  confirm the computer's rack is never shown (only a tile count). Reload mid-turn and
+  confirm the game resumes rather than sticking on the computer's turn. Real Safari
+  (desktop macOS + iOS) remains a manual release-gate check -- Playwright's WebKit engine
+  is a best-effort proxy only, not a certification (see `e2e/playwright.config.ts`).
+
+## 9. Backups
 
 Covered separately in `docs/backup-restore.md` -- Render's managed Postgres backs up
 automatically, but "automatic" and "tested" aren't the same thing, and that doc includes a

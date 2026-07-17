@@ -1,8 +1,15 @@
 import type { Kysely, Selectable, Transaction } from "kysely";
 import type { Database, RoomsTable } from "../types.js";
 import { generateRoomCode } from "../../security/hashing.js";
+import { COMPUTER_DISPLAY_NAME, COMPUTER_PLAYER_ID } from "../botIdentity.js";
+import { ensureComputerPlayer } from "./players.js";
+import { addRoomMember } from "./roomMembers.js";
 
 export type RoomRow = Selectable<RoomsTable>;
+
+/** Turn limit for a Play-vs-Computer room. The bot acts within ~1s, so this is
+ * only the human's own generous async deadline. */
+const COMPUTER_ROOM_TURN_LIMIT_HOURS = 24;
 
 export type CreateRoomParams = {
   readonly creatorPlayerId: string;
@@ -44,6 +51,57 @@ export async function createRoom(
       })
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    const updatedRoom = await trx
+      .updateTable("rooms")
+      .set({ host_room_member_id: hostMember.id })
+      .where("id", "=", room.id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return { room: updatedRoom, hostRoomMemberId: hostMember.id };
+  });
+}
+
+/**
+ * Creates a private, 2-seat Play-vs-Computer room already occupied by the
+ * human host and the credential-less computer opponent (docs plan §5/§8). All
+ * in one transaction so no caller ever observes a half-built bot room. The
+ * bot member is intrinsically ready (addRoomMember derives that from
+ * players.kind); the human readies + starts through the normal room flow.
+ * `has_computer` is set so the room is excluded from public-join paths.
+ */
+export async function createComputerRoom(
+  db: Kysely<Database>,
+  params: { readonly humanPlayerId: string; readonly humanDisplayName: string },
+): Promise<{ room: RoomRow; hostRoomMemberId: string }> {
+  // The bot player must exist before it can be a member; the migration seeds
+  // it in production, this covers a fresh/truncated DB and verifies the
+  // credential-less invariant.
+  await ensureComputerPlayer(db);
+
+  return db.transaction().execute(async (trx) => {
+    const room = await trx
+      .insertInto("rooms")
+      .values({
+        code: generateRoomCode(),
+        visibility: "private",
+        capacity: 2,
+        turn_limit_hours: COMPUTER_ROOM_TURN_LIMIT_HOURS,
+        has_computer: true,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    const hostMember = await addRoomMember(
+      trx,
+      room.id,
+      params.humanPlayerId,
+      params.humanDisplayName,
+    );
+    // controller_type is derived from players.kind ('computer'); the bot joins
+    // ready.
+    await addRoomMember(trx, room.id, COMPUTER_PLAYER_ID, COMPUTER_DISPLAY_NAME);
 
     const updatedRoom = await trx
       .updateTable("rooms")

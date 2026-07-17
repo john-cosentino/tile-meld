@@ -23,6 +23,10 @@ app
       onTimeout: (settled) =>
         broadcastTurnActionResult(app, app.io, settled.gameId, settled.result),
       onWarning: (warned) => broadcastWarning(app, app.io, warned),
+      // A recovered computer-opponent turn is broadcast exactly like a live
+      // one, so reconnected clients see the same game:patch / turn:started /
+      // game:over sequence.
+      onBotActed: (acted) => broadcastTurnActionResult(app, app.io, acted.gameId, acted.result),
     });
   })
   .catch((err: unknown) => {

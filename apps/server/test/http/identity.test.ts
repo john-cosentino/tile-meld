@@ -107,6 +107,26 @@ describe("identity/session routes", () => {
     await app.close();
   });
 
+  it("never authenticates as the credential-less computer player", async () => {
+    const db = await getTestDb();
+    const { ensureComputerPlayer } = await import("../../src/db/repositories/players.js");
+    const { COMPUTER_PLAYER_ID } = await import("../../src/db/botIdentity.js");
+    const bot = await ensureComputerPlayer(db);
+    expect(bot.recovery_hash).toBeNull();
+
+    const app = await buildApp({ db, env: TEST_ENV, logger: false });
+    // No secret exists for the bot, so recovery must be rejected regardless of
+    // what is supplied -- the bot seat can never be driven by a human session.
+    const recover = await app.inject({
+      method: "POST",
+      url: "/api/session/recover",
+      payload: { playerId: COMPUTER_PLAYER_ID, recoverySecret: "anything" },
+    });
+    expect(recover.statusCode).toBe(401);
+
+    await app.close();
+  });
+
   it("POST /api/session/rotate-recovery requires auth and invalidates the old secret", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV, logger: false });

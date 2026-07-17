@@ -246,8 +246,8 @@ describe("room lifecycle routes", () => {
       expect(beforeBody.latestGameId).toBeNull();
       expect(beforeBody.members).toEqual(
         expect.arrayContaining([
-          { playerId: host.playerId, displayName: "Host", isReady: false },
-          { playerId: guest.playerId, displayName: "Guest", isReady: false },
+          { playerId: host.playerId, displayName: "Host", isReady: false, isComputer: false },
+          { playerId: guest.playerId, displayName: "Guest", isReady: false, isComputer: false },
         ]),
       );
 

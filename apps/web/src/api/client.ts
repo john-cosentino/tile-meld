@@ -5,6 +5,7 @@ import {
   CreateRoomResponseSchema,
   JoinRoomResponseSchema,
   QuickJoinResponseSchema,
+  VsComputerResponseSchema,
   PublicRoomsResponseSchema,
   LeaveResponseSchema,
   StartOrRematchResponseSchema,
@@ -87,6 +88,9 @@ export const api = {
 
   quickJoin: (body: QuickJoinRequest) =>
     request("POST", "/rooms/quick-join", QuickJoinResponseSchema, body),
+
+  createVsComputer: (displayName: string) =>
+    request("POST", "/rooms/vs-computer", VsComputerResponseSchema, { displayName }),
 
   publicRooms: (limit = 20, offset = 0): Promise<PublicRoomsResponse> =>
     request("GET", `/rooms/public?limit=${limit}&offset=${offset}`, PublicRoomsResponseSchema),

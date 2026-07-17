@@ -127,6 +127,15 @@ export function WaitingRoomPage() {
           <li key={m.playerId} className="row card" style={{ justifyContent: "space-between" }}>
             <span>
               {m.displayName}
+              {m.isComputer && (
+                <span
+                  className="badge"
+                  aria-label="computer opponent"
+                  style={{ marginLeft: "var(--space-1)" }}
+                >
+                  🤖 BOT
+                </span>
+              )}
               {m.playerId === room.hostPlayerId && " (host)"}
               {m.playerId === myPlayerId && " (you)"}
             </span>

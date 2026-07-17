@@ -14,11 +14,15 @@ import {
   ReadyRequestSchema,
   ReadyResponseSchema,
   StartOrRematchResponseSchema,
+  VsComputerRequestSchema,
+  VsComputerResponseSchema,
 } from "@tile-meld/shared";
 import type { AppInstance } from "../types.js";
 import { requireSession, requireRoomHost, requireRoomMember } from "../auth.js";
 import { sendError } from "../errors.js";
+import { isComputerOpponentEnabled } from "../../env.js";
 import {
+  createComputerRoom,
   createRoom,
   findRoomByCode,
   findRoomById,
@@ -44,6 +48,7 @@ import {
   roomActionLimit,
   roomCreateLimit,
   roomJoinLimit,
+  vsComputerCreateLimit,
 } from "../rateLimits.js";
 
 const ParamsSchema = z.object({ id: z.string() });
@@ -70,7 +75,12 @@ async function dealAndTransitionRoom(
   const members = await listRoomMembers(app.db, room.id);
   const readyMembers = members
     .filter((m) => m.is_ready)
-    .map((m) => ({ roomMemberId: m.id, playerId: m.player_id, displayName: m.display_name }));
+    .map((m) => ({
+      roomMemberId: m.id,
+      playerId: m.player_id,
+      displayName: m.display_name,
+      controllerType: m.controller_type,
+    }));
 
   return app.db.transaction().execute(async (trx) => {
     const { gameId } = await dealNewGame(
@@ -109,6 +119,28 @@ export function registerRoomRoutes(app: AppInstance): void {
   );
 
   app.post(
+    "/api/rooms/vs-computer",
+    {
+      schema: { body: VsComputerRequestSchema, response: { 200: VsComputerResponseSchema } },
+      preValidation: requireSession,
+      config: { rateLimit: vsComputerCreateLimit },
+    },
+    async (request, reply) => {
+      // Operational kill switch. Disabled looks like the endpoint isn't there
+      // (404) rather than advertising a turned-off feature.
+      if (!isComputerOpponentEnabled(app.env)) {
+        sendError(reply, "not_found", "Play vs Computer is not available");
+        return;
+      }
+      const { room } = await createComputerRoom(app.db, {
+        humanPlayerId: request.player!.id,
+        humanDisplayName: request.body.displayName,
+      });
+      reply.code(200).send({ roomId: room.id, code: room.code });
+    },
+  );
+
+  app.post(
     "/api/rooms/join",
     {
       schema: { body: JoinRoomRequestSchema, response: { 200: JoinRoomResponseSchema } },
@@ -128,6 +160,14 @@ export function registerRoomRoutes(app: AppInstance): void {
       const existing = await findRoomMemberByRoomAndPlayer(app.db, room.id, playerId);
       if (existing) {
         reply.code(200).send({ roomId: room.id });
+        return;
+      }
+
+      // A Play-vs-Computer room is private to its single human. No one else may
+      // join it, even with the code. (It is also already full and excluded
+      // from lobby/quick-join by its private visibility.)
+      if (room.has_computer) {
+        sendError(reply, "conflict", "this room cannot be joined");
         return;
       }
 
@@ -190,6 +230,7 @@ export function registerRoomRoutes(app: AppInstance): void {
           playerId: m.player_id,
           displayName: m.display_name,
           isReady: m.is_ready,
+          isComputer: m.controller_type === "computer",
         })),
         latestGameId: latestGame?.id ?? null,
       });
