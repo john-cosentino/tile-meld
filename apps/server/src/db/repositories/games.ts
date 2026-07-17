@@ -161,6 +161,7 @@ export async function loadGameState(
     status: row.status,
     hasInitialMeld: row.has_initial_meld,
     displayName: row.display_name,
+    isComputer: row.controller_type === "computer",
   }));
 
   const table = tableRows.map((row) => resolveTiles(row.tiles));

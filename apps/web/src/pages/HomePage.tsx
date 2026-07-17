@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PRODUCT_NAME, type GetRoomResponse } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
-import { listRecentRoomIds, removeRecentRoom } from "../state/recentRooms.js";
+import { addRecentRoom, listRecentRoomIds, removeRecentRoom } from "../state/recentRooms.js";
+import { getDefaultDisplayName } from "../state/displayName.js";
 
 type RoomSummary = {
   readonly roomId: string;
@@ -14,7 +15,25 @@ type RoomSummary = {
 };
 
 export function HomePage() {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState<RoomSummary[] | undefined>(undefined);
+  const [startingBot, setStartingBot] = useState(false);
+  const [botError, setBotError] = useState<string | undefined>(undefined);
+
+  async function playVsComputer(): Promise<void> {
+    setBotError(undefined);
+    setStartingBot(true);
+    try {
+      const { roomId } = await api.createVsComputer(getDefaultDisplayName() || "You");
+      addRecentRoom(roomId);
+      navigate(`/rooms/${roomId}`);
+    } catch (err) {
+      setBotError(
+        err instanceof ApiError ? err.message : "Could not start a game vs the computer.",
+      );
+      setStartingBot(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -86,8 +105,11 @@ export function HomePage() {
       </ul>
 
       <div className="row">
+        <button className="primary" disabled={startingBot} onClick={() => void playVsComputer()}>
+          {startingBot ? "Starting…" : "Play vs Computer (beta)"}
+        </button>
         <Link to="/rooms/new">
-          <button className="primary">Create a room</button>
+          <button>Create a room</button>
         </Link>
         <Link to="/rooms/join">
           <button>Join by code</button>
@@ -96,6 +118,17 @@ export function HomePage() {
           <button>Browse public lobby</button>
         </Link>
       </div>
+
+      {botError && (
+        <div className="error-banner" role="alert">
+          {botError}
+        </div>
+      )}
+
+      <p className="muted">
+        Play vs Computer sets up a private game against a simple, beta computer opponent — great for
+        trying the game out or troubleshooting on your own.
+      </p>
     </div>
   );
 }

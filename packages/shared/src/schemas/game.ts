@@ -32,6 +32,9 @@ export const RedactedSeatViewSchema = z.object({
   rackCount: z.number().int(),
   status: SeatStatusSchema,
   hasInitialMeld: z.boolean(),
+  // Whether this seat is played by the computer opponent. Non-sensitive: it
+  // lets the client badge the bot and show a "Computer is playing" turn state.
+  isComputer: z.boolean(),
 });
 
 export const RedactedSelfViewSchema = RedactedSeatViewSchema.extend({

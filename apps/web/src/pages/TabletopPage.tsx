@@ -105,6 +105,9 @@ export function TabletopPage() {
   if (!view) return <p>Loading table…</p>;
 
   const isMyTurn = view.status === "active" && view.self.seatIndex === view.activeSeat;
+  const activeOpponent = view.opponents.find((o) => o.seatIndex === view.activeSeat);
+  const computerIsPlaying =
+    view.status === "active" && !isMyTurn && activeOpponent?.isComputer === true;
   const draftChanged =
     draft.rack.join(",") !== canonicalRackIds.join(",") ||
     draft.sets.length !== canonicalTableIds.length;
@@ -197,7 +200,13 @@ export function TabletopPage() {
 
         {view.status === "active" && (
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <strong>{isMyTurn ? "Your turn" : `Waiting on seat ${view.activeSeat + 1}`}</strong>
+            <strong>
+              {isMyTurn
+                ? "Your turn"
+                : computerIsPlaying
+                  ? "🤖 Computer is playing…"
+                  : `Waiting on seat ${view.activeSeat + 1}`}
+            </strong>
             <DeadlineCountdown deadlineAt={view.deadlineAt} />
           </div>
         )}
@@ -216,7 +225,9 @@ export function TabletopPage() {
           <span className="muted">Pool: {view.poolCount} tiles</span>
           {view.opponents.map((o) => (
             <span key={o.seatIndex} className="muted">
-              {o.displayName}: {o.rackCount} tiles{o.status === "resigned" ? " (resigned)" : ""}
+              {o.displayName}
+              {o.isComputer ? " 🤖" : ""}: {o.rackCount} tiles
+              {o.status === "resigned" ? " (resigned)" : ""}
               {view.activeSeat === o.seatIndex && view.status === "active" ? " ⏳" : ""}
             </span>
           ))}

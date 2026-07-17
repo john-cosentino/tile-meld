@@ -89,8 +89,18 @@ export function useGame(gameId: string) {
       void refetch();
     }
     function onTurnStarted(payload: { readonly seatIndex: number }): void {
-      const mine = viewRef.current?.self.seatIndex === payload.seatIndex;
-      announce(mine ? "It's your turn." : `Turn started for seat ${payload.seatIndex + 1}.`);
+      const current = viewRef.current;
+      const mine = current?.self.seatIndex === payload.seatIndex;
+      if (mine) {
+        announce("It's your turn.");
+        return;
+      }
+      const opponent = current?.opponents.find((o) => o.seatIndex === payload.seatIndex);
+      announce(
+        opponent?.isComputer
+          ? "Computer is playing."
+          : `Turn started for seat ${payload.seatIndex + 1}.`,
+      );
     }
     function onTurnWarning(payload: {
       readonly seatIndex: number;
