@@ -38,6 +38,13 @@ const EnvSchema = z.object({
   VAPID_PUBLIC_KEY: optionalString(),
   VAPID_PRIVATE_KEY: optionalString(),
   VAPID_SUBJECT: optionalString(),
+  // Operational kill switch for the Play-vs-Computer feature (docs plan §12).
+  // DEFAULT DEPLOYED CONFIGURATION IS ENABLED: the feature is on unless this is
+  // explicitly set to "false". Disabling only blocks NEW bot-room creation --
+  // in-flight games keep running and recover normally. Optional (not
+  // schema-defaulted) so it stays absent-able in the Env type; interpret via
+  // isComputerOpponentEnabled().
+  ENABLE_COMPUTER_OPPONENT: z.enum(["true", "false"]).optional(),
   // How long the computer opponent waits, after a turn is handed to it,
   // before acting (docs plan §7). Purely a UX latency knob: the human sees
   // their turn complete and the UI transition to "Computer is playing" before
@@ -51,6 +58,12 @@ const EnvSchema = z.object({
 });
 
 export type Env = z.infer<typeof EnvSchema>;
+
+/** Whether Play vs Computer may create new bot rooms. Enabled by default; only
+ * an explicit ENABLE_COMPUTER_OPPONENT="false" turns it off. */
+export function isComputerOpponentEnabled(env: Env): boolean {
+  return env.ENABLE_COMPUTER_OPPONENT !== "false";
+}
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const result = EnvSchema.safeParse(source);

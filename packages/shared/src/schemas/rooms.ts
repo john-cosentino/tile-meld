@@ -37,6 +37,17 @@ export const QuickJoinResponseSchema = z.object({
   roomId: z.string(),
 });
 
+// Play vs Computer: creates a private 2-seat room already occupied by the
+// computer opponent. The caller only supplies their own display name; the
+// server fixes visibility, capacity, and the bot member.
+export const VsComputerRequestSchema = z.object({
+  displayName: DisplayNameSchema,
+});
+export const VsComputerResponseSchema = z.object({
+  roomId: z.string(),
+  code: z.string(),
+});
+
 export const PublicRoomsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
   offset: z.coerce.number().int().min(0).optional().default(0),
@@ -64,6 +75,9 @@ export const RoomMemberSummarySchema = z.object({
   playerId: z.string(),
   displayName: z.string(),
   isReady: z.boolean(),
+  // True for the computer opponent's member -- lets the waiting room badge it
+  // and treat it as always-ready. Non-sensitive.
+  isComputer: z.boolean(),
 });
 export const GetRoomResponseSchema = z.object({
   roomId: z.string(),
@@ -91,6 +105,8 @@ export type JoinRoomRequest = z.infer<typeof JoinRoomRequestSchema>;
 export type JoinRoomResponse = z.infer<typeof JoinRoomResponseSchema>;
 export type QuickJoinRequest = z.infer<typeof QuickJoinRequestSchema>;
 export type QuickJoinResponse = z.infer<typeof QuickJoinResponseSchema>;
+export type VsComputerRequest = z.infer<typeof VsComputerRequestSchema>;
+export type VsComputerResponse = z.infer<typeof VsComputerResponseSchema>;
 export type PublicRoomsQuery = z.infer<typeof PublicRoomsQuerySchema>;
 export type PublicRoomSummary = z.infer<typeof PublicRoomSummarySchema>;
 export type PublicRoomsResponse = z.infer<typeof PublicRoomsResponseSchema>;
