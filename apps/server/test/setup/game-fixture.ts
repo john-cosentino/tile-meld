@@ -67,6 +67,7 @@ export async function dealDeterministicGame(
     roomMemberId: m.id,
     playerId: m.player_id,
     displayName: m.display_name,
+    controllerType: m.controller_type,
   }));
 
   const deck = shuffle(createTileCatalog(), identityRandomInt);

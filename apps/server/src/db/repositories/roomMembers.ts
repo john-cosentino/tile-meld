@@ -9,9 +9,31 @@ export async function addRoomMember(
   playerId: string,
   displayName: string,
 ): Promise<RoomMemberRow> {
+  // controller_type is DERIVED from the authoritative players.kind, never
+  // supplied by the caller -- so a member can never be mislabeled (docs plan
+  // §5, Amendment 3). Both this read and the insert below use the caller's
+  // db/trx handle: if the caller passes a transaction they share it, but this
+  // function does not open one itself. Correctness does not depend on that --
+  // the composite FK (player_id, controller_type) -> players (id, kind)
+  // structurally rejects any mismatch regardless of transaction boundaries.
+  const player = await db
+    .selectFrom("players")
+    .select("kind")
+    .where("id", "=", playerId)
+    .executeTakeFirstOrThrow();
+
+  // A computer member is "ready" from the moment it joins and stays ready
+  // across rematches (resetReadiness only clears humans); a human member
+  // starts not-ready as before.
   return db
     .insertInto("room_members")
-    .values({ room_id: roomId, player_id: playerId, display_name: displayName })
+    .values({
+      room_id: roomId,
+      player_id: playerId,
+      display_name: displayName,
+      controller_type: player.kind,
+      is_ready: player.kind === "computer",
+    })
     .returningAll()
     .executeTakeFirstOrThrow();
 }
@@ -69,7 +91,10 @@ export async function setRoomMemberReady(
     .execute();
 }
 
-/** Readiness resets between games -- called after a game/rematch starts. */
+/** Readiness resets between games -- called after a game/rematch starts.
+ * Computer members are intrinsically ready and are deliberately left
+ * untouched, so a human can `/rematch` against the bot without the bot ever
+ * needing to "ready up" (docs plan §5, D-BOT7). */
 export async function resetReadiness(
   db: Kysely<Database> | Transaction<Database>,
   roomId: string,
@@ -78,6 +103,7 @@ export async function resetReadiness(
     .updateTable("room_members")
     .set({ is_ready: false })
     .where("room_id", "=", roomId)
+    .where("controller_type", "=", "human")
     .execute();
 }
 

@@ -70,7 +70,12 @@ async function dealAndTransitionRoom(
   const members = await listRoomMembers(app.db, room.id);
   const readyMembers = members
     .filter((m) => m.is_ready)
-    .map((m) => ({ roomMemberId: m.id, playerId: m.player_id, displayName: m.display_name }));
+    .map((m) => ({
+      roomMemberId: m.id,
+      playerId: m.player_id,
+      displayName: m.display_name,
+      controllerType: m.controller_type,
+    }));
 
   return app.db.transaction().execute(async (trx) => {
     const { gameId } = await dealNewGame(

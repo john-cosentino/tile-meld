@@ -18,6 +18,11 @@ type Timestamp = ColumnType<Date, Date | string, Date | string>;
 type TimestampWithDefault = ColumnType<Date, Date | string | undefined, Date | string>;
 
 export type Visibility = "private" | "public";
+// Identity authority for an actor. players.kind is the single source of truth;
+// controller_type columns are denormalized snapshots derived from it (see
+// migration 0018 and docs plan §5, Amendment 3).
+export type PlayerKind = "human" | "computer";
+export type ControllerType = "human" | "computer";
 export type RoomStatus = "open" | "in_game" | "between_games" | "closed" | "abandoned";
 export type GameStatus = "active" | "completed";
 export type SeatStatus = "active" | "resigned";
@@ -40,9 +45,12 @@ export type TurnStatus =
 export interface PlayersTable {
   id: Generated<string>;
   created_at: ColumnType<Date, Date | string | undefined, never>;
-  recovery_hash: string;
+  // Nullable since migration 0018: a computer player has no recovery secret.
+  // A DB CHECK enforces non-null for humans and null for computers.
+  recovery_hash: string | null;
   recovery_rotated_at: Timestamp | null;
   display_name_default: string | null;
+  kind: Generated<PlayerKind>;
 }
 
 export interface SessionsTable {
@@ -65,6 +73,9 @@ export interface RoomsTable {
   host_room_member_id: string | null;
   created_at: ColumnType<Date, Date | string | undefined, never>;
   last_activity_at: TimestampWithDefault;
+  // Denormalized marker (migration 0018): true iff this room has a computer
+  // member. Excludes bot rooms from public lobby / quick-join / join.
+  has_computer: Generated<boolean>;
 }
 
 export interface RoomMembersTable {
@@ -75,6 +86,7 @@ export interface RoomMembersTable {
   joined_at: ColumnType<Date, Date | string | undefined, never>;
   is_ready: Generated<boolean>;
   left_at: Timestamp | null;
+  controller_type: Generated<ControllerType>;
 }
 
 export interface GamesTable {
@@ -103,6 +115,10 @@ export interface GameSeatsTable {
   status: Generated<SeatStatus>;
   has_initial_meld: Generated<boolean>;
   join_order: number;
+  // Immutable historical snapshot of the seat's controller at deal time
+  // (migration 0018). bot_kind records the bot version for a computer seat.
+  controller_type: Generated<ControllerType>;
+  bot_kind: string | null;
 }
 
 export interface RacksTable {

@@ -26,7 +26,12 @@ async function seedRoomWithMembers(db: Awaited<ReturnType<typeof getTestDb>>, co
   });
 
   const members: ReadyMember[] = [
-    { roomMemberId: hostRoomMemberId, playerId: hostPlayer.id, displayName: "Host" },
+    {
+      roomMemberId: hostRoomMemberId,
+      playerId: hostPlayer.id,
+      displayName: "Host",
+      controllerType: "human",
+    },
   ];
   for (let i = 1; i < count; i++) {
     const player = await createPlayer(db, `player-${i}-recovery-secret`);
@@ -35,6 +40,7 @@ async function seedRoomWithMembers(db: Awaited<ReturnType<typeof getTestDb>>, co
       roomMemberId: member.id,
       playerId: player.id,
       displayName: member.display_name,
+      controllerType: member.controller_type,
     });
   }
 

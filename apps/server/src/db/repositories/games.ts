@@ -7,9 +7,10 @@ import {
   type TransitionResult,
   type Tile,
 } from "@tile-meld/engine";
-import type { Database, GamesTable } from "../types.js";
+import type { ControllerType, Database, GamesTable } from "../types.js";
 import type { PersistedGameView, SeatWithDisplayName } from "../redact.js";
 import { resolveTiles, tileIdsOf } from "../catalog.js";
+import { COMPUTER_BOT_KIND } from "../botIdentity.js";
 
 const RACK_SIZE = 14;
 
@@ -19,6 +20,13 @@ export type ReadyMember = {
   readonly roomMemberId: string;
   readonly playerId: string;
   readonly displayName: string;
+  // Required: the controller to snapshot onto game_seats, sourced from the
+  // authoritative room member (room_members.controller_type, itself derived
+  // from players.kind and DB-enforced). Making this mandatory prevents a
+  // silent "human" default from writing an incorrect historical seat record
+  // (docs plan §5, Amendment 3). A composite FK re-validates it against
+  // players.kind at insert time.
+  readonly controllerType: ControllerType;
 };
 
 /**
@@ -65,6 +73,7 @@ export async function dealNewGame(
 
   for (let seatIndex = 0; seatIndex < seatCount; seatIndex++) {
     const member = readyMembers[seatIndex]!;
+    const controllerType = member.controllerType;
     await trx
       .insertInto("game_seats")
       .values({
@@ -76,6 +85,9 @@ export async function dealNewGame(
         status: "active",
         has_initial_meld: false,
         join_order: seatIndex,
+        controller_type: controllerType,
+        // Historical snapshot: record the bot version for a computer seat.
+        bot_kind: controllerType === "computer" ? COMPUTER_BOT_KIND : null,
       })
       .execute();
 
@@ -355,6 +367,22 @@ export async function listGameSeatPlayerIds(
     .where("game_id", "=", gameId)
     .execute();
   return new Map(rows.map((row) => [row.seat_index, row.player_id]));
+}
+
+/** Maps every seat in a game to its controller snapshot -- the immutable
+ * historical record of which seats a computer played. Bot-turn orchestration
+ * (Phase C) reads this to decide whether the active seat is a computer seat;
+ * authority is this snapshot, not any denormalized room field. */
+export async function listGameSeatControllers(
+  db: Kysely<Database> | Transaction<Database>,
+  gameId: string,
+): Promise<Map<number, ControllerType>> {
+  const rows = await db
+    .selectFrom("game_seats")
+    .select(["seat_index", "controller_type"])
+    .where("game_id", "=", gameId)
+    .execute();
+  return new Map(rows.map((row) => [row.seat_index, row.controller_type]));
 }
 
 /** Maps every seat in a game to its display-name snapshot -- used to
