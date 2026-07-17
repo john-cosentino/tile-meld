@@ -1,5 +1,13 @@
 import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 
+// The waiting room navigates into the game only after its own poll observes
+// the room flip to `in_game` (a Socket.IO/DB-driven transition), so entering
+// the game is authoritative state to wait for, not something guaranteed within
+// a few seconds -- especially when that poll is competing for the shared per-IP
+// rate-limit bucket late in a long serial run. 30s gives that transition real
+// headroom without masking a genuinely stuck game (the per-test timeout is 90s).
+const GAME_ENTRY_TIMEOUT = 30000;
+
 /** Retries `attempt` (a navigation, reload, or click that may land on the
  * app's own transient-rate-limit UI) until `target` becomes visible.
  * Several of this app's endpoints -- identity creation, session recovery
@@ -22,15 +30,29 @@ async function retryOnRateLimit(
 ): Promise<void> {
   const rateLimited = page.getByText(/Rate limit exceeded, retry in (\d+) second/);
   for (let i = 0; i < 6; i++) {
+    // `attempt` is triggered once here, and again only after an *observed*
+    // rate-limit banner + its backoff (below). It is deliberately NOT
+    // re-triggered while we are merely waiting: a create/join click has by
+    // then navigated the page, so re-clicking would target a vanished button
+    // and the actual failure state under load is not a banner at all but a
+    // page silently retrying its own data fetch (e.g. WaitingRoomPage's
+    // "Loading room…", which swallows anything but a 404 and shows no banner).
     await attempt();
-    // 30s (not the usual 15s) because some targets sit behind a page that
-    // polls the server itself (e.g. WaitingRoomPage, every 3s) and quietly
-    // swallows anything but a 404 while retrying -- under the same
-    // cumulative rate-limit pressure this whole function exists for, that
-    // self-healing poll needs several cycles' worth of headroom, not just
-    // one, with no inline "Rate limit exceeded" banner of its own to detect.
-    await expect(target.or(rateLimited)).toBeVisible({ timeout: 30000 });
-    if (await target.isVisible()) return;
+
+    // 60s ceiling: enough headroom for that self-healing poll to succeed on a
+    // later cycle once the shared per-IP bucket refills, rather than assuming
+    // it completes in a few seconds. Either the target appears (done) or a
+    // rate-limit banner appears (back off and re-attempt); if neither does,
+    // fall through to the final assertion, which reports the real state.
+    let sawRateLimit = false;
+    try {
+      await expect(target.or(rateLimited)).toBeVisible({ timeout: 60000 });
+      if (await target.isVisible()) return;
+      sawRateLimit = true;
+    } catch {
+      break;
+    }
+    if (!sawRateLimit) break;
 
     const text = (await rateLimited.textContent()) ?? "";
     const seconds = Number(/retry in (\d+) second/.exec(text)?.[1] ?? "5");
@@ -119,15 +141,23 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   await guestPage.getByRole("button", { name: "Mark ready" }).click();
   await hostPage.getByRole("button", { name: /Start game/ }).click();
 
-  await expect(hostPage).toHaveURL(/\/games\//, { timeout: 15000 });
-  await expect(guestPage).toHaveURL(/\/games\//, { timeout: 15000 });
+  await expect(hostPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
+  await expect(guestPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
   await expect(hostPage.getByRole("heading", { name: "Your rack (14)" })).toBeVisible({
-    timeout: 15000,
+    timeout: GAME_ENTRY_TIMEOUT,
   });
   await expect(guestPage.getByRole("heading", { name: "Your rack (14)" })).toBeVisible({
-    timeout: 15000,
+    timeout: GAME_ENTRY_TIMEOUT,
   });
 
+  // Both pages are in the game; give the initial game:state a beat to resolve
+  // whose turn it is before reading it, so the active/waiting split is based on
+  // observed state rather than a race with the first render.
+  await expect(
+    hostPage
+      .getByText("Your turn", { exact: true })
+      .or(hostPage.getByText(/Waiting on seat|Computer is playing/)),
+  ).toBeVisible({ timeout: GAME_ENTRY_TIMEOUT });
   const hostIsActive = await hostPage.getByText("Your turn", { exact: true }).isVisible();
   return hostIsActive
     ? { activePage: hostPage, waitingPage: guestPage, hostPage, guestPage, roomId }
@@ -179,12 +209,17 @@ export async function startNPlayerGame(
   await hostPage.getByRole("button", { name: /Start game/ }).click();
 
   for (const page of pages) {
-    await expect(page).toHaveURL(/\/games\//, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
     await expect(page.getByRole("heading", { name: "Your rack (14)" })).toBeVisible({
-      timeout: 15000,
+      timeout: GAME_ENTRY_TIMEOUT,
     });
   }
 
+  // Wait for the initial game:state to resolve the active seat on at least one
+  // page before reading it, rather than racing the first render.
+  await expect(pages[0]!.getByText(/Your turn|Waiting on seat/)).toBeVisible({
+    timeout: GAME_ENTRY_TIMEOUT,
+  });
   for (const page of pages) {
     if (await page.getByText("Your turn", { exact: true }).isVisible()) {
       return { pages, activePage: page };

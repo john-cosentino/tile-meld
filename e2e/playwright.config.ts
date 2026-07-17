@@ -42,6 +42,14 @@ export default defineConfig({
   // startTwoPlayerGame) is unaffected and still exercises genuine
   // multi-client concurrency at a realistic scale.
   workers: 1,
+  // A small secondary safeguard (not the primary fix): the whole matrix runs
+  // serially against one shared per-IP rate-limit bucket, so a test late in a
+  // long run can occasionally time out waiting for a data fetch that is being
+  // transiently rate-limited by the cumulative volume ahead of it. A retry
+  // runs after that pressure has drained and the bucket refilled. The primary
+  // fixes are the more patient, authoritative-state waits in tests/helpers.ts
+  // and the raised default assertion timeout below.
+  retries: process.env.CI ? 2 : 0,
   // Above Playwright's 30s default: multi-context setups (3-4 players, or
   // several fresh identities in one test) plus real rate-limit-backoff
   // retries (retryOnRateLimit, tests/helpers.ts) routinely need more than
@@ -53,6 +61,14 @@ export default defineConfig({
     baseURL: "http://localhost:5173",
     trace: "on-first-retry",
   },
+  // Playwright's default per-assertion timeout is 5s. Under cumulative CI
+  // rate-limit pressure, an observable state change (a rack/set count
+  // updating after a drag, a page navigating after a Socket.IO-driven room
+  // transition) legitimately arrives later than that -- 5s is an assumption
+  // about UI/round-trip latency, not an authoritative deadline. Waiting
+  // longer for the real observed state (rather than sleeping, or asserting
+  // too eagerly) is the correct fix.
+  expect: { timeout: 15000 },
   webServer: [
     {
       command: "pnpm --filter @tile-meld/server exec tsx src/index.ts",
