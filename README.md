@@ -1,6 +1,8 @@
 # Tile Meld
 
-A browser-based, asynchronous multiplayer tile-melding game (2-4 players).
+A browser-based, asynchronous multiplayer tile-melding game (2-4 players),
+with a single-player **Play vs Computer** mode (a simple, deterministic
+computer opponent — see `docs/computer-opponent.md`).
 See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.

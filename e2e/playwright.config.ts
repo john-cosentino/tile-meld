@@ -69,6 +69,13 @@ export default defineConfig({
         // Postgres instance that's discarded after the run, never a real
         // deployment's secret (see .env.example for the real one).
         SESSION_TOKEN_HMAC_SECRET: "e2e-test-only-secret-not-for-production-use-32chars",
+        // A modest, fixed computer-opponent delay: long enough that the
+        // "Computer is playing…" turn state is reliably observable in the UI
+        // across every browser engine, short enough that a game of several
+        // turns still finishes well inside a test's budget. ENABLE_COMPUTER_
+        // OPPONENT is deliberately left unset so the feature runs in its
+        // default (enabled) production configuration.
+        BOT_TURN_DELAY_MS: "1200",
       },
     },
     {

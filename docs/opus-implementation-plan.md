@@ -1117,7 +1117,10 @@ cd ~/git/tile-meld && git add -A && git commit -m "<phase message>" && git push
 - **Accounts + Google sign-in:** new `AuthContext` populators linked to existing `players.id`; no engine
   or game-schema change.
 - **Email notifications:** once accounts/emails exist, add an email channel alongside push.
-- **AI/computer opponents:** a new caller of the pure engine.
+- **AI/computer opponents:** a new caller of the pure engine. **Implemented (v1):** a simple,
+  deterministic single-player computer opponent (1 human + 1 computer, private 2-seat) --
+  see `docs/computer-opponent.md`. It is exactly "another caller of the pure engine" as
+  planned. Future work here is a stronger/strategic opponent, not the basic capability.
 - **Moderation:** mute/report/block + a dashboard once the audience broadens.
 - **Lifetime stats / leaderboards / rankings:** require durable accounts.
 - **Multiple themes:** the branding/token layer already supports it; add theme switching later.
