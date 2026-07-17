@@ -8,6 +8,17 @@ import {
   type Destination,
 } from "./draftState.js";
 
+// `present` plus its undo stack, held in ONE piece of state so every update is
+// a pure function of the previous value. The prior version kept the history in
+// a ref and a separate `historyLength` state, mutating the ref and calling
+// setHistoryLength *inside* the setPresent updater -- an impure updater with a
+// nested setState. React's StrictMode (enabled in main.tsx) double-invokes
+// updaters in dev, which double-applied those side effects and could leave
+// `historyLength`/`canUndo` out of sync with the actual history, occasionally
+// disabling the Undo button so a click no-op'd. A single pure reducer is
+// StrictMode-safe and keeps canUndo exactly consistent with the stack.
+type DraftHistory = { readonly present: DraftState; readonly past: readonly DraftState[] };
+
 /**
  * Owns the local draft plus its undo history, and resets to the canonical
  * turn-start state whenever `version` changes -- covers both "the server
@@ -20,19 +31,16 @@ export function useDraftState(
   canonicalTable: readonly (readonly string[])[],
   version: number,
 ) {
-  const [present, setPresent] = useState<DraftState>(() =>
-    buildInitialDraft(canonicalRack, canonicalTable),
-  );
-  const historyRef = useRef<DraftState[]>([]);
-  const [historyLength, setHistoryLength] = useState(0);
+  const [state, setState] = useState<DraftHistory>(() => ({
+    present: buildInitialDraft(canonicalRack, canonicalTable),
+    past: [],
+  }));
   const lastVersionRef = useRef(version);
 
   useEffect(() => {
     if (lastVersionRef.current === version) return;
     lastVersionRef.current = version;
-    historyRef.current = [];
-    setHistoryLength(0);
-    setPresent(buildInitialDraft(canonicalRack, canonicalTable));
+    setState({ present: buildInitialDraft(canonicalRack, canonicalTable), past: [] });
     // canonicalRack/canonicalTable intentionally excluded from the
     // dependency array: this effect should fire only on a real version
     // change, not on every re-render that happens to pass a new array
@@ -41,13 +49,11 @@ export function useDraftState(
     // this either way -- documented here for a human reader instead.)
   }, [version]);
 
-  const commit = useCallback((updater: (s: DraftState) => DraftState) => {
-    setPresent((prev) => {
-      historyRef.current = [...historyRef.current, prev];
-      setHistoryLength(historyRef.current.length);
-      return updater(prev);
-    });
-  }, []);
+  const commit = useCallback(
+    (updater: (s: DraftState) => DraftState) =>
+      setState((s) => ({ present: updater(s.present), past: [...s.past, s.present] })),
+    [],
+  );
 
   const moveTile = useCallback(
     (tileId: string, destination: Destination) =>
@@ -67,29 +73,22 @@ export function useDraftState(
   );
 
   const reset = useCallback(() => {
-    historyRef.current = [];
-    setHistoryLength(0);
-    setPresent(buildInitialDraft(canonicalRack, canonicalTable));
+    setState({ present: buildInitialDraft(canonicalRack, canonicalTable), past: [] });
   }, [canonicalRack, canonicalTable]);
 
   const undo = useCallback(() => {
-    setPresent((prev) => {
-      const history = historyRef.current;
-      if (history.length === 0) return prev;
-      const last = history[history.length - 1]!;
-      historyRef.current = history.slice(0, -1);
-      setHistoryLength(historyRef.current.length);
-      return last;
-    });
+    setState((s) =>
+      s.past.length === 0 ? s : { present: s.past[s.past.length - 1]!, past: s.past.slice(0, -1) },
+    );
   }, []);
 
   return {
-    draft: present,
+    draft: state.present,
     moveTile,
     reorderInSet,
     reorderRack,
     reset,
     undo,
-    canUndo: historyLength > 0,
+    canUndo: state.past.length > 0,
   };
 }

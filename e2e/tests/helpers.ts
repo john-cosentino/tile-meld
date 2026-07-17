@@ -141,8 +141,21 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   await guestPage.getByRole("button", { name: "Mark ready" }).click();
   await hostPage.getByRole("button", { name: /Start game/ }).click();
 
+  // The host reliably lands on the game once Start succeeds; the game URL is
+  // then known. The guest's waiting-room poll normally follows on its own, but
+  // under cumulative rate-limit pressure that poll can lag -- so give it a
+  // brief window, then send the guest straight to the same game URL. This is
+  // test SETUP getting both clients seated, not the behavior under test (the
+  // in-app auto-navigation is exercised directly by turn-timeout/reconnect
+  // specs); it does not change any production polling or rate limit.
   await expect(hostPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
-  await expect(guestPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
+  const gameUrl = hostPage.url();
+  try {
+    await expect(guestPage).toHaveURL(/\/games\//, { timeout: 10000 });
+  } catch {
+    await guestPage.goto(gameUrl);
+  }
+
   await expect(hostPage.getByRole("heading", { name: "Your rack (14)" })).toBeVisible({
     timeout: GAME_ENTRY_TIMEOUT,
   });
@@ -208,8 +221,19 @@ export async function startNPlayerGame(
   }
   await hostPage.getByRole("button", { name: /Start game/ }).click();
 
+  // Same safe setup fallback as startTwoPlayerGame: the host enters the game
+  // reliably; each other seat's waiting-room poll normally follows, but if it
+  // lags under load, send that page straight to the known game URL.
+  await expect(hostPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
+  const gameUrl = hostPage.url();
+  for (const page of guestPages) {
+    try {
+      await expect(page).toHaveURL(/\/games\//, { timeout: 10000 });
+    } catch {
+      await page.goto(gameUrl);
+    }
+  }
   for (const page of pages) {
-    await expect(page).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
     await expect(page.getByRole("heading", { name: "Your rack (14)" })).toBeVisible({
       timeout: GAME_ENTRY_TIMEOUT,
     });
@@ -262,5 +286,20 @@ export async function dragTo(
   // and track the dragged item before the final drop.
   await page.mouse.move(startX + 20, startY + 20, { steps: 5 });
   await page.mouse.move(endX, endY, { steps: 10 });
+  // Settle the pointer AT the target with a couple more pointermove events
+  // before releasing. dnd-kit resolves the drop's `over` droppable from the
+  // dragged item's position via rect-intersection collision; a single arrival
+  // move can leave `over` resolved to a neighbouring zone (e.g. the "new set"
+  // zone just below a short existing set) when the target sits near a
+  // boundary. These small in-target moves let collision settle on the droppable
+  // actually under the pointer before pointerup commits it.
+  await page.mouse.move(endX + 2, endY + 2, { steps: 2 });
+  await page.mouse.move(endX, endY, { steps: 2 });
   await page.mouse.up();
+  // Move the pointer well off the drop target after releasing. dnd-kit tears
+  // down its drag overlay / pointer tracking on pointerup; leaving the mouse
+  // parked on the target can keep a transient overlay or hover state over the
+  // spot a following interaction needs (the next drag's source, or the Undo
+  // button), which otherwise reads as a dropped drag or a swallowed click.
+  await page.mouse.move(0, 0);
 }
