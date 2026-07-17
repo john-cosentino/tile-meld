@@ -37,6 +37,16 @@ RUN pnpm --filter @tile-meld/server deploy --prod --legacy /app/deploy/server
 
 FROM base AS runtime
 ENV NODE_ENV=production
+# The runtime image starts, migrates, and health-checks the app with `node`
+# only (see CMD, HEALTHCHECK, and render.yaml's preDeployCommand
+# `node dist/migrate-cli.js up`) -- it never runs npm/npx/pnpm. The Node base
+# image bundles the npm CLI, which vendors its own copy of undici at
+# /usr/local/lib/node_modules/npm/node_modules/undici; that copy trails the
+# app's own dependency versions and is what the image scanner flags. Since it
+# is unused at runtime, remove the bundled npm CLI (and its vendored deps)
+# entirely -- this shrinks the runtime attack surface rather than tracking npm's
+# bundled-undici release cadence. `node` itself is untouched.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 COPY --from=build /app/deploy/server /app/apps/server
 COPY --from=build /app/apps/web/dist /app/apps/web/dist
 WORKDIR /app/apps/server

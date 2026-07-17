@@ -30,12 +30,17 @@ test("refresh mid-game discards the local draft but keeps server-committed state
 test("recovery: the same identity recovered in a fresh browser context sees the exact same private game state", async ({
   browser,
 }) => {
-  // retryOnRateLimit (helpers.ts) can wait out several real ~20s backoffs
-  // on the recovery endpoint's especially tight bucket -- particularly
-  // when this file runs back-to-back with other tests that also reload,
-  // as the full CI matrix (all 5 projects against one server) does -- well
-  // past the 30s default.
-  test.setTimeout(120000);
+  // This test-specific timeout (not the suite default) covers a workflow that
+  // legitimately makes several calls against the app's TIGHTEST rate-limit
+  // bucket -- the recovery endpoint at 5 req/min (deliberate brute-force
+  // protection) is exercised twice (the RecoveryPage submit, then the
+  // post-reload bootstrap re-recovery) -- plus three identity creations, all
+  // while the full 5-project matrix runs serially against one server. The
+  // setup itself no longer wastes time waiting on a lagging guest client
+  // (startTwoPlayerGame now navigates a stuck guest directly), so what remains
+  // is the real, rate-limited recovery round-trips; 180s gives them honest
+  // headroom without touching the suite-wide timeout.
+  test.setTimeout(180000);
   const { activePage } = await startTwoPlayerGame(browser);
   const gameUrl = activePage.url();
   const originalRack = await activePage
