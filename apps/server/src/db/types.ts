@@ -51,6 +51,12 @@ export interface PlayersTable {
   recovery_rotated_at: Timestamp | null;
   display_name_default: string | null;
   kind: Generated<PlayerKind>;
+  // Globally unique among kind='human' rows (migration 0019). `username`
+  // preserves entered casing for display; `username_canonical` is the
+  // lowercased form the partial unique index enforces uniqueness on. Both
+  // are NULL until claimed, and NULL forever for kind='computer'.
+  username: string | null;
+  username_canonical: string | null;
 }
 
 export interface SessionsTable {

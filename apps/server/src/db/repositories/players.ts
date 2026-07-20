@@ -1,4 +1,5 @@
 import type { Kysely, Selectable, Transaction } from "kysely";
+import { canonicalizeUsername } from "@tile-meld/shared";
 import type { Database, PlayersTable } from "../types.js";
 import { hashRecoverySecret } from "../../security/hashing.js";
 import { COMPUTER_DISPLAY_NAME, COMPUTER_PLAYER_ID } from "../botIdentity.js";
@@ -90,4 +91,77 @@ export async function rotateRecoverySecret(
     .where("id", "=", playerId)
     .returningAll()
     .executeTakeFirstOrThrow();
+}
+
+export type ClaimUsernameOutcome =
+  | { readonly kind: "claimed"; readonly player: PlayerRow }
+  | { readonly kind: "already_claimed_same"; readonly player: PlayerRow }
+  | { readonly kind: "already_claimed_different" }
+  | { readonly kind: "not_human" }
+  | { readonly kind: "taken" };
+
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === "23505"
+  );
+}
+
+/**
+ * Claims a globally unique username for a human identity.
+ *
+ * The UPDATE's own WHERE clause (kind='human' AND username_canonical IS
+ * NULL) is the primary guard; the partial unique index on
+ * username_canonical (migration 0019) is the final concurrency arbiter for
+ * two different identities racing for the same name -- exactly one of two
+ * concurrent claims for the same canonical username succeeds, the other
+ * catches a 23505 here and reports "taken".
+ *
+ * Idempotent: reclaiming the identity's own current username (same
+ * canonical form) reports "already_claimed_same" without a write, rather
+ * than an error. An attempt to change an already-claimed username to a
+ * different value is rejected ("already_claimed_different") -- claims are
+ * one-shot by design (docs plan DR-4: reserved indefinitely).
+ */
+export async function claimUsername(
+  db: Kysely<Database> | Transaction<Database>,
+  playerId: string,
+  username: string,
+): Promise<ClaimUsernameOutcome> {
+  const usernameCanonical = canonicalizeUsername(username);
+
+  let updated: PlayerRow | undefined;
+  try {
+    updated = await db
+      .updateTable("players")
+      .set({ username, username_canonical: usernameCanonical })
+      .where("id", "=", playerId)
+      .where("kind", "=", "human")
+      .where("username_canonical", "is", null)
+      .returningAll()
+      .executeTakeFirst();
+  } catch (err) {
+    if (isUniqueViolation(err)) return { kind: "taken" };
+    throw err;
+  }
+
+  if (updated) return { kind: "claimed", player: updated };
+
+  // Nothing matched the WHERE clause above: the identity doesn't exist,
+  // isn't human, or already has a username. This read is purely diagnostic
+  // (to report a precise reason) -- the UPDATE already made the actual
+  // decision, so there's no new race introduced by reading again here.
+  const current = await db
+    .selectFrom("players")
+    .selectAll()
+    .where("id", "=", playerId)
+    .executeTakeFirst();
+
+  if (!current || current.kind !== "human") return { kind: "not_human" };
+  if (current.username_canonical === usernameCanonical) {
+    return { kind: "already_claimed_same", player: current };
+  }
+  return { kind: "already_claimed_different" };
 }

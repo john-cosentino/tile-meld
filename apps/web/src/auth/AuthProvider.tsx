@@ -46,6 +46,10 @@ export type AuthState =
   | {
       readonly status: "ready";
       readonly playerId: string;
+      /** Null until claimed (Phase 1: docs/next-changes-implementation-
+       * plan.md). Globally unique among human identities once set, and
+       * retained across reload/recovery -- see claimUsername(). */
+      readonly username: string | null;
       /** Only set immediately after a brand-new identity is created --
        * shown once so the player can save it, then cleared via
        * acknowledgeRecoverySecret(). Never re-derivable after that, by
@@ -58,6 +62,7 @@ type AuthContextValue = {
   readonly state: AuthState;
   readonly acknowledgeRecoverySecret: () => void;
   readonly rotateRecovery: () => Promise<string>;
+  readonly claimUsername: (username: string) => Promise<string>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -84,15 +89,21 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       const stored = readStoredIdentity();
       try {
         if (stored) {
-          await api.recoverSession(stored.playerId, stored.recoverySecret);
-          setState({ status: "ready", playerId: stored.playerId, newRecoverySecret: null });
+          const recovered = await api.recoverSession(stored.playerId, stored.recoverySecret);
+          setState({
+            status: "ready",
+            playerId: stored.playerId,
+            username: recovered.username,
+            newRecoverySecret: null,
+          });
           return;
         }
         const created = await api.createIdentity();
-        writeStoredIdentity(created);
+        writeStoredIdentity({ playerId: created.playerId, recoverySecret: created.recoverySecret });
         setState({
           status: "ready",
           playerId: created.playerId,
+          username: created.username,
           newRecoverySecret: created.recoverySecret,
         });
       } catch (err) {
@@ -118,8 +129,16 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     return recoverySecret;
   }, []);
 
+  const claimUsername = useCallback(async (username: string): Promise<string> => {
+    const result = await api.claimUsername(username);
+    setState((prev) => (prev.status === "ready" ? { ...prev, username: result.username } : prev));
+    return result.username;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ state, acknowledgeRecoverySecret, rotateRecovery }}>
+    <AuthContext.Provider
+      value={{ state, acknowledgeRecoverySecret, rotateRecovery, claimUsername }}
+    >
       {children}
     </AuthContext.Provider>
   );

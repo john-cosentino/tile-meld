@@ -1,5 +1,9 @@
 import {
+  canonicalizeUsername,
+  ClaimUsernameRequestSchema,
+  ClaimUsernameResponseSchema,
   CreateIdentityResponseSchema,
+  isReservedUsername,
   RecoverSessionRequestSchema,
   RecoverSessionResponseSchema,
   RotateRecoveryResponseSchema,
@@ -10,12 +14,13 @@ import { requireSession } from "../auth.js";
 import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from "../../security/session.js";
 import { generateRecoverySecret, verifyRecoverySecret } from "../../security/hashing.js";
 import {
+  claimUsername,
   createPlayer,
   findPlayerById,
   rotateRecoverySecret,
 } from "../../db/repositories/players.js";
 import { createSession } from "../../db/repositories/sessions.js";
-import { identityCreateLimit, recoveryLimit } from "../rateLimits.js";
+import { identityCreateLimit, recoveryLimit, usernameClaimLimit } from "../rateLimits.js";
 
 function setSessionCookie(
   reply: import("fastify").FastifyReply,
@@ -48,7 +53,9 @@ export function registerIdentityRoutes(app: AppInstance): void {
         SESSION_TTL_MS,
       );
       setSessionCookie(reply, token, request.protocol === "https");
-      return reply.code(200).send({ playerId: player.id, recoverySecret });
+      return reply
+        .code(200)
+        .send({ playerId: player.id, recoverySecret, username: player.username });
     },
   );
 
@@ -83,7 +90,7 @@ export function registerIdentityRoutes(app: AppInstance): void {
         SESSION_TTL_MS,
       );
       setSessionCookie(reply, token, request.protocol === "https");
-      reply.code(200).send({ playerId: player.id });
+      reply.code(200).send({ playerId: player.id, username: player.username });
     },
   );
 
@@ -97,6 +104,42 @@ export function registerIdentityRoutes(app: AppInstance): void {
       const newSecret = generateRecoverySecret();
       await rotateRecoverySecret(app.db, request.player!.id, newSecret);
       reply.code(200).send({ recoverySecret: newSecret });
+    },
+  );
+
+  app.post(
+    "/api/identity/username",
+    {
+      schema: {
+        body: ClaimUsernameRequestSchema,
+        response: { 200: ClaimUsernameResponseSchema },
+      },
+      preValidation: requireSession,
+      config: { rateLimit: usernameClaimLimit },
+    },
+    async (request, reply) => {
+      const canonical = canonicalizeUsername(request.body.username);
+      if (isReservedUsername(canonical)) {
+        sendError(reply, "invalid_request", "that username is reserved");
+        return;
+      }
+
+      const outcome = await claimUsername(app.db, request.player!.id, request.body.username);
+
+      if (outcome.kind === "claimed" || outcome.kind === "already_claimed_same") {
+        reply.code(200).send({ username: outcome.player.username! });
+        return;
+      }
+      if (outcome.kind === "already_claimed_different") {
+        sendError(reply, "conflict", "this identity already has a username and cannot change it");
+        return;
+      }
+      if (outcome.kind === "taken") {
+        sendError(reply, "conflict", "that username is already taken");
+        return;
+      }
+      // outcome.kind === "not_human"
+      sendError(reply, "forbidden", "computer identities cannot claim a username");
     },
   );
 }

@@ -4,11 +4,13 @@ import { AuthProvider, useAuth } from "../src/auth/AuthProvider.js";
 
 const createIdentity = vi.fn();
 const recoverSession = vi.fn();
+const claimUsernameApi = vi.fn();
 
 vi.mock("../src/api/client.js", () => ({
   api: {
     createIdentity: (...args: unknown[]) => createIdentity(...args),
     recoverSession: (...args: unknown[]) => recoverSession(...args),
+    claimUsername: (...args: unknown[]) => claimUsernameApi(...args),
   },
   ApiError: class ApiError extends Error {
     constructor(
@@ -22,12 +24,15 @@ vi.mock("../src/api/client.js", () => ({
 }));
 
 function Probe() {
-  const { state } = useAuth();
+  const { state, claimUsername } = useAuth();
   if (state.status !== "ready") return <span>{state.status}</span>;
   return (
-    <span>
-      ready:{state.playerId}:{state.newRecoverySecret ?? "none"}
-    </span>
+    <>
+      <span>
+        ready:{state.playerId}:{state.username ?? "none"}:{state.newRecoverySecret ?? "none"}
+      </span>
+      <button onClick={() => void claimUsername("alice")}>claim</button>
+    </>
   );
 }
 
@@ -36,10 +41,11 @@ describe("AuthProvider", () => {
     localStorage.clear();
     createIdentity.mockReset();
     recoverSession.mockReset();
+    claimUsernameApi.mockReset();
   });
 
   it("mints a new identity and surfaces the recovery secret once, when nothing is stored", async () => {
-    createIdentity.mockResolvedValue({ playerId: "p1", recoverySecret: "s1" });
+    createIdentity.mockResolvedValue({ playerId: "p1", recoverySecret: "s1", username: null });
 
     render(
       <AuthProvider>
@@ -47,7 +53,7 @@ describe("AuthProvider", () => {
       </AuthProvider>,
     );
 
-    await waitFor(() => screen.getByText("ready:p1:s1"));
+    await waitFor(() => screen.getByText("ready:p1:none:s1"));
     expect(createIdentity).toHaveBeenCalledOnce();
     expect(recoverSession).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem("tilemeld.identity")!)).toEqual({
@@ -61,7 +67,7 @@ describe("AuthProvider", () => {
       "tilemeld.identity",
       JSON.stringify({ playerId: "stored-id", recoverySecret: "stored-secret" }),
     );
-    recoverSession.mockResolvedValue({ playerId: "stored-id" });
+    recoverSession.mockResolvedValue({ playerId: "stored-id", username: "existing" });
 
     render(
       <AuthProvider>
@@ -69,7 +75,7 @@ describe("AuthProvider", () => {
       </AuthProvider>,
     );
 
-    await waitFor(() => screen.getByText("ready:stored-id:none"));
+    await waitFor(() => screen.getByText("ready:stored-id:existing:none"));
     expect(recoverSession).toHaveBeenCalledWith("stored-id", "stored-secret");
     expect(createIdentity).not.toHaveBeenCalled();
   });
@@ -88,5 +94,22 @@ describe("AuthProvider", () => {
     );
 
     await waitFor(() => screen.getByText("error"));
+  });
+
+  it("claimUsername updates state.username on success", async () => {
+    createIdentity.mockResolvedValue({ playerId: "p1", recoverySecret: "s1", username: null });
+    claimUsernameApi.mockResolvedValue({ username: "alice" });
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => screen.getByText("ready:p1:none:s1"));
+    screen.getByRole("button", { name: "claim" }).click();
+
+    await waitFor(() => screen.getByText("ready:p1:alice:s1"));
+    expect(claimUsernameApi).toHaveBeenCalledWith("alice");
   });
 });

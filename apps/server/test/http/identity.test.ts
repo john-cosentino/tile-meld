@@ -70,7 +70,7 @@ describe("identity/session routes", () => {
       payload: { playerId, recoverySecret },
     });
     expect(recover.statusCode).toBe(200);
-    expect(recover.json()).toEqual({ playerId });
+    expect(recover.json()).toEqual({ playerId, username: null });
     expect(recover.cookies.some((c) => c.name === SESSION_COOKIE_NAME)).toBe(true);
 
     await app.close();

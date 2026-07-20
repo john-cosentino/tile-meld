@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  canonicalizeUsername,
   CreateRoomRequestSchema,
   DisplayNameSchema,
+  isReservedUsername,
   JoinRoomRequestSchema,
   PublicRoomsQuerySchema,
   RedactedGameViewSchema,
   TileSchema,
+  UsernameSchema,
 } from "../src/index.js";
 
 describe("DisplayNameSchema", () => {
@@ -19,6 +22,75 @@ describe("DisplayNameSchema", () => {
 
   it("rejects an overly long display name", () => {
     expect(DisplayNameSchema.safeParse("x".repeat(41)).success).toBe(false);
+  });
+});
+
+describe("UsernameSchema", () => {
+  it("trims surrounding whitespace", () => {
+    expect(UsernameSchema.parse("  alice  ")).toBe("alice");
+  });
+
+  it("accepts letters, digits, underscore, and hyphen", () => {
+    expect(UsernameSchema.safeParse("alice_bob-99").success).toBe(true);
+  });
+
+  it("rejects internal whitespace", () => {
+    expect(UsernameSchema.safeParse("al ice").success).toBe(false);
+  });
+
+  it("rejects disallowed characters", () => {
+    expect(UsernameSchema.safeParse("alice!").success).toBe(false);
+    expect(UsernameSchema.safeParse("alice.bob").success).toBe(false);
+    expect(UsernameSchema.safeParse("alice@bob").success).toBe(false);
+  });
+
+  it("rejects a username shorter than 3 characters", () => {
+    expect(UsernameSchema.safeParse("ab").success).toBe(false);
+  });
+
+  it("accepts the 3-character boundary", () => {
+    expect(UsernameSchema.safeParse("abc").success).toBe(true);
+  });
+
+  it("rejects a username longer than 24 characters", () => {
+    expect(UsernameSchema.safeParse("a".repeat(25)).success).toBe(false);
+  });
+
+  it("accepts the 24-character boundary", () => {
+    expect(UsernameSchema.safeParse("a".repeat(24)).success).toBe(true);
+  });
+
+  it("rejects an empty or whitespace-only username", () => {
+    expect(UsernameSchema.safeParse("   ").success).toBe(false);
+  });
+});
+
+describe("canonicalizeUsername", () => {
+  it("lowercases and trims", () => {
+    expect(canonicalizeUsername("  Alice  ")).toBe("alice");
+  });
+
+  it("makes case-variant usernames collide", () => {
+    expect(canonicalizeUsername("Alice")).toBe(canonicalizeUsername("ALICE"));
+    expect(canonicalizeUsername("Alice")).toBe(canonicalizeUsername("alice"));
+  });
+});
+
+describe("isReservedUsername", () => {
+  it("reserves system-oriented names", () => {
+    for (const name of ["computer", "system", "admin", "moderator", "null", "undefined"]) {
+      expect(isReservedUsername(name)).toBe(true);
+    }
+  });
+
+  it("reserves names beginning with public_", () => {
+    expect(isReservedUsername("public_john")).toBe(true);
+    expect(isReservedUsername("public_")).toBe(true);
+  });
+
+  it("does not reserve an ordinary username", () => {
+    expect(isReservedUsername("alice")).toBe(false);
+    expect(isReservedUsername("publicjohn")).toBe(false);
   });
 });
 

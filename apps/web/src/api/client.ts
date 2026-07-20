@@ -1,4 +1,5 @@
 import {
+  ClaimUsernameResponseSchema,
   CreateIdentityResponseSchema,
   RecoverSessionResponseSchema,
   RotateRecoveryResponseSchema,
@@ -80,6 +81,9 @@ export const api = {
     request("POST", "/session/recover", RecoverSessionResponseSchema, { playerId, recoverySecret }),
 
   rotateRecovery: () => request("POST", "/session/rotate-recovery", RotateRecoveryResponseSchema),
+
+  claimUsername: (username: string) =>
+    request("POST", "/identity/username", ClaimUsernameResponseSchema, { username }),
 
   createRoom: (body: CreateRoomRequest) =>
     request("POST", "/rooms", CreateRoomResponseSchema, body),
