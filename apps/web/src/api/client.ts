@@ -16,6 +16,7 @@ import {
   ChatHistoryResponseSchema,
   VapidPublicKeyResponseSchema,
   type CreateRoomRequest,
+  type JoinRoomByNameRequest,
   type JoinRoomRequest,
   type QuickJoinRequest,
   type GetRoomResponse,
@@ -89,6 +90,9 @@ export const api = {
     request("POST", "/rooms", CreateRoomResponseSchema, body),
 
   joinRoom: (body: JoinRoomRequest) => request("POST", "/rooms/join", JoinRoomResponseSchema, body),
+
+  joinRoomByName: (body: JoinRoomByNameRequest) =>
+    request("POST", "/rooms/join-by-name", JoinRoomResponseSchema, body),
 
   quickJoin: (body: QuickJoinRequest) =>
     request("POST", "/rooms/quick-join", QuickJoinResponseSchema, body),

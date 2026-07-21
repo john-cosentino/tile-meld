@@ -4,6 +4,7 @@ import {
   CreateRoomRequestSchema,
   CreateRoomResponseSchema,
   GetRoomResponseSchema,
+  JoinRoomByNameRequestSchema,
   JoinRoomRequestSchema,
   JoinRoomResponseSchema,
   LeaveResponseSchema,
@@ -25,6 +26,7 @@ import {
   createComputerRoom,
   createRoom,
   findRoomByCode,
+  findRoomByName,
   findRoomById,
   findQuickJoinableRoom,
   listPublicOpenRoomsWithMembers,
@@ -44,6 +46,7 @@ import {
 } from "../../db/repositories/roomMembers.js";
 import { findPlayerById } from "../../db/repositories/players.js";
 import { dealNewGame, findLatestGameForRoom } from "../../db/repositories/games.js";
+import { lockRoomForUpdate } from "../../db/transactions.js";
 import {
   publicLobbyLimit,
   roomActionLimit,
@@ -154,6 +157,13 @@ export function registerRoomRoutes(app: AppInstance): void {
     },
   );
 
+  // Legacy/compatibility join path (Phase 3: docs/next-changes-
+  // implementation-plan.md, corrected DR-8). The normal web UI now uses
+  // POST /api/rooms/join-by-name below; this code-based route is preserved
+  // unchanged for backward compatibility, rollback, existing deep links,
+  // older clients, and troubleshooting -- room codes remain authoritative
+  // internal identifiers and a fallback credential, just no longer the
+  // primary join UI's join key.
   app.post(
     "/api/rooms/join",
     {
@@ -204,6 +214,84 @@ export function registerRoomRoutes(app: AppInstance): void {
         }
         throw err;
       }
+      await touchRoomActivity(app.db, room.id);
+      reply.code(200).send({ roomId: room.id });
+    },
+  );
+
+  // The normal join path (Phase 3, corrected DR-8): exact-name lookup for
+  // BOTH public and private rooms -- no code required, no free-text display
+  // name. Private rooms are unlisted (excluded from the lobby/search/
+  // autocomplete) but joinable by anyone who knows the exact name; this
+  // route never distinguishes "no such room" from "found but private" --
+  // both a nonexistent name and a resolvable-but-unjoinable room (full,
+  // not open, or computer-controlled) return the SAME outward response, to
+  // limit what a guessed name can reveal about an unlisted room.
+  app.post(
+    "/api/rooms/join-by-name",
+    {
+      schema: { body: JoinRoomByNameRequestSchema, response: { 200: JoinRoomResponseSchema } },
+      preValidation: requireSession,
+      config: { rateLimit: roomJoinLimit },
+    },
+    async (request, reply) => {
+      const playerId = request.player!.id;
+      const joiner = await findPlayerById(app.db, playerId);
+      if (!joiner?.username) {
+        sendError(reply, "username_required", "claim a username before joining a room");
+        return;
+      }
+
+      const unavailable = (): void => {
+        sendError(reply, "not_found", "no room with that name is available to join");
+      };
+
+      const room = await findRoomByName(app.db, request.body.name);
+      if (!room) {
+        unavailable();
+        return;
+      }
+
+      const existing = await findRoomMemberByRoomAndPlayer(app.db, room.id, playerId);
+      if (existing) {
+        reply.code(200).send({ roomId: room.id });
+        return;
+      }
+
+      // A Play-vs-Computer room is private to its single human -- no one
+      // else may join it (mirrors the code-based route above).
+      if (room.has_computer) {
+        unavailable();
+        return;
+      }
+
+      // Recheck status + capacity under a room-row lock so two concurrent
+      // joins racing for the last seat can't both succeed (the code-based
+      // route above has no such lock -- this is a new endpoint, not a
+      // change to that one).
+      let outcome: "joined" | "unavailable";
+      try {
+        outcome = await app.db.transaction().execute(async (trx) => {
+          const locked = await lockRoomForUpdate(trx, room.id);
+          if (locked.status !== "open") return "unavailable";
+          const members = await listRoomMembers(trx, locked.id);
+          if (members.length >= locked.capacity) return "unavailable";
+          await addRoomMember(trx, locked.id, playerId, joiner.username!);
+          return "joined";
+        });
+      } catch (err) {
+        if (isUniqueViolation(err)) {
+          sendError(reply, "conflict", "that display name is already taken in this room");
+          return;
+        }
+        throw err;
+      }
+
+      if (outcome === "unavailable") {
+        unavailable();
+        return;
+      }
+
       await touchRoomActivity(app.db, room.id);
       reply.code(200).send({ roomId: room.id });
     },
@@ -284,8 +372,15 @@ export function registerRoomRoutes(app: AppInstance): void {
       config: { rateLimit: roomJoinLimit },
     },
     async (request, reply) => {
-      const { displayName } = request.body;
       const playerId = request.player!.id;
+      // displayName remains in the wire schema for backward compatibility
+      // but is never trusted as the joiner's display name -- the claimed
+      // username is authoritative, same as every other join path (Phase 3).
+      const joiner = await findPlayerById(app.db, playerId);
+      if (!joiner?.username) {
+        sendError(reply, "username_required", "claim a username before joining a room");
+        return;
+      }
 
       const room = await findQuickJoinableRoom(app.db, playerId);
       if (!room) {
@@ -294,7 +389,7 @@ export function registerRoomRoutes(app: AppInstance): void {
       }
 
       try {
-        await addRoomMember(app.db, room.id, playerId, displayName);
+        await addRoomMember(app.db, room.id, playerId, joiner.username);
       } catch (err) {
         if (isUniqueViolation(err)) {
           sendError(reply, "conflict", "that display name is already taken in this room");

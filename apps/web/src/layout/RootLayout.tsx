@@ -49,7 +49,7 @@ export function RootLayout() {
           <nav className="row" aria-label="Main navigation">
             <Link to="/lobby">Public Lobby</Link>
             <Link to="/rooms/new">Create Room</Link>
-            <Link to="/rooms/join">Join by Code</Link>
+            <Link to="/rooms/join">Join Room by Name</Link>
             <Link to="/recovery">Recovery</Link>
           </nav>
         </div>

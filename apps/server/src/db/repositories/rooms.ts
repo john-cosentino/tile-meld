@@ -248,6 +248,31 @@ export async function findRoomByCode(
     .executeTakeFirst();
 }
 
+/**
+ * Case-insensitive exact-name lookup -- the authoritative resolution path
+ * for "Join Room by Name" (Phase 3, corrected DR-8: private rooms are
+ * unlisted, not secret, and join by exact name like public rooms). Matches
+ * only `lower(name) = lower(input)`; a NULL name (a legacy room predating
+ * Phase 2's naming) never matches -- the explicit `is not null` guard
+ * documents that exclusion even though the equality comparison already
+ * yields NULL (never TRUE) against a NULL column. No LIKE, no prefix
+ * matching, no broad scan -- a single bounded exact-match lookup that can
+ * never enumerate or suggest room names. Both public and private rooms
+ * resolve identically here; visibility only affects listing surfaces
+ * (the public lobby), never this lookup.
+ */
+export async function findRoomByName(
+  db: Kysely<Database>,
+  name: string,
+): Promise<RoomRow | undefined> {
+  return db
+    .selectFrom("rooms")
+    .selectAll()
+    .where("name", "is not", null)
+    .where(sql<boolean>`lower(name) = lower(${name})`)
+    .executeTakeFirst();
+}
+
 export async function findRoomById(db: Kysely<Database>, id: string): Promise<RoomRow | undefined> {
   return db.selectFrom("rooms").selectAll().where("id", "=", id).executeTakeFirst();
 }

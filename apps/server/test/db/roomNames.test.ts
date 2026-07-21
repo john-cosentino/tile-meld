@@ -2,7 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { sql } from "kysely";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
 import { createPlayer } from "../../src/db/repositories/players.js";
-import { createRoom, createComputerRoom } from "../../src/db/repositories/rooms.js";
+import { createRoom, createComputerRoom, findRoomByName } from "../../src/db/repositories/rooms.js";
 import { ensureComputerPlayer } from "../../src/db/repositories/players.js";
 
 // Phase 2 -- human-readable room names (docs/next-changes-implementation-
@@ -285,5 +285,97 @@ describe("rooms.name schema constraints (migration 0020)", () => {
         })
         .execute(),
     ).resolves.not.toThrow();
+  });
+});
+
+describe("findRoomByName (Phase 3 -- repository-level exact-match behavior)", () => {
+  afterAll(async () => {
+    await closeTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAll(await getTestDb());
+  });
+
+  it("finds a room by its exact name", async () => {
+    const db = await getTestDb();
+    const player = await createHostPlayer(db, "s1");
+    const { room } = await createRoom(db, {
+      creatorPlayerId: player.id,
+      creatorUsername: "Exacto",
+      capacity: 2,
+      visibility: "private",
+      turnLimitHours: 4,
+    });
+
+    const found = await findRoomByName(db, "Exacto");
+    expect(found?.id).toBe(room.id);
+  });
+
+  it("is case-insensitive", async () => {
+    const db = await getTestDb();
+    const player = await createHostPlayer(db, "s1");
+    const { room } = await createRoom(db, {
+      creatorPlayerId: player.id,
+      creatorUsername: "CaseTest",
+      capacity: 2,
+      visibility: "private",
+      turnLimitHours: 4,
+    });
+
+    expect((await findRoomByName(db, "casetest"))?.id).toBe(room.id);
+    expect((await findRoomByName(db, "CASETEST"))?.id).toBe(room.id);
+  });
+
+  it("does not match a prefix or substring", async () => {
+    const db = await getTestDb();
+    const player = await createHostPlayer(db, "s1");
+    await createRoom(db, {
+      creatorPlayerId: player.id,
+      creatorUsername: "PrefixMatch",
+      capacity: 2,
+      visibility: "private",
+      turnLimitHours: 4,
+    });
+
+    expect(await findRoomByName(db, "Prefix")).toBeUndefined();
+    expect(await findRoomByName(db, "PrefixMatchExtra")).toBeUndefined();
+  });
+
+  it("never matches a legacy room with a NULL name", async () => {
+    const db = await getTestDb();
+    await db
+      .insertInto("rooms")
+      .values({ code: "LEGACY01", visibility: "private", capacity: 2, turn_limit_hours: 4 })
+      .execute();
+
+    expect(await findRoomByName(db, "LEGACY01")).toBeUndefined();
+  });
+
+  it("finds both public and private rooms identically -- visibility is not a lookup filter", async () => {
+    const db = await getTestDb();
+    const player = await createHostPlayer(db, "s1");
+    const { room: privateRoom } = await createRoom(db, {
+      creatorPlayerId: player.id,
+      creatorUsername: "VisTest",
+      capacity: 2,
+      visibility: "private",
+      turnLimitHours: 4,
+    });
+    const { room: publicRoom } = await createRoom(db, {
+      creatorPlayerId: player.id,
+      creatorUsername: "VisTest",
+      capacity: 2,
+      visibility: "public",
+      turnLimitHours: 4,
+    });
+
+    expect((await findRoomByName(db, "VisTest"))?.id).toBe(privateRoom.id);
+    expect((await findRoomByName(db, "public_VisTest"))?.id).toBe(publicRoom.id);
+  });
+
+  it("returns undefined for a room name that was never allocated", async () => {
+    const db = await getTestDb();
+    expect(await findRoomByName(db, "NeverExisted")).toBeUndefined();
   });
 });

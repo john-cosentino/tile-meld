@@ -167,13 +167,16 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
     hostPage.getByRole("button", { name: "Create room" }),
     hostHeading,
   );
-  const code = await readRoomCode(hostPage);
+  // Still verifies the preserved "Room code:" compatibility/fallback line
+  // renders (Phase 3), even though the guest below no longer needs it.
+  await readRoomCode(hostPage);
   const roomId = /\/rooms\/([^/?#]+)/.exec(hostPage.url())?.[1];
   if (!roomId) throw new Error("startTwoPlayerGame: could not parse roomId from URL after create");
 
-  await guestPage.getByRole("navigation").getByRole("link", { name: "Join by Code" }).click();
-  await guestPage.getByLabel("Room code").fill(code);
-  await guestPage.getByLabel("Your display name").fill("Guest");
+  // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
+  // room's name IS the host's username for a private room, already known.
+  await guestPage.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
+  await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
     guestPage,
     guestPage.getByRole("button", { name: "Join room" }),
@@ -252,12 +255,18 @@ export async function startNPlayerGame(
     hostPage.getByRole("button", { name: "Create room" }),
     hostHeading,
   );
-  const code = await readRoomCode(hostPage);
+  // Still verifies the preserved "Room code:" compatibility/fallback line
+  // renders (Phase 3), even though the guests below no longer need it.
+  await readRoomCode(hostPage);
 
-  for (const [index, guestPage] of guestPages.entries()) {
-    await guestPage.getByRole("navigation").getByRole("link", { name: "Join by Code" }).click();
-    await guestPage.getByLabel("Room code").fill(code);
-    await guestPage.getByLabel("Your display name").fill(`P${index + 2}`);
+  // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
+  // room's name IS the host's username for a private room, already known.
+  for (const guestPage of guestPages) {
+    await guestPage
+      .getByRole("navigation")
+      .getByRole("link", { name: "Join Room by Name" })
+      .click();
+    await guestPage.getByLabel("Room name").fill(hostUsername);
     await clickUntilSettled(
       guestPage,
       guestPage.getByRole("button", { name: "Join room" }),

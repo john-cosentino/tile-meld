@@ -1,7 +1,16 @@
 import { z } from "zod";
+import { USERNAME_MAX_LENGTH } from "./identity.js";
 
 export const DisplayNameSchema = z.string().trim().min(1).max(40);
 export const RoomCodeSchema = z.string().trim().min(1).max(16);
+// Practical max length for a join-by-name lookup: the longest string the
+// server-side allocator (createRoom/createComputerRoom, Phase 2) can ever
+// generate -- "public_" (7) + the longest username (USERNAME_MAX_LENGTH)
+// + a numbered suffix up to " 50" (3) -- see ROOM_NAME_CANDIDATE_WINDOW in
+// apps/server/src/db/repositories/rooms.ts. A room name is never free
+// user input, so this bound is derived from the generator, not guessed.
+export const ROOM_NAME_MAX_LENGTH = "public_".length + USERNAME_MAX_LENGTH + " 50".length;
+export const RoomNameSchema = z.string().trim().min(1).max(ROOM_NAME_MAX_LENGTH);
 export const CapacitySchema = z.union([z.literal(2), z.literal(3), z.literal(4)]);
 export const VisibilitySchema = z.enum(["private", "public"]);
 export const TurnLimitHoursSchema = z.union([
@@ -32,6 +41,15 @@ export const JoinRoomRequestSchema = z.object({
 });
 export const JoinRoomResponseSchema = z.object({
   roomId: z.string(),
+});
+
+// Join Room by Name (Phase 3, corrected DR-8): the normal join path for
+// both public and private rooms, resolved by exact name -- no code, no
+// display name (the authenticated player's claimed username is used
+// server-side). Reuses JoinRoomResponseSchema -- identical `{roomId}`
+// shape.
+export const JoinRoomByNameRequestSchema = z.object({
+  name: RoomNameSchema,
 });
 
 export const QuickJoinRequestSchema = z.object({
@@ -110,6 +128,7 @@ export type CreateRoomRequest = z.infer<typeof CreateRoomRequestSchema>;
 export type CreateRoomResponse = z.infer<typeof CreateRoomResponseSchema>;
 export type JoinRoomRequest = z.infer<typeof JoinRoomRequestSchema>;
 export type JoinRoomResponse = z.infer<typeof JoinRoomResponseSchema>;
+export type JoinRoomByNameRequest = z.infer<typeof JoinRoomByNameRequestSchema>;
 export type QuickJoinRequest = z.infer<typeof QuickJoinRequestSchema>;
 export type QuickJoinResponse = z.infer<typeof QuickJoinResponseSchema>;
 export type VsComputerRequest = z.infer<typeof VsComputerRequestSchema>;

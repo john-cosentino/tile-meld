@@ -131,7 +131,7 @@ export function HomePage() {
           <button>Create a room</button>
         </Link>
         <Link to="/rooms/join">
-          <button>Join by code</button>
+          <button>Join Room by Name</button>
         </Link>
         <Link to="/lobby">
           <button>Browse public lobby</button>

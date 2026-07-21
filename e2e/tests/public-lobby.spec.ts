@@ -26,11 +26,12 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   await waitForReady(quickJoinHostPage);
   await waitForReady(quickJoinPage);
 
-  // Room creation (Phase 2) requires a claimed username; only the two
-  // creators below need one -- explicit-join and Quick Join remain
-  // username-agnostic.
+  // Room creation AND joining (Phase 2/3) both require a claimed username --
+  // every identity here needs one.
   const hostUsername = await claimUsername(hostPage, "PubHost");
+  await claimUsername(guestPage, "PubGuest");
   const quickHostUsername = await claimUsername(quickJoinHostPage, "QuickHost");
+  await claimUsername(quickJoinPage, "PubQuick");
 
   // Capacity 2 so the room fills (and self-excludes from future Quick Join
   // matches) as soon as the explicit-join guest below completes it -- keeps
@@ -54,7 +55,6 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   // can never collide with this one).
   await guestPage.getByRole("navigation").getByRole("link", { name: "Public Lobby" }).click();
   await expect(guestPage.getByRole("heading", { name: "Public lobby" })).toBeVisible();
-  await guestPage.getByLabel("Your display name").fill("PubGuest");
   const roomRow = guestPage.locator("li").filter({ hasText: hostRoomName });
   await expect(roomRow).toBeVisible({ timeout: 15000 });
   await expect(roomRow.getByText(/1\/2 players/)).toBeVisible();
@@ -88,7 +88,6 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   );
 
   await quickJoinPage.getByRole("navigation").getByRole("link", { name: "Public Lobby" }).click();
-  await quickJoinPage.getByLabel("Your display name").fill("PubQuick");
   // Landing anywhere in a waiting room (the "Leave room" control) is the
   // definitive signal here -- which specific room is intentionally not
   // asserted, per the comment above.

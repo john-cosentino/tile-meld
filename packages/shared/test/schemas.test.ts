@@ -6,10 +6,13 @@ import {
   DisplayNameSchema,
   GetRoomResponseSchema,
   isReservedUsername,
+  JoinRoomByNameRequestSchema,
   JoinRoomRequestSchema,
   PublicRoomSummarySchema,
   PublicRoomsQuerySchema,
   RedactedGameViewSchema,
+  ROOM_NAME_MAX_LENGTH,
+  RoomNameSchema,
   TileSchema,
   UsernameSchema,
 } from "../src/index.js";
@@ -188,6 +191,37 @@ describe("JoinRoomRequestSchema", () => {
     expect(JoinRoomRequestSchema.safeParse({ code: "ABC12345", displayName: "Bob" }).success).toBe(
       true,
     );
+  });
+});
+
+describe("RoomNameSchema / JoinRoomByNameRequestSchema (Phase 3)", () => {
+  it("trims surrounding whitespace", () => {
+    expect(RoomNameSchema.parse("  John  ")).toBe("John");
+  });
+
+  it("rejects an empty name", () => {
+    expect(RoomNameSchema.safeParse("   ").success).toBe(false);
+  });
+
+  it("accepts a name at the practical max length", () => {
+    expect(RoomNameSchema.safeParse("x".repeat(ROOM_NAME_MAX_LENGTH)).success).toBe(true);
+  });
+
+  it("rejects a name longer than the practical max length", () => {
+    expect(RoomNameSchema.safeParse("x".repeat(ROOM_NAME_MAX_LENGTH + 1)).success).toBe(false);
+  });
+
+  it("JoinRoomByNameRequestSchema requires only `name` -- no code, no displayName field", () => {
+    expect(JoinRoomByNameRequestSchema.safeParse({ name: "John" }).success).toBe(true);
+    expect(JoinRoomByNameRequestSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("strips an unrecognized displayName field rather than accepting it", () => {
+    const result = JoinRoomByNameRequestSchema.safeParse({ name: "John", displayName: "Ignored" });
+    expect(result.success).toBe(true);
+    expect(
+      result.success && (result.data as Record<string, unknown>)["displayName"],
+    ).toBeUndefined();
   });
 });
 

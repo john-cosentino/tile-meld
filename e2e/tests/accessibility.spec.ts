@@ -31,10 +31,12 @@ test("Create Room page has no serious/critical accessibility violations", async 
   await assertNoSeriousViolations(page, "Create Room");
 });
 
-test("Join by Code page has no serious/critical accessibility violations", async ({ page }) => {
+test("Join Room by Name page has no serious/critical accessibility violations", async ({
+  page,
+}) => {
   await waitForReady(page);
-  await page.getByRole("navigation").getByRole("link", { name: "Join by Code" }).click();
-  await assertNoSeriousViolations(page, "Join by Code");
+  await page.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
+  await assertNoSeriousViolations(page, "Join Room by Name");
 });
 
 test("Public Lobby page has no serious/critical accessibility violations", async ({ page }) => {
