@@ -14,6 +14,7 @@ export type SeatWithDisplayName = Seat & {
 };
 
 export type PersistedGameView = {
+  readonly roomId: string;
   readonly table: readonly TableSet[];
   readonly pool: readonly Tile[];
   readonly seats: readonly SeatWithDisplayName[];
@@ -45,6 +46,7 @@ export type RedactedSelfView = RedactedSeatView & {
 };
 
 export type RedactedGameView = {
+  readonly roomId: string;
   readonly table: readonly TableSet[];
   readonly poolCount: number;
   readonly activeSeat: number;
@@ -86,6 +88,7 @@ export function redactGameFor(game: PersistedGameView, viewerSeatIndex: number):
     .map(toPublicView);
 
   return {
+    roomId: game.roomId,
     table: game.table,
     poolCount: game.pool.length,
     activeSeat: game.activeSeat,

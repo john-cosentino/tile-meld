@@ -167,17 +167,29 @@ export async function manualStartRoom(
   });
 }
 
+/** Minimum current room members required for a one-click rematch (Phase 5).
+ * Distinct from MIN_READY_TO_START -- a rematch no longer depends on
+ * readiness at all, it seats every current member, so the floor is simply
+ * "enough current members to play" (a human + the computer member counts
+ * as two for a Play vs Computer room). */
+export const MIN_REMATCH_MEMBERS = 2;
+
 export type ManualRematchOutcome =
   | { readonly kind: "started"; readonly gameId: string }
   | { readonly kind: "not_between_games" }
-  | { readonly kind: "insufficient_ready" };
+  | { readonly kind: "insufficient_members" };
 
 /**
- * The host-controlled rematch action (unchanged business rules from before
- * Phase 4 -- D-REMATCH stays opt-in, ready-based, host-only). Only the
- * locking discipline is new: the room row is now locked before the
- * status/readiness recheck, for the same consistency-of-lock-order reason
- * every other room-mutating path in this module has it.
+ * The host-controlled, one-click rematch action (Phase 5: docs/next-
+ * changes-implementation-plan.md). Unlike manualStartRoom, this no longer
+ * gates on readiness -- it seats every CURRENT room member (listRoomMembers
+ * already excludes anyone who has left, via left_at IS NULL), so neither
+ * the host nor any other member needs to mark Ready first. A player who
+ * resigned from the completed game is still a current room member (game_
+ * seats.status is per-game, not per-membership) and is eligible again here.
+ * Same locking discipline as every other entry point in this module: lock
+ * the room row first, recheck status/eligibility under that lock, deal at
+ * most one game.
  */
 export async function manualRematchRoom(
   db: Kysely<Database>,
@@ -188,12 +200,11 @@ export async function manualRematchRoom(
     if (room.status !== "between_games") return { kind: "not_between_games" };
 
     const members = await listRoomMembers(trx, room.id);
-    const ready = members.filter((m) => m.is_ready);
-    if (ready.length < MIN_READY_TO_START) return { kind: "insufficient_ready" };
+    if (members.length < MIN_REMATCH_MEMBERS) return { kind: "insufficient_members" };
 
     const latestGame = await findLatestGameForRoom(trx, room.id);
     const nextSeq = (latestGame?.seq ?? 0) + 1;
-    const gameId = await dealForRoom(trx, room, ready, nextSeq);
+    const gameId = await dealForRoom(trx, room, members, nextSeq);
     return { kind: "started", gameId };
   });
 }

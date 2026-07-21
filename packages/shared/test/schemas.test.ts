@@ -269,6 +269,7 @@ describe("RedactedGameViewSchema", () => {
   it("accepts a well-formed redacted view and never requires opponent rack tiles", () => {
     const view = {
       gameId: "game-1",
+      roomId: "room-1",
       version: 3,
       table: [[{ kind: "numbered", tileId: "C1-5-a", color: "C1", value: 5 }]],
       poolCount: 42,

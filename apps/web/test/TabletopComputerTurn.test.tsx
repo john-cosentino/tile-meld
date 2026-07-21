@@ -19,6 +19,7 @@ import { TabletopPage } from "../src/pages/TabletopPage.js";
 function view(activeSeat: number): RedactedGameView {
   return {
     gameId: "g1",
+    roomId: "r1",
     version: 3,
     table: [],
     poolCount: 40,

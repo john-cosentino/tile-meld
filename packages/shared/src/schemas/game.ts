@@ -43,6 +43,7 @@ export const RedactedSelfViewSchema = RedactedSeatViewSchema.extend({
 
 export const RedactedGameViewSchema = z.object({
   gameId: z.string(),
+  roomId: z.string(),
   version: z.number().int(),
   table: z.array(TableSetSchema),
   poolCount: z.number().int(),

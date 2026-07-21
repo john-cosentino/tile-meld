@@ -16,6 +16,7 @@ import type { TileFace } from "../tabletop/Tile.js";
 import { Rack } from "../tabletop/Rack.js";
 import { Table } from "../tabletop/Table.js";
 import { DeadlineCountdown } from "../tabletop/DeadlineCountdown.js";
+import { RematchPanel } from "../tabletop/RematchPanel.js";
 import {
   hintForSet,
   runningInitialMeldTotal,
@@ -214,9 +215,9 @@ export function TabletopPage() {
         {view.status === "completed" && (
           <div className="card stack" role="status">
             <h2>Game over</h2>
-            <p>Return to the room to ready up for a rematch.</p>
+            <RematchPanel roomId={view.roomId} gameId={gameId!} />
             <Link to="/">
-              <button className="primary">Back to your rooms</button>
+              <button>Back to your rooms</button>
             </Link>
           </div>
         )}

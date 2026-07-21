@@ -38,6 +38,15 @@ async function newPlayer(
   return { playerId: response.json().playerId, cookie: cookieHeader, username };
 }
 
+async function getRoomJson(app: AppInstance, cookie: string, roomId: string) {
+  const response = await app.inject({
+    method: "GET",
+    url: `/api/rooms/${roomId}`,
+    headers: { cookie },
+  });
+  return response.json();
+}
+
 describe("room lifecycle routes", () => {
   afterAll(async () => {
     await closeTestDb();
@@ -909,15 +918,15 @@ describe("room lifecycle routes", () => {
     });
   });
 
-  describe("POST /api/rooms/:id/rematch", () => {
-    it("starts a new game with an incremented seq, excluding unready members, preserving room_members", async () => {
+  describe("POST /api/rooms/:id/rematch (Phase 5 -- one-click rematch)", () => {
+    it("starts a new game with an incremented seq, seating every current member without requiring readiness", async () => {
       const db = await getTestDb();
       const app = await buildApp({ db, env: TEST_ENV, logger: false });
       const host = await newPlayer(app);
       // Capacity 4 (not 3): only 3 members ever join, so the room stays
-      // below capacity and "open" throughout -- the manual Start/rematch
-      // sequence below controls readiness explicitly (Phase 4 -- filling to
-      // exact capacity would auto-start with every current member instead).
+      // below capacity and "open" throughout -- the manual Start below
+      // controls readiness explicitly (Phase 4 -- filling to exact capacity
+      // would auto-start with every current member instead).
       const created = await app.inject({
         method: "POST",
         url: "/api/rooms",
@@ -955,30 +964,18 @@ describe("room lifecycle routes", () => {
       });
       const { gameId: firstGameId } = firstGame.json();
 
-      // Simulate Phase 5 completing the game (not built yet) by manually
-      // transitioning the room to between_games, as the plan's state
-      // machine expects before a rematch is allowed.
+      // Manually transition the room to between_games, as the plan's state
+      // machine expects before a rematch is allowed (a real game completion
+      // does this via game/turnActions.ts, exercised elsewhere).
       await db
         .updateTable("rooms")
         .set({ status: "between_games" })
         .where("id", "=", roomId)
         .execute();
 
-      // This time, only host + third are ready -- second (unready) must
-      // be excluded, matching D-REMATCH ("no auto-enrollment").
-      await app.inject({
-        method: "POST",
-        url: `/api/rooms/${roomId}/ready`,
-        headers: { cookie: host.cookie },
-        payload: { ready: true },
-      });
-      await app.inject({
-        method: "POST",
-        url: `/api/rooms/${roomId}/ready`,
-        headers: { cookie: third.cookie },
-        payload: { ready: true },
-      });
-
+      // Nobody re-readies -- Phase 5's one-click rematch must seat host,
+      // second, AND third anyway (the third seat never even joined the
+      // first game, since it started below capacity).
       const rematch = await app.inject({
         method: "POST",
         url: `/api/rooms/${roomId}/rematch`,
@@ -1001,10 +998,14 @@ describe("room lifecycle routes", () => {
         .where("game_id", "=", secondGameId)
         .execute();
       const seatPlayerIds = secondGameSeats.map((s) => s.player_id).sort();
-      expect(seatPlayerIds).toEqual([host.playerId, third.playerId].sort());
+      expect(seatPlayerIds).toEqual([host.playerId, second.playerId, third.playerId].sort());
 
-      // room_members persist across the rematch (Second is still a member,
-      // just not seated in this particular game).
+      const room = await getRoomJson(app, host.cookie, roomId);
+      expect(room.status).toBe("in_game");
+      expect(room.latestGameId).toBe(secondGameId);
+      expect(room.members.every((m: { isReady: boolean }) => m.isReady === false)).toBe(true);
+
+      // room_members persist across the rematch.
       const members = await db
         .selectFrom("room_members")
         .selectAll()
@@ -1041,6 +1042,131 @@ describe("room lifecycle routes", () => {
         headers: { cookie: host.cookie },
       });
       expect(response.statusCode).toBe(409); // still "open", not between_games
+
+      await app.close();
+    });
+
+    it("rejects a non-host caller", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const created = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: host.cookie },
+        payload: { displayName: "Host", capacity: 2, visibility: "private", turnLimitHours: 4 },
+      });
+      const { roomId, code } = created.json();
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      }); // auto-starts (capacity 2)
+      await db
+        .updateTable("rooms")
+        .set({ status: "between_games" })
+        .where("id", "=", roomId)
+        .execute();
+
+      const response = await app.inject({
+        method: "POST",
+        url: `/api/rooms/${roomId}/rematch`,
+        headers: { cookie: guest.cookie },
+      });
+      expect(response.statusCode).toBe(403);
+
+      await app.close();
+    });
+
+    it("rejects a rematch with fewer than 2 eligible members remaining", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const created = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: host.cookie },
+        payload: { displayName: "Host", capacity: 3, visibility: "private", turnLimitHours: 4 },
+      });
+      const { roomId, code } = created.json();
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      });
+      await db
+        .updateTable("rooms")
+        .set({ status: "between_games" })
+        .where("id", "=", roomId)
+        .execute();
+      await app.inject({
+        method: "POST",
+        url: `/api/rooms/${roomId}/leave`,
+        headers: { cookie: guest.cookie },
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        url: `/api/rooms/${roomId}/rematch`,
+        headers: { cookie: host.cookie },
+      });
+      expect(response.statusCode).toBe(409);
+
+      await app.close();
+    });
+
+    it("two concurrent rematch requests produce exactly one new game (database as final arbiter)", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const created = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: host.cookie },
+        payload: { displayName: "Host", capacity: 2, visibility: "private", turnLimitHours: 4 },
+      });
+      const { roomId, code } = created.json();
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      }); // auto-starts
+      await db
+        .updateTable("rooms")
+        .set({ status: "between_games" })
+        .where("id", "=", roomId)
+        .execute();
+
+      const [r1, r2] = await Promise.all([
+        app.inject({
+          method: "POST",
+          url: `/api/rooms/${roomId}/rematch`,
+          headers: { cookie: host.cookie },
+        }),
+        app.inject({
+          method: "POST",
+          url: `/api/rooms/${roomId}/rematch`,
+          headers: { cookie: host.cookie },
+        }),
+      ]);
+      const succeeded = [r1, r2].filter((r) => r.statusCode === 200);
+      const failed = [r1, r2].filter((r) => r.statusCode !== 200);
+      expect(succeeded).toHaveLength(1);
+      expect(failed).toHaveLength(1);
+      expect(failed[0]!.statusCode).toBe(409);
+
+      const games = await db
+        .selectFrom("games")
+        .selectAll()
+        .where("room_id", "=", roomId)
+        .execute();
+      expect(games).toHaveLength(2); // the original auto-started game plus exactly one rematch
 
       await app.close();
     });

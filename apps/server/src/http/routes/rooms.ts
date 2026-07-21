@@ -47,6 +47,7 @@ import {
   manualRematchRoom,
   manualStartRoom,
   MIN_READY_TO_START,
+  MIN_REMATCH_MEMBERS,
 } from "../../game/roomStart.js";
 import {
   publicLobbyLimit,
@@ -451,16 +452,23 @@ export function registerRoomRoutes(app: AppInstance): void {
       const host = await requireRoomHost(request, reply, room);
       if (!host) return;
 
-      // Phase 4: same locking discipline as manual Start above, applied to
-      // rematch too -- business rules (status='between_games', ready-based,
-      // host-only, next seq) are unchanged from before this phase.
+      // Phase 5: one-click rematch -- same room-lock discipline as manual
+      // Start, but no readiness gate: manualRematchRoom seats every current
+      // room member. "not_between_games" covers both "never started" and
+      // "a rematch already started" (a second request that arrives after
+      // the first has already flipped the room to in_game observes the
+      // same outcome).
       const outcome = await manualRematchRoom(app.db, roomId);
       switch (outcome.kind) {
         case "not_between_games":
           sendError(reply, "conflict", "room is not between games");
           return;
-        case "insufficient_ready":
-          sendError(reply, "conflict", `at least ${MIN_READY_TO_START} ready members are required`);
+        case "insufficient_members":
+          sendError(
+            reply,
+            "conflict",
+            `at least ${MIN_REMATCH_MEMBERS} eligible members are required for a rematch`,
+          );
           return;
         case "started":
           reply.code(200).send({ gameId: outcome.gameId });

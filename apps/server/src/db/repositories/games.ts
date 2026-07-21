@@ -184,6 +184,7 @@ export async function loadGameState(
 
   return {
     gameId: gameRow.id,
+    roomId: gameRow.room_id,
     table,
     pool,
     seats,
