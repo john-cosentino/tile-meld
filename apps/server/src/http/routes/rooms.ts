@@ -1,4 +1,3 @@
-import { randomInt } from "node:crypto";
 import { z } from "zod";
 import {
   CreateRoomRequestSchema,
@@ -33,20 +32,22 @@ import {
   succeedHostIfNeeded,
   touchRoomActivity,
   updateRoomStatus,
-  type RoomRow,
 } from "../../db/repositories/rooms.js";
 import {
-  addRoomMember,
   findRoomMemberByRoomAndPlayer,
   findRoomMemberById,
   listRoomMembers,
   markRoomMemberLeft,
-  resetReadiness,
   setRoomMemberReady,
 } from "../../db/repositories/roomMembers.js";
 import { findPlayerById } from "../../db/repositories/players.js";
-import { dealNewGame, findLatestGameForRoom } from "../../db/repositories/games.js";
-import { lockRoomForUpdate } from "../../db/transactions.js";
+import { findLatestGameForRoom } from "../../db/repositories/games.js";
+import {
+  joinRoomAndMaybeAutoStart,
+  manualRematchRoom,
+  manualStartRoom,
+  MIN_READY_TO_START,
+} from "../../game/roomStart.js";
 import {
   publicLobbyLimit,
   roomActionLimit,
@@ -56,50 +57,6 @@ import {
 } from "../rateLimits.js";
 
 const ParamsSchema = z.object({ id: z.string() });
-const MIN_READY_TO_START = 2;
-
-function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: unknown }).code === "23505"
-  );
-}
-
-/** Deals a new game from the room's currently-ready members and
- * transitions the room to in_game, resetting readiness for the next
- * round. Preconditions (room status, ready count) must already be
- * checked by the caller. */
-async function dealAndTransitionRoom(
-  app: AppInstance,
-  room: RoomRow,
-  seq: number,
-): Promise<string> {
-  const members = await listRoomMembers(app.db, room.id);
-  const readyMembers = members
-    .filter((m) => m.is_ready)
-    .map((m) => ({
-      roomMemberId: m.id,
-      playerId: m.player_id,
-      displayName: m.display_name,
-      controllerType: m.controller_type,
-    }));
-
-  return app.db.transaction().execute(async (trx) => {
-    const { gameId } = await dealNewGame(
-      trx,
-      room.id,
-      seq,
-      readyMembers,
-      room.turn_limit_hours,
-      randomInt,
-    );
-    await updateRoomStatus(trx, room.id, "in_game");
-    await resetReadiness(trx, room.id);
-    return gameId;
-  });
-}
 
 export function registerRoomRoutes(app: AppInstance): void {
   app.post(
@@ -187,35 +144,32 @@ export function registerRoomRoutes(app: AppInstance): void {
         return;
       }
 
-      // A Play-vs-Computer room is private to its single human. No one else may
-      // join it, even with the code. (It is also already full and excluded
-      // from lobby/quick-join by its private visibility.)
-      if (room.has_computer) {
-        sendError(reply, "conflict", "this room cannot be joined");
-        return;
-      }
-
-      if (room.status !== "open") {
-        sendError(reply, "conflict", "room is not open for joining");
-        return;
-      }
-      const members = await listRoomMembers(app.db, room.id);
-      if (members.length >= room.capacity) {
-        sendError(reply, "conflict", "room is full");
-        return;
-      }
-
-      try {
-        await addRoomMember(app.db, room.id, playerId, displayName);
-      } catch (err) {
-        if (isUniqueViolation(err)) {
+      // Phase 4: the same authoritative, room-locked transaction every join
+      // path uses -- see game/roomStart.ts. Distinct error messages are
+      // preserved here (unlike join-by-name's uniform failure) since a
+      // room code isn't a privacy-sensitive lookup key the way a name is.
+      const outcome = await joinRoomAndMaybeAutoStart(app.db, room.id, playerId, displayName);
+      switch (outcome.kind) {
+        case "computer_room":
+          // A Play-vs-Computer room is private to its single human. No one
+          // else may join it, even with the code. (It is also already full
+          // and excluded from lobby/quick-join by its private visibility.)
+          sendError(reply, "conflict", "this room cannot be joined");
+          return;
+        case "not_open":
+          sendError(reply, "conflict", "room is not open for joining");
+          return;
+        case "full":
+          sendError(reply, "conflict", "room is full");
+          return;
+        case "display_name_taken":
           sendError(reply, "conflict", "that display name is already taken in this room");
           return;
-        }
-        throw err;
+        case "joined":
+          await touchRoomActivity(app.db, room.id);
+          reply.code(200).send({ roomId: room.id });
+          return;
       }
-      await touchRoomActivity(app.db, room.id);
-      reply.code(200).send({ roomId: room.id });
     },
   );
 
@@ -258,36 +212,18 @@ export function registerRoomRoutes(app: AppInstance): void {
         return;
       }
 
-      // A Play-vs-Computer room is private to its single human -- no one
-      // else may join it (mirrors the code-based route above).
-      if (room.has_computer) {
-        unavailable();
+      // Phase 4: the same authoritative, room-locked transaction every join
+      // path uses -- see game/roomStart.ts. Every non-"joined" outcome
+      // (computer_room, not_open, full) collapses to the SAME generic
+      // "unavailable" response here, preserving the uniform-failure privacy
+      // design from Phase 3 -- a guessed private-room name must never be
+      // distinguishable from a nonexistent one by its response.
+      const outcome = await joinRoomAndMaybeAutoStart(app.db, room.id, playerId, joiner.username);
+      if (outcome.kind === "display_name_taken") {
+        sendError(reply, "conflict", "that display name is already taken in this room");
         return;
       }
-
-      // Recheck status + capacity under a room-row lock so two concurrent
-      // joins racing for the last seat can't both succeed (the code-based
-      // route above has no such lock -- this is a new endpoint, not a
-      // change to that one).
-      let outcome: "joined" | "unavailable";
-      try {
-        outcome = await app.db.transaction().execute(async (trx) => {
-          const locked = await lockRoomForUpdate(trx, room.id);
-          if (locked.status !== "open") return "unavailable";
-          const members = await listRoomMembers(trx, locked.id);
-          if (members.length >= locked.capacity) return "unavailable";
-          await addRoomMember(trx, locked.id, playerId, joiner.username!);
-          return "joined";
-        });
-      } catch (err) {
-        if (isUniqueViolation(err)) {
-          sendError(reply, "conflict", "that display name is already taken in this room");
-          return;
-        }
-        throw err;
-      }
-
-      if (outcome === "unavailable") {
+      if (outcome.kind !== "joined") {
         unavailable();
         return;
       }
@@ -388,14 +324,20 @@ export function registerRoomRoutes(app: AppInstance): void {
         return;
       }
 
-      try {
-        await addRoomMember(app.db, room.id, playerId, joiner.username);
-      } catch (err) {
-        if (isUniqueViolation(err)) {
-          sendError(reply, "conflict", "that display name is already taken in this room");
-          return;
-        }
-        throw err;
+      // Phase 4: the same authoritative, room-locked transaction every join
+      // path uses -- see game/roomStart.ts. findQuickJoinableRoom's own
+      // read is unlocked, so a race since that read (the room filled or
+      // closed a moment ago) is possible but rare; any non-"joined" outcome
+      // here reuses the same "no eligible room" message the caller already
+      // gets when nothing was found in the first place.
+      const outcome = await joinRoomAndMaybeAutoStart(app.db, room.id, playerId, joiner.username);
+      if (outcome.kind === "display_name_taken") {
+        sendError(reply, "conflict", "that display name is already taken in this room");
+        return;
+      }
+      if (outcome.kind !== "joined") {
+        sendError(reply, "not_found", "no eligible public room to join");
+        return;
       }
       await touchRoomActivity(app.db, room.id);
       reply.code(200).send({ roomId: room.id });
@@ -473,18 +415,22 @@ export function registerRoomRoutes(app: AppInstance): void {
       const host = await requireRoomHost(request, reply, room);
       if (!host) return;
 
-      if (room.status !== "open") {
-        sendError(reply, "conflict", "room is not open");
-        return;
+      // Phase 4: locks the room row and rechecks status/readiness under
+      // that lock -- host authorization above needs no lock (unchanged),
+      // but the actual deal decision now races safely against a concurrent
+      // capacity auto-start from the join path (see game/roomStart.ts).
+      const outcome = await manualStartRoom(app.db, roomId);
+      switch (outcome.kind) {
+        case "not_open":
+          sendError(reply, "conflict", "room is not open");
+          return;
+        case "insufficient_ready":
+          sendError(reply, "conflict", `at least ${MIN_READY_TO_START} ready members are required`);
+          return;
+        case "started":
+          reply.code(200).send({ gameId: outcome.gameId });
+          return;
       }
-      const readyCount = (await listRoomMembers(app.db, roomId)).filter((m) => m.is_ready).length;
-      if (readyCount < MIN_READY_TO_START) {
-        sendError(reply, "conflict", `at least ${MIN_READY_TO_START} ready members are required`);
-        return;
-      }
-
-      const gameId = await dealAndTransitionRoom(app, room, 1);
-      reply.code(200).send({ gameId });
     },
   );
 
@@ -505,20 +451,21 @@ export function registerRoomRoutes(app: AppInstance): void {
       const host = await requireRoomHost(request, reply, room);
       if (!host) return;
 
-      if (room.status !== "between_games") {
-        sendError(reply, "conflict", "room is not between games");
-        return;
+      // Phase 4: same locking discipline as manual Start above, applied to
+      // rematch too -- business rules (status='between_games', ready-based,
+      // host-only, next seq) are unchanged from before this phase.
+      const outcome = await manualRematchRoom(app.db, roomId);
+      switch (outcome.kind) {
+        case "not_between_games":
+          sendError(reply, "conflict", "room is not between games");
+          return;
+        case "insufficient_ready":
+          sendError(reply, "conflict", `at least ${MIN_READY_TO_START} ready members are required`);
+          return;
+        case "started":
+          reply.code(200).send({ gameId: outcome.gameId });
+          return;
       }
-      const readyCount = (await listRoomMembers(app.db, roomId)).filter((m) => m.is_ready).length;
-      if (readyCount < MIN_READY_TO_START) {
-        sendError(reply, "conflict", `at least ${MIN_READY_TO_START} ready members are required`);
-        return;
-      }
-
-      const latestGame = await findLatestGameForRoom(app.db, roomId);
-      const nextSeq = (latestGame?.seq ?? 0) + 1;
-      const gameId = await dealAndTransitionRoom(app, room, nextSeq);
-      reply.code(200).send({ gameId });
     },
   );
 }

@@ -330,13 +330,17 @@ describe("room lifecycle routes", () => {
       const host = await newPlayer(app, "Host");
       // displayName deliberately differs from the claimed username, to
       // prove it is ignored server-side for the host's display name.
+      // Capacity 3 (not 2): the room must stay "open" after just the host
+      // and one guest join, so the manual ready/start sequence below can
+      // still be exercised below capacity (Phase 4 -- a 2-player room would
+      // auto-start on the second join instead).
       const created = await app.inject({
         method: "POST",
         url: "/api/rooms",
         headers: { cookie: host.cookie },
         payload: {
           displayName: "IgnoredDisplayName",
-          capacity: 2,
+          capacity: 3,
           visibility: "private",
           turnLimitHours: 4,
         },
@@ -910,11 +914,15 @@ describe("room lifecycle routes", () => {
       const db = await getTestDb();
       const app = await buildApp({ db, env: TEST_ENV, logger: false });
       const host = await newPlayer(app);
+      // Capacity 4 (not 3): only 3 members ever join, so the room stays
+      // below capacity and "open" throughout -- the manual Start/rematch
+      // sequence below controls readiness explicitly (Phase 4 -- filling to
+      // exact capacity would auto-start with every current member instead).
       const created = await app.inject({
         method: "POST",
         url: "/api/rooms",
         headers: { cookie: host.cookie },
-        payload: { displayName: "Host", capacity: 3, visibility: "private", turnLimitHours: 4 },
+        payload: { displayName: "Host", capacity: 4, visibility: "private", turnLimitHours: 4 },
       });
       const { roomId, code } = created.json();
       const second = await newPlayer(app);

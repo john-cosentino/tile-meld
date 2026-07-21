@@ -175,25 +175,30 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
 
   // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
   // room's name IS the host's username for a private room, already known.
+  // Capacity 2: this join fills the room and auto-starts it immediately
+  // (Phase 4) -- no manual ready/start round trip is needed, or safe to
+  // attempt (the Waiting Room's controls can already be gone by the time a
+  // click would land, once each page's own 3s poll observes the status
+  // flip). The wait target below tolerates landing on either the
+  // (possibly momentary) Waiting Room or -- if the redirect already
+  // happened -- the Tabletop directly.
   await guestPage.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
   await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
     guestPage,
     guestPage.getByRole("button", { name: "Join room" }),
-    guestPage.getByRole("heading", { name: hostUsername }),
+    guestPage
+      .getByRole("heading", { name: hostUsername })
+      .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
   );
 
-  await hostPage.getByRole("button", { name: "Mark ready" }).click();
-  await guestPage.getByRole("button", { name: "Mark ready" }).click();
-  await hostPage.getByRole("button", { name: /Start game/ }).click();
-
-  // The host reliably lands on the game once Start succeeds; the game URL is
-  // then known. The guest's waiting-room poll normally follows on its own, but
-  // under cumulative rate-limit pressure that poll can lag -- so give it a
-  // brief window, then send the guest straight to the same game URL. This is
-  // test SETUP getting both clients seated, not the behavior under test (the
-  // in-app auto-navigation is exercised directly by turn-timeout/reconnect
-  // specs); it does not change any production polling or rate limit.
+  // Auto-start (Phase 4) already dealt the game -- both pages get carried
+  // there by their own waiting-room poll (or may already be there). The
+  // host reliably reaches /games/ on its own; give the guest a brief
+  // window, then fall back to the known game URL. This is test SETUP
+  // getting both clients seated, not the behavior under test (the in-app
+  // auto-navigation is exercised directly by turn-timeout/reconnect specs);
+  // it does not change any production polling or rate limit.
   await expect(hostPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
   const gameUrl = hostPage.url();
   try {
@@ -261,6 +266,12 @@ export async function startNPlayerGame(
 
   // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
   // room's name IS the host's username for a private room, already known.
+  // The LAST join fills the room to capacity and auto-starts it (Phase 4);
+  // earlier joins leave it open. No manual ready/start round trip is
+  // needed, or safe to attempt once the room has started (see
+  // startTwoPlayerGame's comment on the same race). The wait target below
+  // tolerates landing on either the Waiting Room or -- if already
+  // redirected -- the Tabletop.
   for (const guestPage of guestPages) {
     await guestPage
       .getByRole("navigation")
@@ -270,18 +281,16 @@ export async function startNPlayerGame(
     await clickUntilSettled(
       guestPage,
       guestPage.getByRole("button", { name: "Join room" }),
-      guestPage.getByRole("heading", { name: hostUsername }),
+      guestPage
+        .getByRole("heading", { name: hostUsername })
+        .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
     );
   }
 
-  for (const page of pages) {
-    await page.getByRole("button", { name: "Mark ready" }).click();
-  }
-  await hostPage.getByRole("button", { name: /Start game/ }).click();
-
-  // Same safe setup fallback as startTwoPlayerGame: the host enters the game
-  // reliably; each other seat's waiting-room poll normally follows, but if it
-  // lags under load, send that page straight to the known game URL.
+  // Auto-start (Phase 4) already dealt the game once the room filled. Same
+  // safe setup fallback as startTwoPlayerGame: the host enters the game
+  // reliably; each other seat's waiting-room poll normally follows, but if
+  // it lags under load, send that page straight to the known game URL.
   await expect(hostPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
   const gameUrl = hostPage.url();
   for (const page of guestPages) {

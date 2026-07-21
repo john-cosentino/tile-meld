@@ -45,26 +45,21 @@ async function startTwoPlayerGame(app: AppInstance) {
   });
   const { roomId, code } = created.json();
   const guest = await newPlayer(app);
+  // Capacity 2: this join fills the room and auto-starts it (Phase 4) --
+  // no manual ready/start round trip needed or possible (the room is no
+  // longer "open" by the time it would run).
   await app.inject({
     method: "POST",
     url: "/api/rooms/join",
     headers: { cookie: guest.cookie },
     payload: { code, displayName: "Guest" },
   });
-  for (const p of [host, guest]) {
-    await app.inject({
-      method: "POST",
-      url: `/api/rooms/${roomId}/ready`,
-      headers: { cookie: p.cookie },
-      payload: { ready: true },
-    });
-  }
-  const started = await app.inject({
-    method: "POST",
-    url: `/api/rooms/${roomId}/start`,
+  const roomState = await app.inject({
+    method: "GET",
+    url: `/api/rooms/${roomId}`,
     headers: { cookie: host.cookie },
   });
-  return { gameId: started.json().gameId as string, host, guest };
+  return { gameId: roomState.json().latestGameId as string, host, guest };
 }
 
 describe("GET /api/games/:id", () => {
