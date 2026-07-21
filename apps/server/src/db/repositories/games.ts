@@ -7,7 +7,7 @@ import {
   type TransitionResult,
   type Tile,
 } from "@tile-meld/engine";
-import type { ControllerType, Database, GamesTable } from "../types.js";
+import type { ControllerType, Database, GamesTable, SeatStatus } from "../types.js";
 import type { PersistedGameView, SeatWithDisplayName } from "../redact.js";
 import { resolveTiles, tileIdsOf } from "../catalog.js";
 import { COMPUTER_BOT_KIND } from "../botIdentity.js";
@@ -340,20 +340,23 @@ export async function findLatestGameForRoom(
  * A player's seat in a specific game, if any. Authorization for viewing a
  * game's redacted state is based on this -- game_seats are immutable
  * historical records, so this still resolves after the seat's room_member
- * has left the room or the game has completed.
+ * has left the room or the game has completed. Also returns the seat's
+ * `status` (active/resigned) -- Phase 6's dashboard uses this to classify a
+ * completed game as "Completed" vs "Resigned" for the viewing player,
+ * without adding a second query for callers that already need this lookup.
  */
 export async function findGameSeatForPlayer(
   db: Kysely<Database> | Transaction<Database>,
   gameId: string,
   playerId: string,
-): Promise<{ readonly seatIndex: number } | undefined> {
+): Promise<{ readonly seatIndex: number; readonly status: SeatStatus } | undefined> {
   const row = await db
     .selectFrom("game_seats")
-    .select(["seat_index"])
+    .select(["seat_index", "status"])
     .where("game_id", "=", gameId)
     .where("player_id", "=", playerId)
     .executeTakeFirst();
-  return row ? { seatIndex: row.seat_index } : undefined;
+  return row ? { seatIndex: row.seat_index, status: row.status } : undefined;
 }
 
 /** Maps every seat in a game to its player -- used when a game ends to

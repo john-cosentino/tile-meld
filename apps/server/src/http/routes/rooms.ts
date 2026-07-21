@@ -41,7 +41,7 @@ import {
   setRoomMemberReady,
 } from "../../db/repositories/roomMembers.js";
 import { findPlayerById } from "../../db/repositories/players.js";
-import { findLatestGameForRoom } from "../../db/repositories/games.js";
+import { findGameSeatForPlayer, findLatestGameForRoom } from "../../db/repositories/games.js";
 import {
   joinRoomAndMaybeAutoStart,
   manualRematchRoom,
@@ -256,6 +256,12 @@ export function registerRoomRoutes(app: AppInstance): void {
         room.host_room_member_id ? findRoomMemberById(app.db, room.host_room_member_id) : undefined,
         findLatestGameForRoom(app.db, roomId),
       ]);
+      // Phase 6 (dashboard): the caller's own seat in the latest game
+      // specifically, if any -- resolved only after latestGame is known, and
+      // only ever exposes THIS caller's seat status, never anyone else's.
+      const selfSeat = latestGame
+        ? await findGameSeatForPlayer(app.db, latestGame.id, request.player!.id)
+        : undefined;
 
       reply.code(200).send({
         roomId: room.id,
@@ -273,6 +279,10 @@ export function registerRoomRoutes(app: AppInstance): void {
           isComputer: m.controller_type === "computer",
         })),
         latestGameId: latestGame?.id ?? null,
+        latestGameStatus: latestGame?.status ?? null,
+        selfSeatStatus: selfSeat?.status ?? null,
+        hasComputer: room.has_computer,
+        lastActivityAt: room.last_activity_at.toISOString(),
       });
     },
   );

@@ -248,3 +248,74 @@ button.danger {
   color: inherit;
   text-decoration: underline;
 }
+
+/* Home dashboard (Phase 6). The large page title deliberately sits above
+   the normal heading scale used elsewhere in the app -- this is the one
+   place a bigger-than-body-copy title is wanted (§ "larger, prominent
+   Tile Meld page heading"). */
+.dashboard-title {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.dashboard-grid {
+  display: grid;
+  /* auto-fill + a 1fr max means a card is never wider than its column, so
+     this never causes horizontal overflow on a narrow phone viewport --
+     it simply collapses to a single column instead of shrinking cards
+     below a readable width. */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+/* Every dashboard card is a single link (or, for the rare unavailable
+   case, a plain non-interactive div) -- never an interactive element
+   nested inside another one. Tone communicates status REDUNDANTLY with
+   the visible status-badge text below; it is never the only signal. */
+.dashboard-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.dashboard-card:hover {
+  border-color: var(--color-accent);
+}
+
+.dashboard-card--active {
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-bg));
+  border-color: var(--color-success);
+}
+
+.dashboard-card--grey {
+  background: color-mix(in srgb, var(--color-text-muted) 16%, var(--color-bg));
+  border-color: var(--color-text-muted);
+}
+
+/* Opaque background independent of the card's own tone, so the badge's
+   text keeps the same contrast against --color-bg no matter which tinted
+   card it sits on top of. */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid currentColor;
+  background: var(--color-bg);
+  white-space: nowrap;
+}
+
+.status-badge--neutral {
+  color: var(--color-text-muted);
+}
+
+.status-badge--active {
+  color: var(--color-success);
+}
+
+.status-badge--grey {
+  color: var(--color-text-muted);
+}

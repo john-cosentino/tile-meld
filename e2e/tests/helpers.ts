@@ -62,12 +62,15 @@ async function retryOnRateLimit(
 }
 
 /** Navigates to "/" and waits for the identity bootstrap to complete,
- * tolerating a transient rate limit (see retryOnRateLimit). */
+ * tolerating a transient rate limit (see retryOnRateLimit). Waits on the
+ * dashboard's large page-title heading (Phase 6) -- the one heading that's
+ * always rendered the instant the Home page mounts, before its own
+ * separate room-list fetch resolves. */
 export async function waitForReady(page: Page): Promise<void> {
   await retryOnRateLimit(
     page,
     () => page.goto("/"),
-    page.getByRole("heading", { name: "Your games" }),
+    page.getByRole("heading", { name: "Tile Meld", level: 1 }),
   );
 }
 

@@ -76,7 +76,7 @@ test("recovery: the same identity recovered in a fresh browser context sees the 
   await clickUntilSettled(
     recoveredPage,
     recoveredPage.getByRole("button", { name: "Recover session" }),
-    recoveredPage.getByRole("heading", { name: "Your games" }),
+    recoveredPage.getByRole("heading", { name: "Tile Meld", level: 1 }),
   );
 
   await recoveredPage.goto(gameUrl);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { USERNAME_MAX_LENGTH } from "./identity.js";
+import { GameStatusSchema, SeatStatusSchema } from "./game.js";
 
 export const DisplayNameSchema = z.string().trim().min(1).max(40);
 export const RoomCodeSchema = z.string().trim().min(1).max(16);
@@ -114,6 +115,22 @@ export const GetRoomResponseSchema = z.object({
   hostPlayerId: z.string().nullable(),
   members: z.array(RoomMemberSummarySchema),
   latestGameId: z.string().nullable(),
+  // Phase 6 (dashboard/status cards) additions -- all authoritative
+  // primitives the shared web statusTone classifier needs, so it never has
+  // to infer state client-side. null whenever there's no latest game yet
+  // (a freshly created room) or the caller was never seated in it.
+  latestGameStatus: GameStatusSchema.nullable(),
+  // The calling player's own seat status in the latest game specifically
+  // (not any earlier game) -- null if they were never seated in it. Used to
+  // distinguish "Completed" from "Resigned" without exposing anyone else's
+  // seat status.
+  selfSeatStatus: SeatStatusSchema.nullable(),
+  // True iff this room has a computer member (Play vs Computer) -- lets the
+  // dashboard badge it without a second lookup.
+  hasComputer: z.boolean(),
+  // ISO timestamp of the room's last authoritative activity -- rendered as
+  // a readable relative time on the card.
+  lastActivityAt: z.string(),
 });
 
 export const LeaveResponseSchema = z.object({

@@ -68,7 +68,7 @@ test("play vs computer: one-click rematch from Game Over reseats the human and t
   await waitForReady(page);
   const username = await claimUsername(page, "SoloRematch");
   await page.getByRole("link", { name: "Tile Meld", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Your games" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tile Meld", level: 1 })).toBeVisible();
 
   await clickUntilSettled(
     page,

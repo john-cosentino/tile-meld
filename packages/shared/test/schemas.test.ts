@@ -180,6 +180,10 @@ describe("room response schemas -- friendly name field (Phase 2)", () => {
       hostPlayerId: null,
       members: [],
       latestGameId: null,
+      latestGameStatus: null,
+      selfSeatStatus: null,
+      hasComputer: false,
+      lastActivityAt: "2026-07-20T12:00:00.000Z",
     });
     expect(withNullName.success).toBe(true);
   });

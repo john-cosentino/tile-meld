@@ -375,6 +375,13 @@ describe("room lifecycle routes", () => {
       expect(beforeBody.hostPlayerId).toBe(host.playerId);
       expect(beforeBody.status).toBe("open");
       expect(beforeBody.latestGameId).toBeNull();
+      // Phase 6 (dashboard read model): no latest game yet, so both
+      // game-derived fields are null; hasComputer/lastActivityAt are always
+      // present regardless of game state.
+      expect(beforeBody.latestGameStatus).toBeNull();
+      expect(beforeBody.selfSeatStatus).toBeNull();
+      expect(beforeBody.hasComputer).toBe(false);
+      expect(typeof beforeBody.lastActivityAt).toBe("string");
       // The host's display name comes from the claimed username, not the
       // (backward-compat-only) displayName field submitted at creation.
       expect(beforeBody.members).toEqual(
@@ -407,6 +414,10 @@ describe("room lifecycle routes", () => {
       const afterBody = after.json();
       expect(afterBody.status).toBe("in_game");
       expect(afterBody.latestGameId).toBe(gameId);
+      // Phase 6: once a game is dealt, both fields reflect it -- a freshly
+      // dealt game always starts with every seat active.
+      expect(afterBody.latestGameStatus).toBe("active");
+      expect(afterBody.selfSeatStatus).toBe("active");
 
       await app.close();
     });
@@ -430,6 +441,344 @@ describe("room lifecycle routes", () => {
         headers: { cookie: outsider.cookie },
       });
       expect(response.statusCode).toBe(403);
+
+      await app.close();
+    });
+  });
+
+  describe("GET /api/rooms/:id -- Phase 6 dashboard read-model fields", () => {
+    async function createPrivateRoom(app: AppInstance, cookie: string, capacity: 2 | 3 | 4 = 2) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie },
+        payload: { displayName: "unused", capacity, visibility: "private", turnLimitHours: 4 },
+      });
+      return response.json() as { roomId: string; code: string };
+    }
+
+    it("classifies an open room: no game yet, host and only member", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId } = await createPrivateRoom(app, host.cookie, 3);
+
+      const body = await getRoomJson(app, host.cookie, roomId);
+      expect(body.status).toBe("open");
+      expect(body.latestGameId).toBeNull();
+      expect(body.latestGameStatus).toBeNull();
+      expect(body.selfSeatStatus).toBeNull();
+      expect(body.hasComputer).toBe(false);
+      expect(body.visibility).toBe("private");
+
+      await app.close();
+    });
+
+    it("classifies an active room: capacity-triggered auto-start deals the latest active game", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId, code } = await createPrivateRoom(app, host.cookie, 2);
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      }); // auto-starts at capacity 2
+
+      const hostBody = await getRoomJson(app, host.cookie, roomId);
+      const guestBody = await getRoomJson(app, guest.cookie, roomId);
+      expect(hostBody.status).toBe("in_game");
+      expect(hostBody.latestGameStatus).toBe("active");
+      expect(hostBody.selfSeatStatus).toBe("active");
+      // Each player only ever sees their OWN seat status, never a
+      // roommate's -- both are "active" here, but they're independently
+      // computed per caller (verified more directly by the resign test
+      // below, where the two callers' selfSeatStatus values diverge).
+      expect(guestBody.selfSeatStatus).toBe("active");
+
+      await app.close();
+    });
+
+    it("classifies a completed game the player finished without resigning", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId, code } = await createPrivateRoom(app, host.cookie, 2);
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      });
+      const roomBefore = await getRoomJson(app, host.cookie, roomId);
+      const gameId = roomBefore.latestGameId as string;
+
+      // Directly transition the game to completed (mirrors the established
+      // pattern in roomStart.test.ts/rooms.test.ts of driving room/game
+      // state directly rather than through real gameplay, which this
+      // read-model test has no need to exercise).
+      await db
+        .updateTable("games")
+        .set({ status: "completed", completed_at: new Date(), winner_seat: 0 })
+        .where("id", "=", gameId)
+        .execute();
+      await db
+        .updateTable("rooms")
+        .set({ status: "between_games" })
+        .where("id", "=", roomId)
+        .execute();
+
+      const body = await getRoomJson(app, host.cookie, roomId);
+      expect(body.status).toBe("between_games");
+      expect(body.latestGameStatus).toBe("completed");
+      expect(body.selfSeatStatus).toBe("active"); // finished, never resigned
+
+      await app.close();
+    });
+
+    it("classifies the current player's own resignation from the latest completed game", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId, code } = await createPrivateRoom(app, host.cookie, 2);
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      });
+      const roomBefore = await getRoomJson(app, host.cookie, roomId);
+      const gameId = roomBefore.latestGameId as string;
+
+      await db
+        .updateTable("game_seats")
+        .set({ status: "resigned" })
+        .where("game_id", "=", gameId)
+        .where("player_id", "=", guest.playerId)
+        .execute();
+      await db
+        .updateTable("games")
+        .set({ status: "completed", completed_at: new Date(), winner_seat: 0 })
+        .where("id", "=", gameId)
+        .execute();
+      await db
+        .updateTable("rooms")
+        .set({ status: "between_games" })
+        .where("id", "=", roomId)
+        .execute();
+
+      const guestBody = await getRoomJson(app, guest.cookie, roomId);
+      const hostBody = await getRoomJson(app, host.cookie, roomId);
+      expect(guestBody.selfSeatStatus).toBe("resigned");
+      // The host's own seat was never touched -- resignation is per-seat,
+      // never leaks onto another player's status.
+      expect(hostBody.selfSeatStatus).toBe("active");
+
+      await app.close();
+    });
+
+    it("an active rematch overrides prior resigned/completed state for the same room", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId, code } = await createPrivateRoom(app, host.cookie, 2);
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      });
+      const firstGameId = (await getRoomJson(app, host.cookie, roomId)).latestGameId as string;
+      await db
+        .updateTable("game_seats")
+        .set({ status: "resigned" })
+        .where("game_id", "=", firstGameId)
+        .where("player_id", "=", guest.playerId)
+        .execute();
+      await db
+        .updateTable("games")
+        .set({ status: "completed", completed_at: new Date(), winner_seat: 0 })
+        .where("id", "=", firstGameId)
+        .execute();
+      await db
+        .updateTable("rooms")
+        .set({ status: "between_games" })
+        .where("id", "=", roomId)
+        .execute();
+      expect((await getRoomJson(app, guest.cookie, roomId)).selfSeatStatus).toBe("resigned");
+
+      const rematch = await app.inject({
+        method: "POST",
+        url: `/api/rooms/${roomId}/rematch`,
+        headers: { cookie: host.cookie },
+      });
+      const secondGameId = rematch.json().gameId as string;
+      expect(secondGameId).not.toBe(firstGameId);
+
+      const guestBody = await getRoomJson(app, guest.cookie, roomId);
+      expect(guestBody.status).toBe("in_game");
+      expect(guestBody.latestGameId).toBe(secondGameId);
+      expect(guestBody.latestGameStatus).toBe("active");
+      // The new game seats everyone fresh -- the prior resignation does not
+      // carry over (game_seats is per-game, one-click rematch reseats
+      // every current member -- see docs/phase-05-rematch.md).
+      expect(guestBody.selfSeatStatus).toBe("active");
+
+      await app.close();
+    });
+
+    it("classifies a terminal (abandoned) room", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId } = await createPrivateRoom(app, host.cookie, 2);
+      // Solo host leaving an otherwise-empty room marks it abandoned
+      // (POST /api/rooms/:id/leave -- host succession).
+      // The host must still be able to read it: a room row is never
+      // deleted just because it's abandoned in this phase's read model.
+      await db.updateTable("rooms").set({ status: "abandoned" }).where("id", "=", roomId).execute();
+
+      const body = await getRoomJson(app, host.cookie, roomId);
+      expect(body.status).toBe("abandoned");
+
+      await app.close();
+    });
+
+    it("flags a Play vs Computer room with hasComputer", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const human = await newPlayer(app);
+      const created = await app.inject({
+        method: "POST",
+        url: "/api/rooms/vs-computer",
+        headers: { cookie: human.cookie },
+        payload: { displayName: "unused" },
+      });
+      const { roomId } = created.json();
+
+      const body = await getRoomJson(app, human.cookie, roomId);
+      expect(body.hasComputer).toBe(true);
+      expect(body.visibility).toBe("private");
+
+      await app.close();
+    });
+
+    it("reports visibility correctly for both a public and a private room belonging to the same player", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const publicRoom = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: host.cookie },
+        payload: { displayName: "unused", capacity: 2, visibility: "public", turnLimitHours: 4 },
+      });
+      const privateRoom = await createPrivateRoom(app, host.cookie);
+
+      expect((await getRoomJson(app, host.cookie, publicRoom.json().roomId)).visibility).toBe(
+        "public",
+      );
+      expect((await getRoomJson(app, host.cookie, privateRoom.roomId)).visibility).toBe("private");
+
+      await app.close();
+    });
+
+    it("renders a legacy room with name = null without erroring", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId } = await createPrivateRoom(app, host.cookie);
+      // Simulates a room created before Phase 2's naming column existed --
+      // no production path can produce this today, but the column is
+      // nullable specifically for this legacy case (docs/phase-02-friendly-
+      // room-names.md).
+      await db.updateTable("rooms").set({ name: null }).where("id", "=", roomId).execute();
+
+      const body = await getRoomJson(app, host.cookie, roomId);
+      expect(body.name).toBeNull();
+      expect(body.code).toMatch(/^[A-Z0-9]+$/);
+
+      await app.close();
+    });
+
+    it("selects the highest-seq game as latestGame when a room has multiple game sequences", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId, code } = await createPrivateRoom(app, host.cookie, 2);
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      });
+      const firstGameId = (await getRoomJson(app, host.cookie, roomId)).latestGameId as string;
+      await db
+        .updateTable("games")
+        .set({ status: "completed", completed_at: new Date() })
+        .where("id", "=", firstGameId)
+        .execute();
+      await db
+        .updateTable("rooms")
+        .set({ status: "between_games" })
+        .where("id", "=", roomId)
+        .execute();
+
+      const rematch = await app.inject({
+        method: "POST",
+        url: `/api/rooms/${roomId}/rematch`,
+        headers: { cookie: host.cookie },
+      });
+      const secondGameId = rematch.json().gameId as string;
+
+      const body = await getRoomJson(app, host.cookie, roomId);
+      expect(body.latestGameId).toBe(secondGameId);
+      expect(body.latestGameId).not.toBe(firstGameId);
+
+      await app.close();
+    });
+
+    it("never returns another player's room, and exposes no recovery secrets, session tokens, or rack contents", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app);
+      const { roomId, code } = await createPrivateRoom(app, host.cookie, 2);
+      const guest = await newPlayer(app);
+      await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: guest.cookie },
+        payload: { code, displayName: "Guest" },
+      });
+      const outsider = await newPlayer(app);
+
+      const forbidden = await app.inject({
+        method: "GET",
+        url: `/api/rooms/${roomId}`,
+        headers: { cookie: outsider.cookie },
+      });
+      expect(forbidden.statusCode).toBe(403);
+      expect(forbidden.json()).not.toHaveProperty("members");
+      expect(forbidden.json()).not.toHaveProperty("latestGameId");
+
+      const authorized = await app.inject({
+        method: "GET",
+        url: `/api/rooms/${roomId}`,
+        headers: { cookie: host.cookie },
+      });
+      const serialized = JSON.stringify(authorized.json());
+      expect(serialized).not.toContain("recovery");
+      expect(serialized).not.toContain("recoverySecret");
+      expect(serialized).not.toMatch(/session/i);
+      // No rack/tile data of any kind belongs in a room summary at all.
+      expect(serialized).not.toContain("tileId");
+      expect(serialized).not.toContain("rack");
 
       await app.close();
     });

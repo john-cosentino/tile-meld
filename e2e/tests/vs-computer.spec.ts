@@ -23,7 +23,7 @@ async function startVsComputerGame(page: Page): Promise<void> {
   // full-page identity round trip.
   const username = await claimUsername(page, "Solo");
   await page.getByRole("link", { name: "Tile Meld", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Your games" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tile Meld", level: 1 })).toBeVisible();
 
   await clickUntilSettled(
     page,
