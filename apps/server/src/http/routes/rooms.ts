@@ -42,6 +42,7 @@ import {
   resetReadiness,
   setRoomMemberReady,
 } from "../../db/repositories/roomMembers.js";
+import { findPlayerById } from "../../db/repositories/players.js";
 import { dealNewGame, findLatestGameForRoom } from "../../db/repositories/games.js";
 import {
   publicLobbyLimit,
@@ -106,15 +107,23 @@ export function registerRoomRoutes(app: AppInstance): void {
       config: { rateLimit: roomCreateLimit },
     },
     async (request, reply) => {
-      const { displayName, capacity, visibility, turnLimitHours } = request.body;
+      const creator = await findPlayerById(app.db, request.player!.id);
+      if (!creator?.username) {
+        sendError(reply, "username_required", "claim a username before creating a room");
+        return;
+      }
+      // displayName remains in the wire schema for backward compatibility
+      // but is never trusted as the host's display name -- the claimed
+      // username is authoritative (docs plan Phase 2).
+      const { capacity, visibility, turnLimitHours } = request.body;
       const { room } = await createRoom(app.db, {
         creatorPlayerId: request.player!.id,
-        creatorDisplayName: displayName,
+        creatorUsername: creator.username,
         capacity,
         visibility,
         turnLimitHours,
       });
-      reply.code(200).send({ roomId: room.id, code: room.code });
+      reply.code(200).send({ roomId: room.id, code: room.code, name: room.name });
     },
   );
 
@@ -132,11 +141,16 @@ export function registerRoomRoutes(app: AppInstance): void {
         sendError(reply, "not_found", "Play vs Computer is not available");
         return;
       }
+      const creator = await findPlayerById(app.db, request.player!.id);
+      if (!creator?.username) {
+        sendError(reply, "username_required", "claim a username before creating a room");
+        return;
+      }
       const { room } = await createComputerRoom(app.db, {
         humanPlayerId: request.player!.id,
-        humanDisplayName: request.body.displayName,
+        humanUsername: creator.username,
       });
-      reply.code(200).send({ roomId: room.id, code: room.code });
+      reply.code(200).send({ roomId: room.id, code: room.code, name: room.name });
     },
   );
 
@@ -221,6 +235,7 @@ export function registerRoomRoutes(app: AppInstance): void {
       reply.code(200).send({
         roomId: room.id,
         code: room.code,
+        name: room.name,
         visibility: room.visibility,
         capacity: room.capacity,
         turnLimitHours: room.turn_limit_hours,
@@ -251,6 +266,7 @@ export function registerRoomRoutes(app: AppInstance): void {
         rooms: listings.map(({ room, memberDisplayNames }) => ({
           roomId: room.id,
           code: room.code,
+          name: room.name,
           memberDisplayNames: [...memberDisplayNames],
           memberCount: memberDisplayNames.length,
           capacity: room.capacity,

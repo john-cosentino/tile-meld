@@ -45,6 +45,13 @@ describe("identity/session routes", () => {
 
     const identity = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
     const cookie = extractSessionCookie(identity);
+    // Room creation (Phase 2) requires a claimed username.
+    await app.inject({
+      method: "POST",
+      url: "/api/identity/username",
+      headers: { cookie },
+      payload: { username: "AuthCheck" },
+    });
 
     const response = await app.inject({
       method: "POST",

@@ -54,7 +54,7 @@ export async function dealDeterministicGame(
 
   const { room } = await createRoom(db, {
     creatorPlayerId: players[0]!.playerId,
-    creatorDisplayName: "P0",
+    creatorUsername: "P0",
     capacity: seatCount,
     visibility: "private",
     turnLimitHours,
@@ -110,7 +110,7 @@ export async function dealComputerGame(
 
   const { room } = await createRoom(db, {
     creatorPlayerId: human.playerId,
-    creatorDisplayName: "Human",
+    creatorUsername: "Human",
     capacity: 2,
     visibility: "private",
     turnLimitHours,

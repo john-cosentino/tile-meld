@@ -20,6 +20,10 @@ export const CreateRoomRequestSchema = z.object({
 export const CreateRoomResponseSchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  // Server-generated friendly name (Phase 2); null only for legacy rooms
+  // predating this field, which can't apply to a just-created room, but the
+  // type stays nullable to match every other room response uniformly.
+  name: z.string().nullable(),
 });
 
 export const JoinRoomRequestSchema = z.object({
@@ -46,6 +50,7 @@ export const VsComputerRequestSchema = z.object({
 export const VsComputerResponseSchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  name: z.string().nullable(),
 });
 
 export const PublicRoomsQuerySchema = z.object({
@@ -55,6 +60,7 @@ export const PublicRoomsQuerySchema = z.object({
 export const PublicRoomSummarySchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  name: z.string().nullable(),
   memberDisplayNames: z.array(z.string()),
   memberCount: z.number().int(),
   capacity: z.number().int(),
@@ -82,6 +88,7 @@ export const RoomMemberSummarySchema = z.object({
 export const GetRoomResponseSchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  name: z.string().nullable(),
   visibility: VisibilitySchema,
   capacity: z.number().int(),
   turnLimitHours: z.number().int(),

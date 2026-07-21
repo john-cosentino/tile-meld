@@ -4,6 +4,7 @@ import type { PublicRoomSummary } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { addRecentRoom } from "../state/recentRooms.js";
 import { getDefaultDisplayName, setDefaultDisplayName } from "../state/displayName.js";
+import { formatRoomName } from "../state/roomName.js";
 
 const PAGE_SIZE = 20;
 
@@ -77,7 +78,7 @@ export function PublicLobbyPage() {
         {rooms?.map((room) => (
           <li key={room.roomId} className="card row" style={{ justifyContent: "space-between" }}>
             <div>
-              <strong>Room {room.code}</strong>
+              <strong>{formatRoomName(room)}</strong>
               <div className="muted">
                 {room.memberCount}/{room.capacity} players -- {room.turnLimitHours}h turn limit
               </div>

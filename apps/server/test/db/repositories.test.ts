@@ -53,7 +53,7 @@ describe("repositories -- basic correctness", () => {
     const player = await createPlayer(db, "recovery-secret");
     const { room } = await createRoom(db, {
       creatorPlayerId: player.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -87,7 +87,7 @@ describe("repositories -- basic correctness", () => {
     const player = await createPlayer(db, "recovery-secret");
     const { room } = await createRoom(db, {
       creatorPlayerId: player.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -123,7 +123,7 @@ describe("repositories -- basic correctness", () => {
     const loser = await createPlayer(db, "loser-secret");
     const { room } = await createRoom(db, {
       creatorPlayerId: winner.id,
-      creatorDisplayName: "Winner",
+      creatorUsername: "Winner",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,

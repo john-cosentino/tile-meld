@@ -11,10 +11,31 @@ const TEST_ENV = {
   SESSION_TOKEN_HMAC_SECRET: "test-hmac-secret-at-least-32-characters-long",
 };
 
-async function newPlayer(app: AppInstance): Promise<{ playerId: string; cookie: string }> {
+let usernameCounter = 0;
+function nextTestUsername(): string {
+  usernameCounter += 1;
+  return `tester${usernameCounter}`;
+}
+
+/** Creates a fresh identity and claims a username for it -- room creation
+ * (Phase 2) requires a claimed username, so every test player needs one
+ * regardless of whether the test cares about its exact value. Pass an
+ * explicit `username` only where a test asserts on the resulting display
+ * name; otherwise a unique generated one is used. */
+async function newPlayer(
+  app: AppInstance,
+  username: string = nextTestUsername(),
+): Promise<{ playerId: string; cookie: string; username: string }> {
   const response = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
   const cookie = response.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-  return { playerId: response.json().playerId, cookie: `${SESSION_COOKIE_NAME}=${cookie.value}` };
+  const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+  await app.inject({
+    method: "POST",
+    url: "/api/identity/username",
+    headers: { cookie: cookieHeader },
+    payload: { username },
+  });
+  return { playerId: response.json().playerId, cookie: cookieHeader, username };
 }
 
 describe("room lifecycle routes", () => {
@@ -27,10 +48,10 @@ describe("room lifecycle routes", () => {
   });
 
   describe("POST /api/rooms (create)", () => {
-    it("creates a room and makes the creator its host", async () => {
+    it("creates a room and makes the creator its host, named after the creator's username", async () => {
       const db = await getTestDb();
       const app = await buildApp({ db, env: TEST_ENV, logger: false });
-      const host = await newPlayer(app);
+      const host = await newPlayer(app, "Roomo");
 
       const response = await app.inject({
         method: "POST",
@@ -39,9 +60,11 @@ describe("room lifecycle routes", () => {
         payload: { displayName: "Host", capacity: 3, visibility: "public", turnLimitHours: 12 },
       });
       expect(response.statusCode).toBe(200);
-      const { roomId, code } = response.json();
+      const { roomId, code, name } = response.json();
       expect(typeof roomId).toBe("string");
       expect(typeof code).toBe("string");
+      // Public room -> public_ prefix.
+      expect(name).toBe("public_Roomo");
 
       const room = await db
         .selectFrom("rooms")
@@ -56,6 +79,71 @@ describe("room lifecycle routes", () => {
       expect(members).toHaveLength(1);
       expect(room.host_room_member_id).toBe(members[0]!.id);
       expect(room.status).toBe("open");
+      expect(room.name).toBe("public_Roomo");
+      // The host's display name comes from the username, not the
+      // backward-compat-only displayName field ("Host") submitted above.
+      expect(members[0]!.display_name).toBe("Roomo");
+
+      await app.close();
+    });
+
+    it("names a private room after the bare username (no public_ prefix)", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app, "Priva");
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: host.cookie },
+        payload: { displayName: "X", capacity: 2, visibility: "private", turnLimitHours: 4 },
+      });
+      expect(response.json().name).toBe("Priva");
+
+      await app.close();
+    });
+
+    it("numbers a second and third room from the same creator with the smallest available suffix", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const host = await newPlayer(app, "Numo");
+
+      const names: (string | null)[] = [];
+      for (let i = 0; i < 3; i++) {
+        const response = await app.inject({
+          method: "POST",
+          url: "/api/rooms",
+          headers: { cookie: host.cookie },
+          payload: { displayName: "X", capacity: 2, visibility: "private", turnLimitHours: 4 },
+        });
+        names.push(response.json().name);
+      }
+      expect(names).toEqual(["Numo", "Numo 1", "Numo 2"]);
+
+      await app.close();
+    });
+
+    it("rejects creation when the identity has no claimed username", async () => {
+      const db = await getTestDb();
+      const app = await buildApp({ db, env: TEST_ENV, logger: false });
+      const identity = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
+      const cookie = identity.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
+      const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/rooms",
+        headers: { cookie: cookieHeader },
+        payload: { displayName: "Host", capacity: 2, visibility: "private", turnLimitHours: 4 },
+      });
+      expect(response.statusCode).toBe(409);
+      expect(response.json().error).toBe("username_required");
+
+      // No partial room or membership row was created.
+      const rooms = await db.selectFrom("rooms").selectAll().execute();
+      expect(rooms).toHaveLength(0);
+      const members = await db.selectFrom("room_members").selectAll().execute();
+      expect(members).toHaveLength(0);
 
       await app.close();
     });
@@ -143,8 +231,10 @@ describe("room lifecycle routes", () => {
     it("rejects a duplicate display name within the same room", async () => {
       const db = await getTestDb();
       const app = await buildApp({ db, env: TEST_ENV, logger: false });
-      const host = await newPlayer(app);
-      const { code } = await createRoom(app, host.cookie, { displayName: "SameName" });
+      // The host's display name now comes from the claimed username, not
+      // the (backward-compat-only) displayName field.
+      const host = await newPlayer(app, "SameName");
+      const { code } = await createRoom(app, host.cookie);
       const joiner = await newPlayer(app);
 
       const response = await app.inject({
@@ -163,9 +253,28 @@ describe("room lifecycle routes", () => {
       const app = await buildApp({ db, env: TEST_ENV, logger: false });
       const hostA = await newPlayer(app);
       const hostB = await newPlayer(app);
+      const joinerA = await newPlayer(app);
+      const joinerB = await newPlayer(app);
 
-      const roomA = await createRoom(app, hostA.cookie, { displayName: "Same" });
-      const roomB = await createRoom(app, hostB.cookie, { displayName: "Same" });
+      // Joiner display names remain freely settable and are unique only
+      // per-room -- host names can no longer collide by construction, since
+      // they now come from globally-unique usernames.
+      const roomA = await createRoom(app, hostA.cookie);
+      const roomB = await createRoom(app, hostB.cookie);
+      const joinA = await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: joinerA.cookie },
+        payload: { code: roomA.code, displayName: "Same" },
+      });
+      const joinB = await app.inject({
+        method: "POST",
+        url: "/api/rooms/join",
+        headers: { cookie: joinerB.cookie },
+        payload: { code: roomB.code, displayName: "Same" },
+      });
+      expect(joinA.statusCode).toBe(200);
+      expect(joinB.statusCode).toBe(200);
       expect(roomA.roomId).not.toBe(roomB.roomId);
 
       await app.close();
@@ -218,14 +327,22 @@ describe("room lifecycle routes", () => {
     it("returns room details, member readiness, host, and the latest game id", async () => {
       const db = await getTestDb();
       const app = await buildApp({ db, env: TEST_ENV, logger: false });
-      const host = await newPlayer(app);
+      const host = await newPlayer(app, "Host");
+      // displayName deliberately differs from the claimed username, to
+      // prove it is ignored server-side for the host's display name.
       const created = await app.inject({
         method: "POST",
         url: "/api/rooms",
         headers: { cookie: host.cookie },
-        payload: { displayName: "Host", capacity: 2, visibility: "private", turnLimitHours: 4 },
+        payload: {
+          displayName: "IgnoredDisplayName",
+          capacity: 2,
+          visibility: "private",
+          turnLimitHours: 4,
+        },
       });
-      const { roomId, code } = created.json();
+      const { roomId, code, name } = created.json();
+      expect(name).toBe("Host");
       const guest = await newPlayer(app);
       await app.inject({
         method: "POST",
@@ -241,9 +358,12 @@ describe("room lifecycle routes", () => {
       });
       expect(before.statusCode).toBe(200);
       const beforeBody = before.json();
+      expect(beforeBody.name).toBe("Host");
       expect(beforeBody.hostPlayerId).toBe(host.playerId);
       expect(beforeBody.status).toBe("open");
       expect(beforeBody.latestGameId).toBeNull();
+      // The host's display name comes from the claimed username, not the
+      // (backward-compat-only) displayName field submitted at creation.
       expect(beforeBody.members).toEqual(
         expect.arrayContaining([
           { playerId: host.playerId, displayName: "Host", isReady: false, isComputer: false },
@@ -306,8 +426,8 @@ describe("room lifecycle routes", () => {
     it("lists only open public rooms, with member display names/count/capacity/turn limit, no secrets", async () => {
       const db = await getTestDb();
       const app = await buildApp({ db, env: TEST_ENV, logger: false });
-      const publicHost = await newPlayer(app);
-      const privateHost = await newPlayer(app);
+      const publicHost = await newPlayer(app, "PublicHost");
+      const privateHost = await newPlayer(app, "PrivateHost");
       const viewer = await newPlayer(app);
 
       await app.inject({
@@ -342,6 +462,7 @@ describe("room lifecycle routes", () => {
       const { rooms } = response.json();
       expect(rooms).toHaveLength(1);
       expect(rooms[0]).toMatchObject({
+        name: "public_PublicHost",
         memberDisplayNames: ["PublicHost"],
         memberCount: 1,
         capacity: 4,

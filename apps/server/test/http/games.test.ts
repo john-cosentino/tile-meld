@@ -11,10 +11,28 @@ const TEST_ENV = {
   SESSION_TOKEN_HMAC_SECRET: "test-hmac-secret-at-least-32-characters-long",
 };
 
-async function newPlayer(app: AppInstance): Promise<{ playerId: string; cookie: string }> {
+let usernameCounter = 0;
+function nextTestUsername(): string {
+  usernameCounter += 1;
+  return `tester${usernameCounter}`;
+}
+
+/** Room creation (Phase 2) requires a claimed username, so every test
+ * player claims one automatically. */
+async function newPlayer(
+  app: AppInstance,
+  username: string = nextTestUsername(),
+): Promise<{ playerId: string; cookie: string }> {
   const response = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
   const cookie = response.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-  return { playerId: response.json().playerId, cookie: `${SESSION_COOKIE_NAME}=${cookie.value}` };
+  const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+  await app.inject({
+    method: "POST",
+    url: "/api/identity/username",
+    headers: { cookie: cookieHeader },
+    payload: { username },
+  });
+  return { playerId: response.json().playerId, cookie: cookieHeader };
 }
 
 async function startTwoPlayerGame(app: AppInstance) {

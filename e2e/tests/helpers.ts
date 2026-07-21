@@ -71,6 +71,45 @@ export async function waitForReady(page: Page): Promise<void> {
   );
 }
 
+/** Generates a per-call-unique username from a readable base (Phase 2:
+ * docs/next-changes-implementation-plan.md). The whole matrix runs
+ * serially against one long-lived, never-truncated dev database (see
+ * playwright.config.ts), so a fixed literal like "Host" would collide with
+ * an identical claim from an earlier spec in the same run -- unlike the
+ * unit-test suite, which gets a freshly truncated DB per test. Stays
+ * within UsernameSchema's bounds (3-24 chars, [A-Za-z0-9_-]). */
+function uniqueUsername(base: string): string {
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${base}${suffix}`.slice(0, 24);
+}
+
+/** Claims a username for `page`'s identity via the Recovery page -- room
+ * creation (Phase 2) now requires one. Returns the actual claimed username
+ * (suffixed for uniqueness -- see uniqueUsername) so callers can assert
+ * against the friendly room name it produces. Tolerates a transient rate
+ * limit like every other mutating action in this file. */
+export async function claimUsername(page: Page, base: string): Promise<string> {
+  const username = uniqueUsername(base);
+  await page.getByRole("navigation").getByRole("link", { name: "Recovery" }).click();
+  await page.getByLabel("Username").fill(username);
+  await clickUntilSettled(
+    page,
+    page.getByRole("button", { name: "Claim username" }),
+    page.getByText(/your username is/i),
+  );
+  return username;
+}
+
+/** Reads a room's invite code from WaitingRoomPage's dedicated "Room
+ * code:" line. The heading now shows the room's friendly name (Phase 2),
+ * which may differ from the code, so the code can no longer be parsed out
+ * of the heading the way it could before. */
+export async function readRoomCode(page: Page): Promise<string> {
+  const codeLine = page.getByText(/^Room code: /);
+  await codeLine.waitFor();
+  return (await codeLine.textContent())!.replace("Room code:", "").trim();
+}
+
 /** Reloads `page` and waits for `target`, tolerating a transient rate
  * limit (see retryOnRateLimit) -- e.g. a mid-game reload re-runs the
  * identity bootstrap (session recovery) against the same tight token
@@ -114,17 +153,21 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   await waitForReady(hostPage);
   await waitForReady(guestPage);
 
+  // Room creation now requires a claimed username (Phase 2), and the
+  // resulting room is named after it.
+  const hostUsername = await claimUsername(hostPage, "Host");
+  await claimUsername(guestPage, "Guest");
+
   await hostPage.getByRole("link", { name: "Create Room" }).click();
-  await hostPage.getByLabel("Your display name").fill("Host");
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
-  const hostHeading = hostPage.getByRole("heading", { name: /^Room / });
+  const hostHeading = hostPage.getByRole("heading", { name: hostUsername });
   await clickUntilSettled(
     hostPage,
     hostPage.getByRole("button", { name: "Create room" }),
     hostHeading,
   );
-  const code = (await hostHeading.textContent())!.replace("Room ", "").trim();
+  const code = await readRoomCode(hostPage);
   const roomId = /\/rooms\/([^/?#]+)/.exec(hostPage.url())?.[1];
   if (!roomId) throw new Error("startTwoPlayerGame: could not parse roomId from URL after create");
 
@@ -134,7 +177,7 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   await clickUntilSettled(
     guestPage,
     guestPage.getByRole("button", { name: "Join room" }),
-    guestPage.getByRole("heading", { name: `Room ${code}` }),
+    guestPage.getByRole("heading", { name: hostUsername }),
   );
 
   await hostPage.getByRole("button", { name: "Mark ready" }).click();
@@ -193,17 +236,23 @@ export async function startNPlayerGame(
   const hostPage = pages[0]!;
   const guestPages = pages.slice(1);
 
+  // Room creation now requires a claimed username (Phase 2), and the
+  // resulting room is named after it.
+  const hostUsername = await claimUsername(hostPage, "P1");
+  for (const [index, guestPage] of guestPages.entries()) {
+    await claimUsername(guestPage, `P${index + 2}`);
+  }
+
   await hostPage.getByRole("link", { name: "Create Room" }).click();
-  await hostPage.getByLabel("Your display name").fill("P1");
   await hostPage.getByRole("radio", { name: `${capacity} players` }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
-  const hostHeading = hostPage.getByRole("heading", { name: /^Room / });
+  const hostHeading = hostPage.getByRole("heading", { name: hostUsername });
   await clickUntilSettled(
     hostPage,
     hostPage.getByRole("button", { name: "Create room" }),
     hostHeading,
   );
-  const code = (await hostHeading.textContent())!.replace("Room ", "").trim();
+  const code = await readRoomCode(hostPage);
 
   for (const [index, guestPage] of guestPages.entries()) {
     await guestPage.getByRole("navigation").getByRole("link", { name: "Join by Code" }).click();
@@ -212,7 +261,7 @@ export async function startNPlayerGame(
     await clickUntilSettled(
       guestPage,
       guestPage.getByRole("button", { name: "Join room" }),
-      guestPage.getByRole("heading", { name: `Room ${code}` }),
+      guestPage.getByRole("heading", { name: hostUsername }),
     );
   }
 

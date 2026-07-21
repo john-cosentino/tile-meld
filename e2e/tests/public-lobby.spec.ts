@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForReady, clickUntilSettled } from "./helpers.js";
+import { waitForReady, clickUntilSettled, claimUsername, readRoomCode } from "./helpers.js";
 
 // Distinct from every other room-entry path already covered elsewhere
 // (private room by code, in two-player-smoke.spec.ts /multi-player.spec.ts):
@@ -26,35 +26,47 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   await waitForReady(quickJoinHostPage);
   await waitForReady(quickJoinPage);
 
+  // Room creation (Phase 2) requires a claimed username; only the two
+  // creators below need one -- explicit-join and Quick Join remain
+  // username-agnostic.
+  const hostUsername = await claimUsername(hostPage, "PubHost");
+  const quickHostUsername = await claimUsername(quickJoinHostPage, "QuickHost");
+
   // Capacity 2 so the room fills (and self-excludes from future Quick Join
   // matches) as soon as the explicit-join guest below completes it -- keeps
   // repeat local runs from accumulating permanently-open public rooms.
   await hostPage.getByRole("link", { name: "Create Room" }).click();
-  await hostPage.getByLabel("Your display name").fill("PubHost");
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Public (listed in the lobby)" }).check();
-  const hostHeading = hostPage.getByRole("heading", { name: /^Room / });
+  const hostRoomName = `public_${hostUsername}`;
+  const hostHeading = hostPage.getByRole("heading", { name: hostRoomName });
   await clickUntilSettled(
     hostPage,
     hostPage.getByRole("button", { name: "Create room" }),
     hostHeading,
   );
-  const code = (await hostHeading.textContent())!.replace("Room ", "").trim();
+  const code = await readRoomCode(hostPage);
 
   // The guest browses the public lobby and joins this room explicitly,
-  // scoped by room code -- robust even if older public rooms from previous
-  // local runs are still listed alongside it.
+  // scoped by the room's friendly name -- robust even if older public
+  // rooms from previous local runs are still listed alongside it (their
+  // names are derived from a different, globally-unique username, so they
+  // can never collide with this one).
   await guestPage.getByRole("navigation").getByRole("link", { name: "Public Lobby" }).click();
   await expect(guestPage.getByRole("heading", { name: "Public lobby" })).toBeVisible();
   await guestPage.getByLabel("Your display name").fill("PubGuest");
-  const roomRow = guestPage.locator("li").filter({ hasText: `Room ${code}` });
+  const roomRow = guestPage.locator("li").filter({ hasText: hostRoomName });
   await expect(roomRow).toBeVisible({ timeout: 15000 });
   await expect(roomRow.getByText(/1\/2 players/)).toBeVisible();
   await clickUntilSettled(
     guestPage,
     roomRow.getByRole("button", { name: "Join" }),
-    guestPage.getByRole("heading", { name: `Room ${code}` }),
+    guestPage.getByRole("heading", { name: hostRoomName }),
   );
+  // The code read from the waiting room matches what was allocated at
+  // creation -- confirms the friendly name and the opaque code still refer
+  // to the same room.
+  expect(await readRoomCode(guestPage)).toBe(code);
 
   // The room above is now full (2/2) and no longer Quick-Join-eligible, so
   // a second public room is created and deliberately left short a player --
@@ -67,21 +79,22 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   // matters here is that the endpoint places the player into *some* open
   // public room's waiting view, end to end.
   await quickJoinHostPage.getByRole("link", { name: "Create Room" }).click();
-  await quickJoinHostPage.getByLabel("Your display name").fill("QuickHost");
   await quickJoinHostPage.getByRole("radio", { name: "2 players" }).check();
   await quickJoinHostPage.getByRole("radio", { name: "Public (listed in the lobby)" }).check();
   await clickUntilSettled(
     quickJoinHostPage,
     quickJoinHostPage.getByRole("button", { name: "Create room" }),
-    quickJoinHostPage.getByRole("heading", { name: /^Room / }),
+    quickJoinHostPage.getByRole("heading", { name: `public_${quickHostUsername}` }),
   );
 
   await quickJoinPage.getByRole("navigation").getByRole("link", { name: "Public Lobby" }).click();
   await quickJoinPage.getByLabel("Your display name").fill("PubQuick");
+  // Landing anywhere in a waiting room (the "Leave room" control) is the
+  // definitive signal here -- which specific room is intentionally not
+  // asserted, per the comment above.
   await clickUntilSettled(
     quickJoinPage,
     quickJoinPage.getByRole("button", { name: "Quick Join" }),
-    quickJoinPage.getByRole("heading", { name: /^Room / }),
+    quickJoinPage.getByRole("button", { name: "Leave room" }),
   );
-  await expect(quickJoinPage.getByRole("button", { name: "Leave room" })).toBeVisible();
 });

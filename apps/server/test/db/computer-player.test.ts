@@ -73,7 +73,7 @@ describe("computer-opponent domain model", () => {
     await ensureComputerPlayer(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: human.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -95,7 +95,7 @@ describe("computer-opponent domain model", () => {
     const human = await createPlayer(db, "human-secret");
     const { room } = await createRoom(db, {
       creatorPlayerId: human.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -121,7 +121,7 @@ describe("computer-opponent domain model", () => {
     await ensureComputerPlayer(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: host.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -195,7 +195,7 @@ describe("computer-opponent domain model", () => {
     const host = await createPlayer(db, "host-secret");
     const { room } = await createRoom(db, {
       creatorPlayerId: host.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -212,7 +212,7 @@ describe("computer-opponent domain model", () => {
 
     const { room } = await createRoom(db, {
       creatorPlayerId: host.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -255,7 +255,7 @@ describe("computer-opponent domain model", () => {
 
     const { room } = await createRoom(db, {
       creatorPlayerId: host.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,
@@ -298,7 +298,7 @@ describe("computer-opponent domain model", () => {
 
     const { room } = await createRoom(db, {
       creatorPlayerId: host.id,
-      creatorDisplayName: "Host",
+      creatorUsername: "Host",
       capacity: 2,
       visibility: "private",
       turnLimitHours: 4,

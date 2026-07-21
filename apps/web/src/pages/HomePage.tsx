@@ -3,11 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { PRODUCT_NAME, type GetRoomResponse } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { addRecentRoom, listRecentRoomIds, removeRecentRoom } from "../state/recentRooms.js";
-import { getDefaultDisplayName } from "../state/displayName.js";
+import { formatRoomName } from "../state/roomName.js";
+import { useAuth } from "../auth/AuthProvider.js";
 
 type RoomSummary = {
   readonly roomId: string;
   readonly code: string;
+  readonly name: string | null;
   readonly status: GetRoomResponse["status"];
   readonly latestGameId: string | null;
   readonly memberCount: number;
@@ -16,15 +18,18 @@ type RoomSummary = {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { state: authState } = useAuth();
+  const username = authState.status === "ready" ? authState.username : null;
   const [rooms, setRooms] = useState<RoomSummary[] | undefined>(undefined);
   const [startingBot, setStartingBot] = useState(false);
   const [botError, setBotError] = useState<string | undefined>(undefined);
 
   async function playVsComputer(): Promise<void> {
+    if (!username) return;
     setBotError(undefined);
     setStartingBot(true);
     try {
-      const { roomId } = await api.createVsComputer(getDefaultDisplayName() || "You");
+      const { roomId } = await api.createVsComputer(username);
       addRecentRoom(roomId);
       navigate(`/rooms/${roomId}`);
     } catch (err) {
@@ -46,6 +51,7 @@ export function HomePage() {
             return {
               roomId: room.roomId,
               code: room.code,
+              name: room.name,
               status: room.status,
               latestGameId: room.latestGameId,
               memberCount: room.members.length,
@@ -87,7 +93,7 @@ export function HomePage() {
         {rooms?.map((room) => (
           <li key={room.roomId} className="card row" style={{ justifyContent: "space-between" }}>
             <div>
-              <strong>Room {room.code}</strong>
+              <strong>{formatRoomName(room)}</strong>
               <div className="muted">
                 {room.memberCount}/{room.capacity} players -- {statusLabel(room.status)}
               </div>
@@ -104,8 +110,21 @@ export function HomePage() {
         ))}
       </ul>
 
+      {!username && (
+        <div className="card stack" role="status">
+          <p>
+            You need a username before creating games. <Link to="/recovery">Claim a username</Link>{" "}
+            to get started.
+          </p>
+        </div>
+      )}
+
       <div className="row">
-        <button className="primary" disabled={startingBot} onClick={() => void playVsComputer()}>
+        <button
+          className="primary"
+          disabled={startingBot || !username}
+          onClick={() => void playVsComputer()}
+        >
           {startingBot ? "Starting…" : "Play vs Computer (beta)"}
         </button>
         <Link to="/rooms/new">

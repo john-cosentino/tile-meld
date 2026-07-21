@@ -12,10 +12,28 @@ const TEST_ENV = {
   SESSION_TOKEN_HMAC_SECRET: "test-hmac-secret-at-least-32-characters-long",
 };
 
-async function newPlayer(app: AppInstance): Promise<{ playerId: string; cookie: string }> {
+let usernameCounter = 0;
+function nextTestUsername(): string {
+  usernameCounter += 1;
+  return `tester${usernameCounter}`;
+}
+
+/** Room creation (including Play vs Computer, Phase 2) requires a claimed
+ * username, so every test player claims one automatically. */
+async function newPlayer(
+  app: AppInstance,
+  username: string = nextTestUsername(),
+): Promise<{ playerId: string; cookie: string; username: string }> {
   const response = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
   const cookie = response.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-  return { playerId: response.json().playerId, cookie: `${SESSION_COOKIE_NAME}=${cookie.value}` };
+  const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+  await app.inject({
+    method: "POST",
+    url: "/api/identity/username",
+    headers: { cookie: cookieHeader },
+    payload: { username },
+  });
+  return { playerId: response.json().playerId, cookie: cookieHeader, username };
 }
 
 async function createVsComputer(app: AppInstance, cookie: string, displayName = "Solo") {
@@ -39,13 +57,18 @@ describe("Play vs Computer -- room creation and lifecycle", () => {
   it("creates a private 2-seat room with the human host and a ready computer member", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV, logger: false });
-    const human = await newPlayer(app);
+    const human = await newPlayer(app, "SoloPlayer");
 
+    // "Solo" (the legacy backward-compat displayName) is deliberately NOT
+    // the claimed username, to prove it is ignored server-side.
     const response = await createVsComputer(app, human.cookie, "Solo");
     expect(response.statusCode).toBe(200);
-    const { roomId, code } = response.json();
+    const { roomId, code, name } = response.json();
     expect(typeof roomId).toBe("string");
     expect(typeof code).toBe("string");
+    // Vs-computer rooms are always private, so naming follows the private
+    // (bare-username) convention, not the public_ prefix.
+    expect(name).toBe("SoloPlayer");
 
     const room = await db
       .selectFrom("rooms")
@@ -55,6 +78,7 @@ describe("Play vs Computer -- room creation and lifecycle", () => {
     expect(room.visibility).toBe("private");
     expect(room.capacity).toBe(2);
     expect(room.has_computer).toBe(true);
+    expect(room.name).toBe("SoloPlayer");
 
     const members = await db
       .selectFrom("room_members")
@@ -66,6 +90,9 @@ describe("Play vs Computer -- room creation and lifecycle", () => {
     const bot = members.find((m) => m.controller_type === "computer");
     expect(host!.player_id).toBe(human.playerId);
     expect(host!.is_ready).toBe(false);
+    // The host's display name is the claimed username, not the
+    // backward-compat-only displayName field submitted at creation.
+    expect(host!.display_name).toBe("SoloPlayer");
     expect(bot!.player_id).toBe(COMPUTER_PLAYER_ID);
     expect(bot!.is_ready).toBe(true); // intrinsically ready
     expect(room.host_room_member_id).toBe(host!.id);
@@ -150,6 +177,23 @@ describe("Play vs Computer -- room creation and lifecycle", () => {
       payload: { displayName: "Solo" },
     });
     expect(response.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it("rejects creation when the identity has no claimed username, without creating a room", async () => {
+    const db = await getTestDb();
+    const app = await buildApp({ db, env: TEST_ENV, logger: false });
+    const identity = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
+    const cookie = identity.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
+    const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+
+    const response = await createVsComputer(app, cookieHeader);
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toBe("username_required");
+
+    const rooms = await db.selectFrom("rooms").selectAll().execute();
+    expect(rooms).toHaveLength(0);
+
     await app.close();
   });
 

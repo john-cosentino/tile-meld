@@ -82,6 +82,12 @@ export interface RoomsTable {
   // Denormalized marker (migration 0018): true iff this room has a computer
   // member. Excludes bot rooms from public lobby / quick-join / join.
   has_computer: Generated<boolean>;
+  // Server-generated, immutable, human-readable room name derived from the
+  // creator's claimed username (migration 0020). NULL for legacy rooms
+  // predating this column -- callers must fall back to `Room {code}`.
+  // Case-insensitively unique among non-terminal rooms (see the migration's
+  // partial index); never free user input.
+  name: string | null;
 }
 
 export interface RoomMembersTable {

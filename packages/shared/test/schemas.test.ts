@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   canonicalizeUsername,
   CreateRoomRequestSchema,
+  CreateRoomResponseSchema,
   DisplayNameSchema,
+  GetRoomResponseSchema,
   isReservedUsername,
   JoinRoomRequestSchema,
+  PublicRoomSummarySchema,
   PublicRoomsQuerySchema,
   RedactedGameViewSchema,
   TileSchema,
@@ -123,6 +126,59 @@ describe("CreateRoomRequestSchema", () => {
       turnLimitHours: 6,
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("room response schemas -- friendly name field (Phase 2)", () => {
+  it("CreateRoomResponseSchema accepts a server-generated name", () => {
+    const result = CreateRoomResponseSchema.safeParse({
+      roomId: "r1",
+      code: "ABCD1234",
+      name: "John",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("PublicRoomSummarySchema accepts a null name for a legacy room", () => {
+    const result = PublicRoomSummarySchema.safeParse({
+      roomId: "r1",
+      code: "ABCD1234",
+      name: null,
+      memberDisplayNames: ["Alice"],
+      memberCount: 1,
+      capacity: 4,
+      turnLimitHours: 8,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("GetRoomResponseSchema requires the name field to be present (nullable, not optional)", () => {
+    const withoutName = GetRoomResponseSchema.safeParse({
+      roomId: "r1",
+      code: "ABCD1234",
+      visibility: "private",
+      capacity: 2,
+      turnLimitHours: 4,
+      status: "open",
+      hostPlayerId: null,
+      members: [],
+      latestGameId: null,
+    });
+    expect(withoutName.success).toBe(false);
+
+    const withNullName = GetRoomResponseSchema.safeParse({
+      roomId: "r1",
+      code: "ABCD1234",
+      name: null,
+      visibility: "private",
+      capacity: 2,
+      turnLimitHours: 4,
+      status: "open",
+      hostPlayerId: null,
+      members: [],
+      latestGameId: null,
+    });
+    expect(withNullName.success).toBe(true);
   });
 });
 

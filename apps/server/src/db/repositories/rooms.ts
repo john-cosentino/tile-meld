@@ -1,4 +1,4 @@
-import type { Kysely, Selectable, Transaction } from "kysely";
+import { sql, type Kysely, type Selectable, type Transaction } from "kysely";
 import type { Database, RoomsTable } from "../types.js";
 import { generateRoomCode } from "../../security/hashing.js";
 import { COMPUTER_DISPLAY_NAME, COMPUTER_PLAYER_ID } from "../botIdentity.js";
@@ -11,9 +11,91 @@ export type RoomRow = Selectable<RoomsTable>;
  * only the human's own generous async deadline. */
 const COMPUTER_ROOM_TURN_LIMIT_HOURS = 24;
 
+// Room-name allocation (Phase 2: docs/next-changes-implementation-plan.md,
+// DR-6/DR-7). A room's `name` is entirely server-generated from the
+// creator's globally unique username -- never free user input -- so the
+// candidate strings below are always of the exact form `base` or
+// `base N`, and matching against them is never a free-text search.
+
+/** Name of the partial unique index (migration 0020) that is the actual
+ * concurrency arbiter for room-name uniqueness. Used to distinguish a
+ * name-allocation race (retry with the next suffix) from any other unique
+ * violation (e.g. an astronomically unlikely room-code collision, which
+ * must NOT be silently retried as if it were a name conflict). */
+const ROOM_NAME_UNIQUE_INDEX = "rooms_name_lower_uk";
+
+/** How many numbered candidates (`base`, `base 1`, `base 2`, ...) the
+ * fast-path SELECT hint checks in one query. Generous for any realistic
+ * number of simultaneously active rooms per creator; the actual bound on
+ * correctness is the unique index + the insert-retry loop below, not this
+ * window. */
+const ROOM_NAME_CANDIDATE_WINDOW = 50;
+
+/** How many times a whole create-room transaction is retried after losing
+ * a name-allocation race to a concurrent create. Each attempt is a fresh,
+ * fully atomic transaction (Kysely rolls back automatically on throw), so a
+ * retry never leaves a partial room behind. */
+const MAX_NAME_INSERT_ATTEMPTS = 5;
+
+function isRoomNameUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === "23505" &&
+    "constraint" in err &&
+    (err as { constraint?: unknown }).constraint === ROOM_NAME_UNIQUE_INDEX
+  );
+}
+
+function roomNameBase(username: string, visibility: "private" | "public"): string {
+  return visibility === "public" ? `public_${username}` : username;
+}
+
+/**
+ * Picks the smallest available numbered variant of `base` (`base`, then
+ * `base 1`, `base 2`, ...) among rooms currently in the creator's relevance
+ * window (open/in_game/between_games -- see migration 0020's partial
+ * index). This SELECT is only a fast-path hint to minimize retries in the
+ * common case; the partial unique index is the actual concurrency arbiter
+ * -- callers must still handle isRoomNameUniqueViolation() from the
+ * subsequent INSERT.
+ */
+async function nextCandidateRoomName(
+  db: Kysely<Database> | Transaction<Database>,
+  base: string,
+): Promise<string> {
+  const candidates = [
+    base,
+    ...Array.from({ length: ROOM_NAME_CANDIDATE_WINDOW }, (_, i) => `${base} ${i + 1}`),
+  ];
+  const candidatesLower = candidates.map((c) => c.toLowerCase());
+
+  const taken = await db
+    .selectFrom("rooms")
+    .select("name")
+    .where("status", "in", ["open", "in_game", "between_games"])
+    .where(sql<boolean>`lower(name) in (${sql.join(candidatesLower)})`)
+    .execute();
+  const takenLower = new Set(taken.map((r) => (r.name ?? "").toLowerCase()));
+
+  const available = candidates.find((c) => !takenLower.has(c.toLowerCase()));
+  if (!available) {
+    throw new Error(
+      `could not find an available room name for base "${base}" within the search window`,
+    );
+  }
+  return available;
+}
+
 export type CreateRoomParams = {
   readonly creatorPlayerId: string;
-  readonly creatorDisplayName: string;
+  /** The creator's already-claimed, globally unique username -- the
+   * caller (the HTTP route) is responsible for verifying it is non-null
+   * before calling this function. Used both to derive the room's `name`
+   * and, unconditionally, as the host's `room_members.display_name` (never
+   * a caller-supplied display name -- docs plan Phase 2). */
+  readonly creatorUsername: string;
   readonly capacity: 2 | 3 | 4;
   readonly visibility: "private" | "public";
   readonly turnLimitHours: 4 | 8 | 12 | 24;
@@ -25,42 +107,64 @@ export type CreateRoomParams = {
  * the room is inserted first with a null host, then the host member, then
  * the room is updated to point at it -- all within one transaction so no
  * caller ever observes a room with no host.
+ *
+ * The room's `name` is allocated from the creator's username (see
+ * nextCandidateRoomName) and raced against concurrent creators of the same
+ * name via retry-on-23505: on a genuine name collision the whole attempt
+ * (a single transaction) is discarded and retried from scratch with
+ * up-to-date state, up to MAX_NAME_INSERT_ATTEMPTS times.
  */
 export async function createRoom(
   db: Kysely<Database>,
   params: CreateRoomParams,
 ): Promise<{ room: RoomRow; hostRoomMemberId: string }> {
-  return db.transaction().execute(async (trx) => {
-    const room = await trx
-      .insertInto("rooms")
-      .values({
-        code: generateRoomCode(),
-        visibility: params.visibility,
-        capacity: params.capacity,
-        turn_limit_hours: params.turnLimitHours,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+  const base = roomNameBase(params.creatorUsername, params.visibility);
 
-    const hostMember = await trx
-      .insertInto("room_members")
-      .values({
-        room_id: room.id,
-        player_id: params.creatorPlayerId,
-        display_name: params.creatorDisplayName,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+  for (let attempt = 1; attempt <= MAX_NAME_INSERT_ATTEMPTS; attempt++) {
+    try {
+      return await db.transaction().execute(async (trx) => {
+        const name = await nextCandidateRoomName(trx, base);
 
-    const updatedRoom = await trx
-      .updateTable("rooms")
-      .set({ host_room_member_id: hostMember.id })
-      .where("id", "=", room.id)
-      .returningAll()
-      .executeTakeFirstOrThrow();
+        const room = await trx
+          .insertInto("rooms")
+          .values({
+            code: generateRoomCode(),
+            name,
+            visibility: params.visibility,
+            capacity: params.capacity,
+            turn_limit_hours: params.turnLimitHours,
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow();
 
-    return { room: updatedRoom, hostRoomMemberId: hostMember.id };
-  });
+        const hostMember = await trx
+          .insertInto("room_members")
+          .values({
+            room_id: room.id,
+            player_id: params.creatorPlayerId,
+            display_name: params.creatorUsername,
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow();
+
+        const updatedRoom = await trx
+          .updateTable("rooms")
+          .set({ host_room_member_id: hostMember.id })
+          .where("id", "=", room.id)
+          .returningAll()
+          .executeTakeFirstOrThrow();
+
+        return { room: updatedRoom, hostRoomMemberId: hostMember.id };
+      });
+    } catch (err) {
+      if (isRoomNameUniqueViolation(err) && attempt < MAX_NAME_INSERT_ATTEMPTS) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  /* istanbul ignore next -- unreachable: the loop above always returns or throws */
+  throw new Error("failed to allocate a room name after retries");
 }
 
 /**
@@ -70,48 +174,67 @@ export async function createRoom(
  * bot member is intrinsically ready (addRoomMember derives that from
  * players.kind); the human readies + starts through the normal room flow.
  * `has_computer` is set so the room is excluded from public-join paths.
+ *
+ * Room naming/retry follows the same allocation strategy as createRoom
+ * (always private, so the base name is the human's bare username).
  */
 export async function createComputerRoom(
   db: Kysely<Database>,
-  params: { readonly humanPlayerId: string; readonly humanDisplayName: string },
+  params: { readonly humanPlayerId: string; readonly humanUsername: string },
 ): Promise<{ room: RoomRow; hostRoomMemberId: string }> {
   // The bot player must exist before it can be a member; the migration seeds
   // it in production, this covers a fresh/truncated DB and verifies the
   // credential-less invariant.
   await ensureComputerPlayer(db);
 
-  return db.transaction().execute(async (trx) => {
-    const room = await trx
-      .insertInto("rooms")
-      .values({
-        code: generateRoomCode(),
-        visibility: "private",
-        capacity: 2,
-        turn_limit_hours: COMPUTER_ROOM_TURN_LIMIT_HOURS,
-        has_computer: true,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+  const base = roomNameBase(params.humanUsername, "private");
 
-    const hostMember = await addRoomMember(
-      trx,
-      room.id,
-      params.humanPlayerId,
-      params.humanDisplayName,
-    );
-    // controller_type is derived from players.kind ('computer'); the bot joins
-    // ready.
-    await addRoomMember(trx, room.id, COMPUTER_PLAYER_ID, COMPUTER_DISPLAY_NAME);
+  for (let attempt = 1; attempt <= MAX_NAME_INSERT_ATTEMPTS; attempt++) {
+    try {
+      return await db.transaction().execute(async (trx) => {
+        const name = await nextCandidateRoomName(trx, base);
 
-    const updatedRoom = await trx
-      .updateTable("rooms")
-      .set({ host_room_member_id: hostMember.id })
-      .where("id", "=", room.id)
-      .returningAll()
-      .executeTakeFirstOrThrow();
+        const room = await trx
+          .insertInto("rooms")
+          .values({
+            code: generateRoomCode(),
+            name,
+            visibility: "private",
+            capacity: 2,
+            turn_limit_hours: COMPUTER_ROOM_TURN_LIMIT_HOURS,
+            has_computer: true,
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow();
 
-    return { room: updatedRoom, hostRoomMemberId: hostMember.id };
-  });
+        const hostMember = await addRoomMember(
+          trx,
+          room.id,
+          params.humanPlayerId,
+          params.humanUsername,
+        );
+        // controller_type is derived from players.kind ('computer'); the bot joins
+        // ready.
+        await addRoomMember(trx, room.id, COMPUTER_PLAYER_ID, COMPUTER_DISPLAY_NAME);
+
+        const updatedRoom = await trx
+          .updateTable("rooms")
+          .set({ host_room_member_id: hostMember.id })
+          .where("id", "=", room.id)
+          .returningAll()
+          .executeTakeFirstOrThrow();
+
+        return { room: updatedRoom, hostRoomMemberId: hostMember.id };
+      });
+    } catch (err) {
+      if (isRoomNameUniqueViolation(err) && attempt < MAX_NAME_INSERT_ATTEMPTS) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  /* istanbul ignore next -- unreachable: the loop above always returns or throws */
+  throw new Error("failed to allocate a room name after retries");
 }
 
 export async function findRoomByCode(
