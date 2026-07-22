@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadEnv } from "../src/env.js";
+import { loadEnv, isRetentionSweepEnabled } from "../src/env.js";
 
 const REQUIRED = {
   DATABASE_URL: "postgres://tilemeld:tilemeld@localhost:5432/tilemeld",
@@ -59,5 +59,53 @@ describe("loadEnv", () => {
     const env = loadEnv(REQUIRED);
     expect(env.NODE_ENV).toBe("development");
     expect(env.PORT).toBe(3000);
+  });
+});
+
+// Phase 7 -- the destructive retention sweep's kill switch. Opposite
+// polarity from ENABLE_COMPUTER_OPPONENT deliberately: OFF unless
+// explicitly "true", since this one permanently deletes live data.
+describe("ENABLE_RETENTION_SWEEP / isRetentionSweepEnabled", () => {
+  it("defaults to disabled when the var is entirely absent", () => {
+    const env = loadEnv(REQUIRED);
+    expect(env.ENABLE_RETENTION_SWEEP).toBeUndefined();
+    expect(isRetentionSweepEnabled(env)).toBe(false);
+  });
+
+  it("rejects an empty-string value, exactly like ENABLE_COMPUTER_OPPONENT already does", () => {
+    // Unlike CORS_ORIGIN/VAPID_* (optionalString(), which specifically
+    // normalizes a container platform's `${VAR:-}` empty-string
+    // interpolation to "absent"), this boolean-style flag follows
+    // ENABLE_COMPUTER_OPPONENT's existing plain z.enum(["true","false"])
+    // convention -- an empty string is simply not one of the two valid
+    // values, and is rejected the same way any other invalid string is.
+    expect(() => loadEnv({ ...REQUIRED, ENABLE_RETENTION_SWEEP: "" })).toThrow();
+  });
+
+  it('is disabled for an explicit "false"', () => {
+    const env = loadEnv({ ...REQUIRED, ENABLE_RETENTION_SWEEP: "false" });
+    expect(isRetentionSweepEnabled(env)).toBe(false);
+  });
+
+  it('is enabled only for an explicit "true"', () => {
+    const env = loadEnv({ ...REQUIRED, ENABLE_RETENTION_SWEEP: "true" });
+    expect(isRetentionSweepEnabled(env)).toBe(true);
+  });
+
+  it("rejects an invalid value the same way other boolean-style env vars are validated", () => {
+    expect(() => loadEnv({ ...REQUIRED, ENABLE_RETENTION_SWEEP: "yes" })).toThrow();
+    expect(() => loadEnv({ ...REQUIRED, ENABLE_RETENTION_SWEEP: "1" })).toThrow();
+  });
+
+  it("has no env var for the retention window itself -- only the boolean switch exists", () => {
+    // The 48-hour window is a fixed code constant (retentionSweep.ts's
+    // RETENTION_WINDOW_MS), never read from the environment. Asserting the
+    // schema accepts no such key: an unrecognized env var is simply
+    // ignored by zod's default (non-strict) object parsing, so the real
+    // guarantee is source-level (see retentionSweep.ts) -- this test just
+    // documents that no RETENTION_COMPLETED_GAME_HOURS-shaped var is ever
+    // consulted by loadEnv's result.
+    const env = loadEnv({ ...REQUIRED, RETENTION_COMPLETED_GAME_HOURS: "4" });
+    expect((env as Record<string, unknown>)["RETENTION_COMPLETED_GAME_HOURS"]).toBeUndefined();
   });
 });

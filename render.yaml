@@ -59,6 +59,16 @@ services:
       # visibility.
       - key: BOT_TURN_DELAY_MS
         value: "1000"
+      # DESTRUCTIVE, EXPLICITLY OFF -- retention is not enabled as part of
+      # this phase's rollout. Permanently deletes completed games (and any
+      # room left with no surviving game) from the live database 48 hours
+      # after completion once turned on. Only flip this to "true" in the
+      # Render dashboard after completing the staging verification steps in
+      # docs/deploy-render.md's "Completed-game retention" section -- it is
+      # deliberately spelled out here, not merely left absent/defaulted, so
+      # this decision is visible in the blueprint itself.
+      - key: ENABLE_RETENTION_SWEEP
+        value: "false"
       # Generated once, automatically, on first deploy -- never typed in
       # by hand, never appears in this file. Rotating it (e.g. after a
       # suspected leak) is a dashboard action, not a blueprint change --

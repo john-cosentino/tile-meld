@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import type { Kysely, Transaction } from "kysely";
+import { NoResultError, type Kysely, type Transaction } from "kysely";
 import type { Database } from "../db/types.js";
 import type { RoomRow } from "../db/repositories/rooms.js";
 import { updateRoomStatus } from "../db/repositories/rooms.js";
@@ -177,7 +177,8 @@ export const MIN_REMATCH_MEMBERS = 2;
 export type ManualRematchOutcome =
   | { readonly kind: "started"; readonly gameId: string }
   | { readonly kind: "not_between_games" }
-  | { readonly kind: "insufficient_members" };
+  | { readonly kind: "insufficient_members" }
+  | { readonly kind: "not_found" };
 
 /**
  * The host-controlled, one-click rematch action (Phase 5: docs/next-
@@ -190,21 +191,35 @@ export type ManualRematchOutcome =
  * Same locking discipline as every other entry point in this module: lock
  * the room row first, recheck status/eligibility under that lock, deal at
  * most one game.
+ *
+ * Phase 7: a `between_games` room with only expired-and-deleted games is
+ * exactly the kind of room the retention sweep (game/retentionSweep.ts)
+ * may delete once none of its games survive. `lockRoomForUpdate` throws if
+ * the room row is already gone by the time this acquires the lock (the
+ * route's own earlier, unlocked `findRoomById` check narrows but cannot
+ * close this window) -- caught here and mapped to `not_found` instead of
+ * propagating as a raw 500, so a rematch racing a room's deletion always
+ * fails safely with a clean, structured outcome, never partial state.
  */
 export async function manualRematchRoom(
   db: Kysely<Database>,
   roomId: string,
 ): Promise<ManualRematchOutcome> {
-  return db.transaction().execute(async (trx) => {
-    const room = await lockRoomForUpdate(trx, roomId);
-    if (room.status !== "between_games") return { kind: "not_between_games" };
+  try {
+    return await db.transaction().execute(async (trx) => {
+      const room = await lockRoomForUpdate(trx, roomId);
+      if (room.status !== "between_games") return { kind: "not_between_games" };
 
-    const members = await listRoomMembers(trx, room.id);
-    if (members.length < MIN_REMATCH_MEMBERS) return { kind: "insufficient_members" };
+      const members = await listRoomMembers(trx, room.id);
+      if (members.length < MIN_REMATCH_MEMBERS) return { kind: "insufficient_members" };
 
-    const latestGame = await findLatestGameForRoom(trx, room.id);
-    const nextSeq = (latestGame?.seq ?? 0) + 1;
-    const gameId = await dealForRoom(trx, room, members, nextSeq);
-    return { kind: "started", gameId };
-  });
+      const latestGame = await findLatestGameForRoom(trx, room.id);
+      const nextSeq = (latestGame?.seq ?? 0) + 1;
+      const gameId = await dealForRoom(trx, room, members, nextSeq);
+      return { kind: "started", gameId };
+    });
+  } catch (err) {
+    if (err instanceof NoResultError) return { kind: "not_found" };
+    throw err;
+  }
 }

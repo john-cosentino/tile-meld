@@ -8,6 +8,9 @@ import {
   TEST_HMAC_SECRET,
 } from "../setup/game-fixture.js";
 import type { AppInstance } from "../../src/http/types.js";
+import { createPlayer } from "../../src/db/repositories/players.js";
+import { createSession } from "../../src/db/repositories/sessions.js";
+import { SESSION_COOKIE_NAME } from "../../src/security/session.js";
 
 const TEST_ENV = {
   NODE_ENV: "test" as const,
@@ -95,6 +98,38 @@ describe("realtime gateway", () => {
     const hostRackIds = new Set(hostState.self.rack.map((t) => t.tileId));
     const guestRackIds = guestState.self.rack.map((t) => t.tileId);
     for (const id of guestRackIds) expect(hostRackIds.has(id)).toBe(false);
+  });
+
+  // Phase 7: a purged (retention-deleted) game and a gameId that never
+  // existed are indistinguishable here -- both fail this same
+  // findGameSeatForPlayer check. The client's game:join call MUST resolve
+  // (via ack, not only the separate `error` broadcast) even on this
+  // rejection path, or useGame.ts's promise/callback never settles and the
+  // UI is stuck on "Loading table…" forever -- caught by a real
+  // end-to-end e2e run against the actual client (e2e/tests/
+  // purgedGame.spec.ts), not by this repository's own unit-level mocks
+  // (apps/web/test/useGame.test.tsx), which had assumed the ack always
+  // fires and so could not have caught this by construction.
+  it("game:join acks with forbidden (not just an error event) for a nonexistent/inaccessible game, so the client's join always resolves", async () => {
+    const outsider = await createPlayer(app!.db, "outsider-secret");
+    const { token } = await createSession(app!.db, outsider.id, TEST_HMAC_SECRET, 3_600_000);
+    const cookie = `${SESSION_COOKIE_NAME}=${token}`;
+    const socket = await connect(cookie);
+
+    const errorEventPromise = once<{ code: string; message: string }>(socket, "error");
+    const ackPromise = emitAck<{ ok: boolean; code?: string; message?: string }>(
+      socket,
+      "game:join",
+      { gameId: "00000000-0000-0000-0000-000000000000" },
+    );
+
+    const [errorEvent, ack] = await Promise.all([errorEventPromise, ackPromise]);
+    expect(errorEvent.code).toBe("forbidden");
+    expect(ack).toEqual({
+      ok: false,
+      code: "forbidden",
+      message: "not a seat holder in this game",
+    });
   });
 
   it("a valid commit broadcasts game:patch + turn:started to every socket in the game", async () => {

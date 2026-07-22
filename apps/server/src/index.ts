@@ -27,6 +27,13 @@ app
       // one, so reconnected clients see the same game:patch / turn:started /
       // game:over sequence.
       onBotActed: (acted) => broadcastTurnActionResult(app, app.io, acted.gameId, acted.result),
+      // Phase 7: aggregate counts and ids only -- never tile/rack/chat
+      // content -- and only ever fires at all when ENABLE_RETENTION_SWEEP
+      // is set (startBackgroundSweeps doesn't create this timer otherwise).
+      onRetentionSwept: (result) => {
+        if (result.gameIdsDeleted.length === 0 && result.roomIdsDeleted.length === 0) return;
+        app.log.info(result, "retention sweep removed expired completed games");
+      },
     });
   })
   .catch((err: unknown) => {

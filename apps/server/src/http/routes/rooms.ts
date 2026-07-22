@@ -480,6 +480,12 @@ export function registerRoomRoutes(app: AppInstance): void {
             `at least ${MIN_REMATCH_MEMBERS} eligible members are required for a rematch`,
           );
           return;
+        // Phase 7: the room existed at the unlocked check above but was
+        // deleted (e.g. by the retention sweep) before the transaction
+        // below could lock it -- same response as the earlier check.
+        case "not_found":
+          sendError(reply, "not_found", "no such room");
+          return;
         case "started":
           reply.code(200).send({ gameId: outcome.gameId });
           return;

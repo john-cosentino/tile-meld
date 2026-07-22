@@ -258,11 +258,27 @@ export function attachRealtimeGateway(app: AppInstance): RealtimeServer {
     socket.on("game:join", (raw: unknown, ack?: Ack) => {
       void (async () => {
         const parsed = GameJoinPayloadSchema.safeParse(raw);
-        if (!parsed.success) return emitError(socket, "invalid", "malformed game:join payload");
+        if (!parsed.success) {
+          emitError(socket, "invalid", "malformed game:join payload");
+          ack?.({ ok: false, code: "invalid", message: "malformed game:join payload" });
+          return;
+        }
         const { gameId } = parsed.data;
 
+        // Phase 7: this is also the path a retention-purged game takes --
+        // its game_seats rows are gone, indistinguishable here from a
+        // gameId that never existed. Must ack (not just emitError) or the
+        // client's game:join promise/callback never resolves, leaving
+        // useGame.ts stuck on "Loading table…" forever instead of showing
+        // its graceful "this game doesn't exist, or you're not seated in
+        // it" state -- exactly the endless-spinner failure mode Phase 7
+        // requires never happen for a purged game.
         const seat = await findGameSeatForPlayer(app.db, gameId, playerId);
-        if (!seat) return emitError(socket, "forbidden", "not a seat holder in this game");
+        if (!seat) {
+          emitError(socket, "forbidden", "not a seat holder in this game");
+          ack?.({ ok: false, code: "forbidden", message: "not a seat holder in this game" });
+          return;
+        }
 
         await socket.join(gameRoom(gameId));
         try {

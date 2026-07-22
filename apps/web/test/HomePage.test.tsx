@@ -32,10 +32,11 @@ vi.mock("../src/api/client.js", () => {
 });
 
 const listRecentRoomIds = vi.fn(() => [] as string[]);
+const removeRecentRoom = vi.fn();
 vi.mock("../src/state/recentRooms.js", () => ({
   listRecentRoomIds: () => listRecentRoomIds(),
   addRecentRoom: vi.fn(),
-  removeRecentRoom: vi.fn(),
+  removeRecentRoom: (...a: unknown[]) => removeRecentRoom(...a),
 }));
 
 let mockUsername: string | null = "Alice";
@@ -80,6 +81,7 @@ beforeEach(() => {
   getRoom.mockReset();
   listRecentRoomIds.mockReset();
   listRecentRoomIds.mockReturnValue([]);
+  removeRecentRoom.mockReset();
   mockUsername = "Alice";
 });
 
@@ -134,6 +136,33 @@ describe("HomePage -- Your Games loading/empty/error states", () => {
     renderHome();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("the server is having a bad day");
+  });
+
+  // Phase 7: a room that retention (or any other cause) has purged 404s on
+  // the next dashboard load -- pre-existing behavior (Phase 2), re-verified
+  // here as the specific "purged room" case rather than a generic 404.
+  it("silently prunes a recent-room entry whose room now 404s, instead of showing an error", async () => {
+    listRecentRoomIds.mockReturnValue(["room-1", "room-2"]);
+    getRoom.mockImplementation((roomId: string) =>
+      roomId === "room-1"
+        ? Promise.reject(new MockApiError(404, "not_found", "no such room"))
+        : Promise.resolve(roomFixture({ roomId: "room-2", name: "StillHere" })),
+    );
+    renderHome();
+
+    expect(await screen.findByText("StillHere")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(removeRecentRoom).toHaveBeenCalledWith("room-1");
+  });
+
+  it("also prunes a 403 (e.g. a room whose membership no longer resolves) the same way as a 404", async () => {
+    listRecentRoomIds.mockReturnValue(["room-1"]);
+    getRoom.mockRejectedValue(new MockApiError(403, "forbidden", "not a member"));
+    renderHome();
+
+    await waitFor(() => expect(removeRecentRoom).toHaveBeenCalledWith("room-1"));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(await screen.findByText(/no rooms yet/i)).toBeInTheDocument();
   });
 });
 

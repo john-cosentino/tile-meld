@@ -55,6 +55,17 @@ const EnvSchema = z.object({
   // instant execution in tests. Optional (not schema-defaulted) so it stays
   // absent-able in the Env type.
   BOT_TURN_DELAY_MS: z.coerce.number().int().min(0).max(60_000).optional(),
+  // Phase 7 (docs/next-changes-implementation-plan.md, DR-12 corrected):
+  // the destructive 48-hour completed-game retention sweep's kill switch.
+  // OPPOSITE polarity from ENABLE_COMPUTER_OPPONENT deliberately -- this
+  // one is OFF unless explicitly turned on, since it permanently deletes
+  // live data. The 48-hour window itself is a fixed code constant
+  // (game/retentionSweep.ts's RETENTION_WINDOW_MS) and is intentionally
+  // NOT configurable through this or any other env var -- it is a product
+  // rule, not a per-deployment tuning knob. Optional (not schema-
+  // defaulted) so it stays absent-able in the Env type; interpret via
+  // isRetentionSweepEnabled().
+  ENABLE_RETENTION_SWEEP: z.enum(["true", "false"]).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -63,6 +74,13 @@ export type Env = z.infer<typeof EnvSchema>;
  * an explicit ENABLE_COMPUTER_OPPONENT="false" turns it off. */
 export function isComputerOpponentEnabled(env: Env): boolean {
   return env.ENABLE_COMPUTER_OPPONENT !== "false";
+}
+
+/** Whether the destructive retention sweep may run. Disabled by default;
+ * only an explicit ENABLE_RETENTION_SWEEP="true" turns it on. Ship OFF,
+ * verify in staging, then enable -- see docs/deploy-render.md. */
+export function isRetentionSweepEnabled(env: Env): boolean {
+  return env.ENABLE_RETENTION_SWEEP === "true";
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {

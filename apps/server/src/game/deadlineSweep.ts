@@ -1,7 +1,8 @@
 import type { AppInstance } from "../http/types.js";
-import { DEFAULT_BOT_TURN_DELAY_MS } from "../env.js";
+import { DEFAULT_BOT_TURN_DELAY_MS, isRetentionSweepEnabled } from "../env.js";
 import { settleOverdueTurnIfNeeded, type TurnActionResult } from "./turnActions.js";
 import { runBotTurn } from "./botTurn.js";
+import { runRetentionSweepOnce, type RetentionSweepResult } from "./retentionSweep.js";
 
 // The durable, single-process deadline scheduler -- docs/opus-implementation-
 // plan.md §8.1 (Decision D-SCHED). No in-memory setTimeout, no separate
@@ -12,6 +13,14 @@ import { runBotTurn } from "./botTurn.js";
 const DEFAULT_SWEEP_INTERVAL_MS = 15_000;
 const DEFAULT_BATCH_SIZE = 10;
 const WARNING_WINDOW_MS = 15 * 60 * 1000;
+// Retention is destructive and only ever concerns games already 48 hours
+// past completion -- there is no latency requirement anywhere close to the
+// 15s deadline/warning/bot-turn cadence above, so it runs on its own,
+// much slower interval (restrained per Phase 7's explicit "approximately
+// every 5-10 minutes" instruction) rather than sharing DEFAULT_SWEEP_
+// INTERVAL_MS. This constant only controls how often the sweep *checks* --
+// it has no bearing on the fixed 48-hour window itself (retentionSweep.ts).
+const DEFAULT_RETENTION_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 
 export type SettledTimeout = { readonly gameId: string; readonly result: TurnActionResult };
 
@@ -160,19 +169,36 @@ export type SweepHandlers = {
   readonly onTimeout?: (settled: SettledTimeout) => void;
   readonly onWarning?: (warned: Warned) => void;
   readonly onBotActed?: (acted: BotActed) => void;
+  /** Fires after each retention pass, including an empty one (Phase 7).
+   * There is nothing to broadcast over a socket here (a purged game's
+   * viewer already gets a graceful "not found" the next time they touch
+   * it -- see TabletopPage.tsx/useGame.ts), so index.ts's only use for
+   * this is logging aggregate counts. */
+  readonly onRetentionSwept?: (result: RetentionSweepResult) => void;
 };
 
 /**
  * Starts the embedded sweep loop (§8.2: one web process, no separate
- * worker). Returns a stop function. Never started by buildApp itself --
- * only index.ts's real server startup calls this -- so test suites that
- * build an app for HTTP/socket testing don't get a stray background
- * interval running underneath them.
+ * worker). Returns a stop function that clears every timer this call
+ * started. Never started by buildApp itself -- only index.ts's real server
+ * startup calls this -- so test suites that build an app for HTTP/socket
+ * testing don't get a stray background interval running underneath them.
+ *
+ * The retention timer (Phase 7) is a SEPARATE interval from the other
+ * three, at its own slower cadence, and is only created at all when
+ * `ENABLE_RETENTION_SWEEP` is set -- ship OFF, verify in staging, then
+ * enable (docs/deploy-render.md). A disabled flag means no timer is ever
+ * created, not merely a no-op tick: this is what "no retention timer runs
+ * while it is false" means concretely, and it is what keeps calling this
+ * function repeatedly (e.g. across test setup/teardown) from ever
+ * accumulating stray retention timers when the flag is off, which is the
+ * common case.
  */
 export function startBackgroundSweeps(
   app: AppInstance,
   handlers: SweepHandlers = {},
   intervalMs = DEFAULT_SWEEP_INTERVAL_MS,
+  retentionIntervalMs = DEFAULT_RETENTION_SWEEP_INTERVAL_MS,
 ): () => void {
   const timer = setInterval(() => {
     runDeadlineSweepOnce(app)
@@ -188,5 +214,19 @@ export function startBackgroundSweeps(
       .catch((err: unknown) => app.log.error(err, "bot-turn sweep failed"));
   }, intervalMs);
   timer.unref();
-  return () => clearInterval(timer);
+
+  let retentionTimer: ReturnType<typeof setInterval> | undefined;
+  if (isRetentionSweepEnabled(app.env)) {
+    retentionTimer = setInterval(() => {
+      runRetentionSweepOnce(app.db)
+        .then((result) => handlers.onRetentionSwept?.(result))
+        .catch((err: unknown) => app.log.error(err, "retention sweep failed"));
+    }, retentionIntervalMs);
+    retentionTimer.unref();
+  }
+
+  return () => {
+    clearInterval(timer);
+    if (retentionTimer) clearInterval(retentionTimer);
+  };
 }
