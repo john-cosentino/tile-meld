@@ -45,6 +45,13 @@ describe("identity/session routes", () => {
 
     const identity = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
     const cookie = extractSessionCookie(identity);
+    // Room creation (Phase 2) requires a claimed username.
+    await app.inject({
+      method: "POST",
+      url: "/api/identity/username",
+      headers: { cookie },
+      payload: { username: "AuthCheck" },
+    });
 
     const response = await app.inject({
       method: "POST",
@@ -70,7 +77,7 @@ describe("identity/session routes", () => {
       payload: { playerId, recoverySecret },
     });
     expect(recover.statusCode).toBe(200);
-    expect(recover.json()).toEqual({ playerId });
+    expect(recover.json()).toEqual({ playerId, username: null });
     expect(recover.cookies.some((c) => c.name === SESSION_COOKIE_NAME)).toBe(true);
 
     await app.close();

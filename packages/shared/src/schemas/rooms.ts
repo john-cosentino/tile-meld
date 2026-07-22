@@ -1,7 +1,17 @@
 import { z } from "zod";
+import { USERNAME_MAX_LENGTH } from "./identity.js";
+import { GameStatusSchema, SeatStatusSchema } from "./game.js";
 
 export const DisplayNameSchema = z.string().trim().min(1).max(40);
 export const RoomCodeSchema = z.string().trim().min(1).max(16);
+// Practical max length for a join-by-name lookup: the longest string the
+// server-side allocator (createRoom/createComputerRoom, Phase 2) can ever
+// generate -- "public_" (7) + the longest username (USERNAME_MAX_LENGTH)
+// + a numbered suffix up to " 50" (3) -- see ROOM_NAME_CANDIDATE_WINDOW in
+// apps/server/src/db/repositories/rooms.ts. A room name is never free
+// user input, so this bound is derived from the generator, not guessed.
+export const ROOM_NAME_MAX_LENGTH = "public_".length + USERNAME_MAX_LENGTH + " 50".length;
+export const RoomNameSchema = z.string().trim().min(1).max(ROOM_NAME_MAX_LENGTH);
 export const CapacitySchema = z.union([z.literal(2), z.literal(3), z.literal(4)]);
 export const VisibilitySchema = z.enum(["private", "public"]);
 export const TurnLimitHoursSchema = z.union([
@@ -20,6 +30,10 @@ export const CreateRoomRequestSchema = z.object({
 export const CreateRoomResponseSchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  // Server-generated friendly name (Phase 2); null only for legacy rooms
+  // predating this field, which can't apply to a just-created room, but the
+  // type stays nullable to match every other room response uniformly.
+  name: z.string().nullable(),
 });
 
 export const JoinRoomRequestSchema = z.object({
@@ -28,6 +42,15 @@ export const JoinRoomRequestSchema = z.object({
 });
 export const JoinRoomResponseSchema = z.object({
   roomId: z.string(),
+});
+
+// Join Room by Name (Phase 3, corrected DR-8): the normal join path for
+// both public and private rooms, resolved by exact name -- no code, no
+// display name (the authenticated player's claimed username is used
+// server-side). Reuses JoinRoomResponseSchema -- identical `{roomId}`
+// shape.
+export const JoinRoomByNameRequestSchema = z.object({
+  name: RoomNameSchema,
 });
 
 export const QuickJoinRequestSchema = z.object({
@@ -46,6 +69,7 @@ export const VsComputerRequestSchema = z.object({
 export const VsComputerResponseSchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  name: z.string().nullable(),
 });
 
 export const PublicRoomsQuerySchema = z.object({
@@ -55,6 +79,7 @@ export const PublicRoomsQuerySchema = z.object({
 export const PublicRoomSummarySchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  name: z.string().nullable(),
   memberDisplayNames: z.array(z.string()),
   memberCount: z.number().int(),
   capacity: z.number().int(),
@@ -82,6 +107,7 @@ export const RoomMemberSummarySchema = z.object({
 export const GetRoomResponseSchema = z.object({
   roomId: z.string(),
   code: z.string(),
+  name: z.string().nullable(),
   visibility: VisibilitySchema,
   capacity: z.number().int(),
   turnLimitHours: z.number().int(),
@@ -89,6 +115,22 @@ export const GetRoomResponseSchema = z.object({
   hostPlayerId: z.string().nullable(),
   members: z.array(RoomMemberSummarySchema),
   latestGameId: z.string().nullable(),
+  // Phase 6 (dashboard/status cards) additions -- all authoritative
+  // primitives the shared web statusTone classifier needs, so it never has
+  // to infer state client-side. null whenever there's no latest game yet
+  // (a freshly created room) or the caller was never seated in it.
+  latestGameStatus: GameStatusSchema.nullable(),
+  // The calling player's own seat status in the latest game specifically
+  // (not any earlier game) -- null if they were never seated in it. Used to
+  // distinguish "Completed" from "Resigned" without exposing anyone else's
+  // seat status.
+  selfSeatStatus: SeatStatusSchema.nullable(),
+  // True iff this room has a computer member (Play vs Computer) -- lets the
+  // dashboard badge it without a second lookup.
+  hasComputer: z.boolean(),
+  // ISO timestamp of the room's last authoritative activity -- rendered as
+  // a readable relative time on the card.
+  lastActivityAt: z.string(),
 });
 
 export const LeaveResponseSchema = z.object({
@@ -103,6 +145,7 @@ export type CreateRoomRequest = z.infer<typeof CreateRoomRequestSchema>;
 export type CreateRoomResponse = z.infer<typeof CreateRoomResponseSchema>;
 export type JoinRoomRequest = z.infer<typeof JoinRoomRequestSchema>;
 export type JoinRoomResponse = z.infer<typeof JoinRoomResponseSchema>;
+export type JoinRoomByNameRequest = z.infer<typeof JoinRoomByNameRequestSchema>;
 export type QuickJoinRequest = z.infer<typeof QuickJoinRequestSchema>;
 export type QuickJoinResponse = z.infer<typeof QuickJoinResponseSchema>;
 export type VsComputerRequest = z.infer<typeof VsComputerRequestSchema>;

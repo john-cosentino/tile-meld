@@ -33,6 +33,7 @@ function game(
   overrides: Partial<PersistedGameView> & { seats: readonly SeatWithDisplayName[] },
 ): PersistedGameView {
   return {
+    roomId: "room-1",
     table: [],
     pool: [],
     activeSeat: 0,

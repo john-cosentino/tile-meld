@@ -95,4 +95,44 @@ describe("migrations", () => {
     const up = await migrateToLatest(db);
     expect(up.ok).toBe(true);
   });
+
+  // Phase 7 (migration 0021): the retention sweep's candidate-query index.
+  it("creates a partial index on games.completed_at, scoped to status = 'completed'", async () => {
+    const db = await getTestDb();
+    const rows = await sql<{ indexdef: string }>`
+      SELECT indexdef FROM pg_indexes
+      WHERE tablename = 'games' AND indexname = 'games_completed_retention_idx'
+    `.execute(db);
+    expect(rows.rows).toHaveLength(1);
+    const indexdef = rows.rows[0]?.indexdef ?? "";
+    expect(indexdef).toContain("completed_at");
+    // A partial index -- WHERE (status = 'completed') -- not a plain
+    // index over every game regardless of status.
+    expect(indexdef).toMatch(/WHERE \(status = 'completed'::text\)/);
+  });
+
+  it("migration 0021 is additive: no column changes, index-only", async () => {
+    const db = await getTestDb();
+    const rows = await sql<{ column_name: string }>`
+      SELECT column_name FROM information_schema.columns WHERE table_name = 'games'
+    `.execute(db);
+    const columns = rows.rows.map((r) => r.column_name).sort();
+    expect(columns).toEqual(
+      [
+        "id",
+        "room_id",
+        "seq",
+        "status",
+        "pool_order",
+        "pool_cursor",
+        "active_seat",
+        "version",
+        "consecutive_passes",
+        "created_at",
+        "completed_at",
+        "winner_seat",
+        "current_turn_id",
+      ].sort(),
+    );
+  });
 });

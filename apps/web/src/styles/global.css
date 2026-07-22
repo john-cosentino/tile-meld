@@ -248,3 +248,198 @@ button.danger {
   color: inherit;
   text-decoration: underline;
 }
+
+/* Home dashboard (Phase 6). The large page title deliberately sits above
+   the normal heading scale used elsewhere in the app -- this is the one
+   place a bigger-than-body-copy title is wanted (§ "larger, prominent
+   Tile Meld page heading"). */
+.dashboard-title {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.dashboard-grid {
+  display: grid;
+  /* auto-fill + a 1fr max means a card is never wider than its column, so
+     this never causes horizontal overflow on a narrow phone viewport --
+     it simply collapses to a single column instead of shrinking cards
+     below a readable width. */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+/* Every dashboard card is a single link (or, for the rare unavailable
+   case, a plain non-interactive div) -- never an interactive element
+   nested inside another one. Tone communicates status REDUNDANTLY with
+   the visible status-badge text below; it is never the only signal. */
+.dashboard-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.dashboard-card:hover {
+  border-color: var(--color-accent);
+}
+
+.dashboard-card--active {
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-bg));
+  border-color: var(--color-success);
+}
+
+.dashboard-card--grey {
+  background: color-mix(in srgb, var(--color-text-muted) 16%, var(--color-bg));
+  border-color: var(--color-text-muted);
+}
+
+/* Opaque background independent of the card's own tone, so the badge's
+   text keeps the same contrast against --color-bg no matter which tinted
+   card it sits on top of. */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid currentColor;
+  background: var(--color-bg);
+  white-space: nowrap;
+}
+
+.status-badge--neutral {
+  color: var(--color-text-muted);
+}
+
+.status-badge--active {
+  color: var(--color-success);
+}
+
+.status-badge--grey {
+  color: var(--color-text-muted);
+}
+
+/* Tabletop information hierarchy (Phase 8: docs/tabletop-layout-contract.md).
+   Named regions only -- no artwork, no fixed pixel coordinates, no absolute
+   positioning of any interactive control. Every region here is a plain
+   Grid/Flexbox box using the existing design tokens; the layout contract
+   document describes where a future decorative asset could be layered
+   BEHIND each one without this CSS needing to change. */
+
+.tabletop-shell {
+  /* Safe-area padding so a future sticky/edge-to-edge treatment (none
+     exists today -- see the layout contract's "no sticky action bar"
+     decision) would already respect notches/home-indicator insets on a
+     phone; harmless no-op on a device without them. */
+  padding-inline: env(safe-area-inset-left, 0) env(safe-area-inset-right, 0);
+}
+
+.tabletop-status {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The page's single H1 -- turn ownership, substantially more prominent
+   than the rest of the page (Phase 8's core requirement) without being as
+   large as the Home dashboard's page-title scale (.dashboard-title),
+   which is a different kind of heading (a static brand title, not a
+   dynamic, frequently-changing status). */
+.tabletop-turn {
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+.tabletop-opponents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Two columns on desktop -- primary column (opponents/board/rack/actions)
+   dominant, chat a narrower secondary column -- collapsing to one column
+   before either would get too narrow to use. Same DOM order in both
+   cases; only the column count changes, so mobile naturally stacks in the
+   required 1 status -> 2 opponents -> 3 board -> 4 rack -> 5 actions -> 6
+   chat order without a second, duplicated tree. */
+.tabletop-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.tabletop-primary {
+  min-width: 0; /* lets long table-set rows wrap/scroll instead of forcing the grid column wider */
+}
+
+/* The visual center of the screen -- enough minimum height that it never
+   reads as a narrow band between unrelated content, even with zero sets
+   on the table yet. */
+.tabletop-board {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  min-height: 18rem;
+}
+
+/* Visually distinct from the board via an accent top border, rather than
+   a different background -- keeps both regions legible in light and dark
+   mode without introducing a new color token. */
+.tabletop-rack {
+  border-top: 3px solid var(--color-accent);
+  padding-top: var(--space-3);
+}
+
+.tabletop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tabletop-actions-primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.tabletop-actions-danger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* No card chrome of its own -- ChatPanel already renders its own `.card`
+   internally, and stacking two nested card borders/backgrounds here would
+   just look like a card-in-a-card. This wrapper is layout only. */
+.tabletop-chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-self: start;
+}
+
+.tabletop-chat-toggle {
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .tabletop-main {
+    grid-template-columns: 1fr;
+  }
+
+  .tabletop-chat {
+    align-self: stretch;
+  }
+}

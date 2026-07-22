@@ -19,7 +19,7 @@ async function seedRoomWithMembers(db: Awaited<ReturnType<typeof getTestDb>>, co
   const hostPlayer = await createPlayer(db, "host-recovery-secret");
   const { room, hostRoomMemberId } = await createRoom(db, {
     creatorPlayerId: hostPlayer.id,
-    creatorDisplayName: "Host",
+    creatorUsername: "Host",
     capacity: count as 2 | 3 | 4,
     visibility: "private",
     turnLimitHours: TURN_LIMIT_HOURS,

@@ -31,6 +31,7 @@ function roomWithBot() {
   return {
     roomId: "r1",
     code: "ABCD1234",
+    name: "Alice",
     visibility: "private",
     capacity: 2,
     turnLimitHours: 24,
@@ -66,5 +67,31 @@ describe("WaitingRoomPage -- computer opponent", () => {
     expect(screen.getByText(/Computer/)).toBeInTheDocument();
     const readyMarkers = screen.getAllByLabelText("ready");
     expect(readyMarkers.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("WaitingRoomPage -- room name display", () => {
+  beforeEach(() => getRoom.mockReset());
+
+  it("shows the friendly room name as the heading when present", async () => {
+    getRoom.mockResolvedValue(roomWithBot());
+    render(
+      <MemoryRouter>
+        <WaitingRoomPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Alice" })).toBeInTheDocument();
+  });
+
+  it("falls back to Room {code} when the room has no name (legacy)", async () => {
+    getRoom.mockResolvedValue({ ...roomWithBot(), name: null });
+    render(
+      <MemoryRouter>
+        <WaitingRoomPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Room ABCD1234" })).toBeInTheDocument();
   });
 });

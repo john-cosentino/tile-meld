@@ -4,6 +4,7 @@ import type { GetRoomResponse } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { addRecentRoom, removeRecentRoom } from "../state/recentRooms.js";
+import { formatRoomName } from "../state/roomName.js";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -110,11 +111,15 @@ export function WaitingRoomPage() {
 
   return (
     <div className="stack">
-      <h1>Room {room.code}</h1>
+      <h1>{formatRoomName(room)}</h1>
       <p className="muted">
         {room.visibility === "public" ? "Public" : "Private"} -- {room.capacity} players max --{" "}
         {room.turnLimitHours}h turn limit
       </p>
+      {/* The heading now shows the friendly name (which may differ from the
+          code), so the invite code -- still the authoritative join
+          credential -- needs its own always-visible line. */}
+      <p className="muted">Room code: {room.code}</p>
 
       {room.status === "between_games" && (
         <p className="card" role="status">

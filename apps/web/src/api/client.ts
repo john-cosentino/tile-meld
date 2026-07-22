@@ -1,4 +1,5 @@
 import {
+  ClaimUsernameResponseSchema,
   CreateIdentityResponseSchema,
   RecoverSessionResponseSchema,
   RotateRecoveryResponseSchema,
@@ -15,6 +16,7 @@ import {
   ChatHistoryResponseSchema,
   VapidPublicKeyResponseSchema,
   type CreateRoomRequest,
+  type JoinRoomByNameRequest,
   type JoinRoomRequest,
   type QuickJoinRequest,
   type GetRoomResponse,
@@ -81,10 +83,16 @@ export const api = {
 
   rotateRecovery: () => request("POST", "/session/rotate-recovery", RotateRecoveryResponseSchema),
 
+  claimUsername: (username: string) =>
+    request("POST", "/identity/username", ClaimUsernameResponseSchema, { username }),
+
   createRoom: (body: CreateRoomRequest) =>
     request("POST", "/rooms", CreateRoomResponseSchema, body),
 
   joinRoom: (body: JoinRoomRequest) => request("POST", "/rooms/join", JoinRoomResponseSchema, body),
+
+  joinRoomByName: (body: JoinRoomByNameRequest) =>
+    request("POST", "/rooms/join-by-name", JoinRoomResponseSchema, body),
 
   quickJoin: (body: QuickJoinRequest) =>
     request("POST", "/rooms/quick-join", QuickJoinResponseSchema, body),

@@ -3,8 +3,16 @@ import { buildApp } from "../../src/app.js";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
 import { dealDeterministicGame, TEST_HMAC_SECRET } from "../setup/game-fixture.js";
 import type { AppInstance } from "../../src/http/types.js";
-import { runDeadlineSweepOnce, runWarningSweepOnce } from "../../src/game/deadlineSweep.js";
+import {
+  runDeadlineSweepOnce,
+  runWarningSweepOnce,
+  startBackgroundSweeps,
+} from "../../src/game/deadlineSweep.js";
 import { catchUpAndLoad } from "../../src/game/turnActions.js";
+import { createPlayer } from "../../src/db/repositories/players.js";
+import { createRoom } from "../../src/db/repositories/rooms.js";
+import { joinRoomAndMaybeAutoStart } from "../../src/game/roomStart.js";
+import { RETENTION_WINDOW_MS, type RetentionSweepResult } from "../../src/game/retentionSweep.js";
 
 const TEST_ENV = {
   NODE_ENV: "test" as const,
@@ -142,6 +150,109 @@ describe("game/deadlineSweep", () => {
     const warned = await runWarningSweepOnce(app);
     expect(warned).toHaveLength(0);
 
+    await app.close();
+  });
+});
+
+// Phase 7: proves the WIRING (does startBackgroundSweeps create/omit the
+// retention timer per the flag), as opposed to retentionSweep.test.ts's
+// direct, controlled-time coverage of runRetentionSweepOnce's own logic.
+// Uses a short real interval and a bounded real wait (not a 48-hour sleep
+// -- the 48-hour window itself is exercised entirely via injected `now` in
+// retentionSweep.test.ts) purely to observe whether the timer fires at
+// all.
+async function createExpiredEligibleGame(app: AppInstance): Promise<string> {
+  const host = await createPlayer(app.db, `sweep-host-${Math.random()}`);
+  const { room } = await createRoom(app.db, {
+    creatorPlayerId: host.id,
+    creatorUsername: `SweepWiring${Math.random().toString(36).slice(2, 8)}`,
+    capacity: 2,
+    visibility: "private",
+    turnLimitHours: 4,
+  });
+  const guest = await createPlayer(app.db, `sweep-guest-${Math.random()}`);
+  const outcome = await joinRoomAndMaybeAutoStart(app.db, room.id, guest.id, "Guest");
+  if (outcome.kind !== "joined" || !outcome.gameId) throw new Error("unreachable");
+  await app.db
+    .updateTable("games")
+    .set({
+      status: "completed",
+      completed_at: new Date(Date.now() - RETENTION_WINDOW_MS - 60_000),
+      winner_seat: 0,
+    })
+    .where("id", "=", outcome.gameId)
+    .execute();
+  await app.db
+    .updateTable("rooms")
+    .set({ status: "between_games" })
+    .where("id", "=", room.id)
+    .execute();
+  return outcome.gameId;
+}
+
+describe("startBackgroundSweeps -- retention scheduling (Phase 7)", () => {
+  afterAll(async () => {
+    await closeTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAll(await getTestDb());
+  });
+
+  it("never creates a retention timer, and never deletes anything, when ENABLE_RETENTION_SWEEP is unset", async () => {
+    const app = await buildApp({
+      db: await getTestDb(),
+      env: { ...TEST_ENV, ENABLE_RETENTION_SWEEP: undefined },
+      logger: false,
+    });
+    const gameId = await createExpiredEligibleGame(app);
+
+    // A huge main interval (so it can't coincidentally trigger anything
+    // relevant here) and a tiny retention interval -- if the flag failed to
+    // gate timer creation, this would delete the game almost immediately.
+    const stop = startBackgroundSweeps(app, {}, 10_000_000, 30);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    stop();
+
+    const game = await app.db
+      .selectFrom("games")
+      .selectAll()
+      .where("id", "=", gameId)
+      .executeTakeFirst();
+    expect(game).toBeDefined();
+    await app.close();
+  });
+
+  it("creates and runs a retention timer when ENABLE_RETENTION_SWEEP=true", async () => {
+    const app = await buildApp({
+      db: await getTestDb(),
+      env: { ...TEST_ENV, ENABLE_RETENTION_SWEEP: "true" },
+      logger: false,
+    });
+    const gameId = await createExpiredEligibleGame(app);
+
+    const results: RetentionSweepResult[] = [];
+    const stop = startBackgroundSweeps(
+      app,
+      { onRetentionSwept: (r) => results.push(r) },
+      10_000_000,
+      30,
+    );
+
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline && results.length === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    stop();
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]!.gameIdsDeleted).toContain(gameId);
+    const game = await app.db
+      .selectFrom("games")
+      .selectAll()
+      .where("id", "=", gameId)
+      .executeTakeFirst();
+    expect(game).toBeUndefined();
     await app.close();
   });
 });

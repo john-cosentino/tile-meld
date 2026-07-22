@@ -1,7 +1,80 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { UsernameSchema } from "@tile-meld/shared";
 import { useAuth } from "../auth/AuthProvider.js";
 import { api, ApiError } from "../api/client.js";
+
+/** Minimal claim UI (Phase 1): lets an anonymous or legacy identity claim a
+ * globally unique username, or shows it read-only once claimed. Client-side
+ * validation here is only for quick feedback -- the server re-validates and
+ * its unique index is the final word on availability. */
+function UsernameSection() {
+  const { state, claimUsername } = useAuth();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (state.status !== "ready") return null;
+
+  if (state.username) {
+    return (
+      <div className="card stack">
+        <h2>Username</h2>
+        <p>
+          Your username is <strong>{state.username}</strong>. It's globally unique and can't be
+          changed once claimed.
+        </p>
+      </div>
+    );
+  }
+
+  async function onSubmit(e: FormEvent): Promise<void> {
+    e.preventDefault();
+    setError(undefined);
+    const trimmed = value.trim();
+    const parsed = UsernameSchema.safeParse(trimmed);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid username.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await claimUsername(parsed.data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not claim that username.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form className="card stack" onSubmit={(e) => void onSubmit(e)}>
+      <h2>Choose a username</h2>
+      <p className="muted">
+        3-24 characters: letters, numbers, underscores, and hyphens only, no spaces. Globally unique
+        and permanent once claimed.
+      </p>
+      <label className="stack" style={{ gap: "var(--space-1)" }}>
+        Username
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          minLength={3}
+          maxLength={24}
+          required
+        />
+      </label>
+      {error && (
+        <div className="error-banner" role="alert">
+          {error}
+        </div>
+      )}
+      <button type="submit" className="primary" disabled={submitting}>
+        {submitting ? "Claiming…" : "Claim username"}
+      </button>
+    </form>
+  );
+}
 
 function RecoveryCodeDisplay({
   playerId,
@@ -88,6 +161,8 @@ export function RecoveryPage() {
       )}
 
       {rotated && <RecoveryCodeDisplay playerId={state.playerId} secret={rotated} />}
+
+      <UsernameSection />
 
       <div className="card stack">
         <h2>Rotate your recovery code</h2>

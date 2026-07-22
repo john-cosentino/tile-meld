@@ -134,3 +134,77 @@ service; see `docs/computer-opponent.md` for the full feature/architecture summa
 Covered separately in `docs/backup-restore.md` -- Render's managed Postgres backs up
 automatically, but "automatic" and "tested" aren't the same thing, and that doc includes a
 real restore drill.
+
+## 10. Completed-game retention
+
+A background sweep (`apps/server/src/game/retentionSweep.ts`) can permanently delete
+completed games -- and any room left with no surviving game -- from the live database once
+they are **exactly 48 hours** past `games.completed_at`. The 48-hour window is a fixed code
+constant, never configurable through an env var (a product rule, not a per-deployment
+tuning knob -- do not add one). The sweep itself is gated by a boolean kill switch:
+
+- **Ships OFF.** `render.yaml` sets `ENABLE_RETENTION_SWEEP=false` explicitly (not merely
+  left absent) as part of **this phase's rollout** -- retention is implemented and tested,
+  but **not enabled in production yet**. Do not flip it to `true` in Render as part of
+  deploying this phase.
+- **This is genuinely destructive.** Once a game/room is deleted, it is gone from the live
+  database; disabling the flag afterward does not bring it back. Only your Postgres
+  provider's own backup window can restore deleted rows, and only for as long as that
+  window lasts (see "Permanent means live-database-permanent," below).
+
+### Staging verification, before ever enabling this in a real deployment
+
+1. Deploy to a staging environment with its own database (never test destructive retention
+   against a database anyone relies on).
+2. Set `ENABLE_RETENTION_SWEEP=true` on that staging service only.
+3. Create a room, play (or resign) a game to completion, and directly update that one
+   game's `completed_at` in the staging database to more than 48 hours in the past (a plain
+   `UPDATE games SET completed_at = now() - interval '49 hours' WHERE id = '<id>'` --
+   there is no admin UI or backdoor endpoint for this, by design; see "Scope exclusions,"
+   `docs/phase-07-retention.md`).
+4. Within one sweep interval (roughly 5-10 minutes -- restrained deliberately, this is not
+   the 15-second deadline-sweep cadence), confirm in the logs and the database that:
+   - the aged game's row, and every row it owned (seats, racks, turns, table sets, events,
+     idempotency keys, chat), are gone;
+   - the room is also gone **only if** that was its last game -- create a second game in
+     the same room first if you want to verify the "room survives because a newer game
+     exists" case instead;
+   - a *different*, still-recent completed game (and its room) is untouched;
+   - an *active* game is untouched, full stop.
+5. Confirm the room's friendly name is immediately reusable (create a new room as the same
+   username; it gets the base name back, not a numbered suffix).
+6. Only once all of the above holds in staging, consider enabling it in production -- and
+   even then, this phase's own instruction is to leave it off; re-confirm with whoever owns
+   the decision to turn on irreversible data deletion before doing so for real.
+
+### Enabling / disabling in production (once staging verification has passed)
+
+Service dashboard -> **Environment** -> set `ENABLE_RETENTION_SWEEP` to `true` (or back to
+`false`) -> save (auto-redeploys, same as any other env var here). No code change or
+migration is involved either way -- the sweep function always exists; the flag only
+controls whether `startBackgroundSweeps` (`apps/server/src/game/deadlineSweep.ts`) ever
+creates its timer.
+
+### Expected sweep logging
+
+When enabled, a non-empty pass logs one structured line per interval:
+`"retention sweep removed expired completed games"`, with `gameIdsDeleted`,
+`roomIdsDeleted`, and `candidatesSkipped` counts/ids attached -- never tile contents, rack
+contents, chat bodies, or any other player-entered content. An empty pass (nothing expired
+yet) logs nothing, to keep steady-state logs quiet. A failed pass logs
+`"retention sweep failed"` with the error and is retried automatically on the next interval
+-- one failure never crashes the server or permanently stops future attempts (same
+`.catch()`-and-continue convention as the deadline/warning/bot-turn sweeps).
+
+### Rollback
+
+Disabling the flag (`ENABLE_RETENTION_SWEEP=false`) immediately stops any *future*
+deletion. It does **not** undo deletions that already happened -- "permanent deletion"
+here means removed from the live database, not necessarily gone from every backup
+instantly. Render's own Postgres point-in-time recovery (PITR) window is documented in
+`docs/backup-restore.md` (3 days on the Hobby plan, 7 days on Pro or higher) -- a restore
+from within that window would bring deleted rows back, at the cost of reverting everything
+else in the database to that point in time too, which is a last-resort recovery action, not
+routine rollback. A code-level rollback of the *feature* is reverting the application code
+that added it, same as the forward-only migration policy already requires for any schema
+change (Decision D-MIGRATE, §5 above).

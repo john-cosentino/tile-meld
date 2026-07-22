@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { TURN_LIMIT_OPTIONS, type TurnLimitHours } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { addRecentRoom } from "../state/recentRooms.js";
-import { getDefaultDisplayName, setDefaultDisplayName } from "../state/displayName.js";
+import { useAuth } from "../auth/AuthProvider.js";
 
 export function CreateRoomPage() {
   const navigate = useNavigate();
-  const [displayName, setDisplayName] = useState(getDefaultDisplayName());
+  const { state: authState } = useAuth();
+  const username = authState.status === "ready" ? authState.username : null;
   const [capacity, setCapacity] = useState<2 | 3 | 4>(4);
   const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [turnLimitHours, setTurnLimitHours] = useState<TurnLimitHours>(4);
@@ -16,12 +17,15 @@ export function CreateRoomPage() {
 
   async function onSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
+    if (!username) return;
     setError(undefined);
     setSubmitting(true);
     try {
-      setDefaultDisplayName(displayName);
+      // displayName is kept only for wire backward compatibility -- the
+      // server always uses the creator's claimed username as the host's
+      // display name (Phase 2), never this field.
       const { roomId } = await api.createRoom({
-        displayName,
+        displayName: username,
         capacity,
         visibility,
         turnLimitHours,
@@ -34,19 +38,24 @@ export function CreateRoomPage() {
     }
   }
 
+  if (!username) {
+    return (
+      <div className="stack card">
+        <h1>Create a room</h1>
+        <p>
+          You need a username before creating a room. <Link to="/recovery">Claim a username</Link>{" "}
+          to continue.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form className="stack card" onSubmit={(e) => void onSubmit(e)}>
       <h1>Create a room</h1>
-
-      <label className="stack" style={{ gap: "var(--space-1)" }}>
-        Your display name
-        <input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          required
-          maxLength={40}
-        />
-      </label>
+      <p className="muted">
+        Creating as <strong>{username}</strong>.
+      </p>
 
       <fieldset>
         <legend>Capacity</legend>

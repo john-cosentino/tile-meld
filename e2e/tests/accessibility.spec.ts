@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { waitForReady, startTwoPlayerGame, clickUntilSettled } from "./helpers.js";
+import { waitForReady, startTwoPlayerGame, clickUntilSettled, claimUsername } from "./helpers.js";
 
 // Automated accessibility checks (plan Sec 11.3: "automated accessibility
 // checks (axe) where practical") across every screen a player can reach
@@ -31,10 +31,12 @@ test("Create Room page has no serious/critical accessibility violations", async 
   await assertNoSeriousViolations(page, "Create Room");
 });
 
-test("Join by Code page has no serious/critical accessibility violations", async ({ page }) => {
+test("Join Room by Name page has no serious/critical accessibility violations", async ({
+  page,
+}) => {
   await waitForReady(page);
-  await page.getByRole("navigation").getByRole("link", { name: "Join by Code" }).click();
-  await assertNoSeriousViolations(page, "Join by Code");
+  await page.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
+  await assertNoSeriousViolations(page, "Join Room by Name");
 });
 
 test("Public Lobby page has no serious/critical accessibility violations", async ({ page }) => {
@@ -53,14 +55,14 @@ test("Recovery page has no serious/critical accessibility violations", async ({ 
 
 test("Waiting Room page has no serious/critical accessibility violations", async ({ page }) => {
   await waitForReady(page);
+  const username = await claimUsername(page, "A11y");
   await page.getByRole("link", { name: "Create Room" }).click();
-  await page.getByLabel("Your display name").fill("A11y");
   await page.getByRole("radio", { name: "2 players" }).check();
   await page.getByRole("radio", { name: "Private (invite by code)" }).check();
   await clickUntilSettled(
     page,
     page.getByRole("button", { name: "Create room" }),
-    page.getByRole("heading", { name: /^Room / }),
+    page.getByRole("heading", { name: username }),
   );
   await assertNoSeriousViolations(page, "Waiting Room");
 });

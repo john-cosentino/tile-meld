@@ -15,7 +15,9 @@ import type { Destination } from "../tabletop/draftState.js";
 import type { TileFace } from "../tabletop/Tile.js";
 import { Rack } from "../tabletop/Rack.js";
 import { Table } from "../tabletop/Table.js";
-import { DeadlineCountdown } from "../tabletop/DeadlineCountdown.js";
+import { RematchPanel } from "../tabletop/RematchPanel.js";
+import { TabletopStatus } from "../tabletop/TabletopStatus.js";
+import { OpponentStrip } from "../tabletop/OpponentStrip.js";
 import {
   hintForSet,
   runningInitialMeldTotal,
@@ -37,6 +39,13 @@ export function TabletopPage() {
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [confirmingResign, setConfirmingResign] = useState(false);
   const [actionError, setActionError] = useState<string | undefined>(undefined);
+  // Open by default on every viewport -- both an always-visible desktop
+  // side column and a mobile disclosure the user can collapse are
+  // acceptable per the layout contract; defaulting open avoids guessing a
+  // viewport breakpoint in JS while still giving mobile users a one-tap
+  // way to reclaim the screen. `hidden` (not conditional rendering) below
+  // keeps ChatPanel mounted so collapsing never loses chat state.
+  const [chatOpen, setChatOpen] = useState(true);
 
   // Without an activation distance, dnd-kit's default PointerSensor treats
   // *any* pointerdown+pointerup -- even a plain click with zero movement --
@@ -97,12 +106,20 @@ export function TabletopPage() {
   if (game.notFound) {
     return (
       <div className="stack">
+        <h1 className="visually-hidden">Tile Meld</h1>
         <p>This game doesn't exist, or you're not seated in it.</p>
         <Link to="/">Back home</Link>
       </div>
     );
   }
-  if (!view) return <p>Loading table…</p>;
+  if (!view) {
+    return (
+      <div className="stack">
+        <h1 className="visually-hidden">Tile Meld</h1>
+        <p>Loading table…</p>
+      </div>
+    );
+  }
 
   const isMyTurn = view.status === "active" && view.self.seatIndex === view.activeSeat;
   const activeOpponent = view.opponents.find((o) => o.seatIndex === view.activeSeat);
@@ -186,52 +203,13 @@ export function TabletopPage() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="stack">
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <h1 style={{ margin: 0 }}>Tabletop</h1>
-          <span className="muted">
-            {game.connectionState === "connected"
-              ? "🟢 Connected"
-              : game.connectionState === "connecting"
-                ? "🟡 Connecting…"
-                : "🔴 Disconnected"}
-          </span>
-        </div>
-
-        {view.status === "active" && (
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <strong>
-              {isMyTurn
-                ? "Your turn"
-                : computerIsPlaying
-                  ? "🤖 Computer is playing…"
-                  : `Waiting on seat ${view.activeSeat + 1}`}
-            </strong>
-            <DeadlineCountdown deadlineAt={view.deadlineAt} />
-          </div>
-        )}
-
-        {view.status === "completed" && (
-          <div className="card stack" role="status">
-            <h2>Game over</h2>
-            <p>Return to the room to ready up for a rematch.</p>
-            <Link to="/">
-              <button className="primary">Back to your rooms</button>
-            </Link>
-          </div>
-        )}
-
-        <div className="row">
-          <span className="muted">Pool: {view.poolCount} tiles</span>
-          {view.opponents.map((o) => (
-            <span key={o.seatIndex} className="muted">
-              {o.displayName}
-              {o.isComputer ? " 🤖" : ""}: {o.rackCount} tiles
-              {o.status === "resigned" ? " (resigned)" : ""}
-              {view.activeSeat === o.seatIndex && view.status === "active" ? " ⏳" : ""}
-            </span>
-          ))}
-        </div>
+      <div className="tabletop-shell stack">
+        <TabletopStatus
+          view={view}
+          connectionState={game.connectionState}
+          isMyTurn={isMyTurn}
+          computerIsPlaying={computerIsPlaying}
+        />
 
         {game.banner && (
           <div className="error-banner" role="alert">
@@ -243,83 +221,143 @@ export function TabletopPage() {
             ⏰ {game.warningToast} <button onClick={game.dismissWarningToast}>Dismiss</button>
           </div>
         )}
-        {actionError && (
-          <div className="error-banner" role="alert">
-            {actionError}
+
+        {view.status === "completed" && (
+          <div className="card stack" role="status">
+            <RematchPanel roomId={view.roomId} gameId={gameId!} />
+            <Link to="/">
+              <button>Back to your rooms</button>
+            </Link>
           </div>
         )}
 
-        {!view.self.hasInitialMeld && view.status === "active" && (
-          <p className="muted">
-            Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
-          </p>
-        )}
-        {turnValidation && !turnValidation.valid && draftChanged && (
-          <p className="muted" role="status">
-            Hint: this arrangement wouldn't be accepted yet (
-            {turnValidation.reason.replaceAll("_", " ")}).
-          </p>
-        )}
-        <p className="muted">
-          Committing an arrangement the server rejects costs a 3-tile penalty and ends your turn --
-          check the hints above before committing.
-        </p>
+        <div className="tabletop-main">
+          <div className="tabletop-primary stack">
+            <OpponentStrip
+              opponents={view.opponents}
+              activeSeat={view.activeSeat}
+              gameStatus={view.status}
+            />
 
-        <Table
-          sets={draft.sets}
-          resolve={resolve}
-          selectedTileId={selectedTileId}
-          onSelectTile={onSelectTile}
-          onActivateZone={onActivateZone}
-          onReorder={(setId, tileId, direction) => reorderInSet(setId, tileId, direction)}
-          setValidity={setValidity}
-        />
+            {/* No separate aria-label here -- Table.tsx already renders its
+                own "Table" <h2>, and duplicating that name on this wrapper
+                would just create two identically-named landmarks nested
+                inside each other. data-testid is a stable, a11y-tree-inert
+                hook for tests that need to scope queries to "inside the
+                board" specifically (Phase 8: docs/tabletop-layout-contract.md). */}
+            <div className="tabletop-board stack" data-testid="tabletop-board">
+              <span className="muted">Pool: {view.poolCount} tiles</span>
+              <Table
+                sets={draft.sets}
+                resolve={resolve}
+                selectedTileId={selectedTileId}
+                onSelectTile={onSelectTile}
+                onActivateZone={onActivateZone}
+                onReorder={(setId, tileId, direction) => reorderInSet(setId, tileId, direction)}
+                setValidity={setValidity}
+              />
+            </div>
 
-        <Rack
-          tileIds={draft.rack}
-          resolve={resolve}
-          selectedTileId={selectedTileId}
-          onSelectTile={onSelectTile}
-          onActivateZone={() => onActivateZone({ zone: "rack" })}
-          onReorder={reorderRack}
-        />
+            {/* Same reasoning as tabletop-board -- Rack.tsx's own heading
+                and its DropZone's aria-label="Your rack" are already the
+                stable accessible names here; data-testid is test-only. */}
+            <div className="tabletop-rack" data-testid="tabletop-rack">
+              <Rack
+                tileIds={draft.rack}
+                resolve={resolve}
+                selectedTileId={selectedTileId}
+                onSelectTile={onSelectTile}
+                onActivateZone={() => onActivateZone({ zone: "rack" })}
+                onReorder={reorderRack}
+              />
+            </div>
 
-        <div className="row">
-          <button disabled={!canUndo} onClick={undo}>
-            Undo
-          </button>
-          <button disabled={!draftChanged} onClick={reset}>
-            Reset turn
-          </button>
-          <button disabled={!isMyTurn || view.poolCount === 0} onClick={() => void handleDraw()}>
-            Draw tile
-          </button>
-          <button disabled={!isMyTurn || view.poolCount > 0} onClick={() => void handlePass()}>
-            Pass
-          </button>
-          <button
-            className="primary"
-            disabled={!isMyTurn || draft.sets.length === 0}
-            onClick={() => void handleCommit()}
-          >
-            Commit turn
-          </button>
-          {!confirmingResign ? (
-            <button className="danger" onClick={() => setConfirmingResign(true)}>
-              Resign
+            <div className="tabletop-feedback stack">
+              {actionError && (
+                <div className="error-banner" role="alert">
+                  {actionError}
+                </div>
+              )}
+              {!view.self.hasInitialMeld && view.status === "active" && (
+                <p className="muted">
+                  Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
+                </p>
+              )}
+              {turnValidation && !turnValidation.valid && draftChanged && (
+                <p className="muted" role="status">
+                  Hint: this arrangement wouldn't be accepted yet (
+                  {turnValidation.reason.replaceAll("_", " ")}).
+                </p>
+              )}
+              {isMyTurn && (
+                <p className="muted">
+                  Committing an arrangement the server rejects costs a 3-tile penalty and ends your
+                  turn -- check the hints above before committing.
+                </p>
+              )}
+            </div>
+
+            <div className="tabletop-actions" role="group" aria-label="Game actions">
+              <div className="tabletop-actions-primary">
+                <button disabled={!canUndo} onClick={undo}>
+                  Undo
+                </button>
+                <button disabled={!draftChanged} onClick={reset}>
+                  Reset turn
+                </button>
+                <button
+                  disabled={!isMyTurn || view.poolCount === 0}
+                  onClick={() => void handleDraw()}
+                >
+                  Draw tile
+                </button>
+                <button
+                  disabled={!isMyTurn || view.poolCount > 0}
+                  onClick={() => void handlePass()}
+                >
+                  Pass
+                </button>
+                <button
+                  className="primary"
+                  disabled={!isMyTurn || draft.sets.length === 0}
+                  onClick={() => void handleCommit()}
+                >
+                  Commit turn
+                </button>
+              </div>
+              <div className="tabletop-actions-danger">
+                {!confirmingResign ? (
+                  <button className="danger" onClick={() => setConfirmingResign(true)}>
+                    Resign
+                  </button>
+                ) : (
+                  <span className="row">
+                    <span>Resign for good?</span>
+                    <button className="danger" onClick={() => void handleResign()}>
+                      Confirm resign
+                    </button>
+                    <button onClick={() => setConfirmingResign(false)}>Cancel</button>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="tabletop-chat" data-testid="tabletop-chat">
+            <button
+              type="button"
+              className="tabletop-chat-toggle"
+              aria-expanded={chatOpen}
+              aria-controls="tabletop-chat-panel"
+              onClick={() => setChatOpen((v) => !v)}
+            >
+              {chatOpen ? "Hide chat" : "Show chat"}
             </button>
-          ) : (
-            <span className="row">
-              <span>Resign for good?</span>
-              <button className="danger" onClick={() => void handleResign()}>
-                Confirm resign
-              </button>
-              <button onClick={() => setConfirmingResign(false)}>Cancel</button>
-            </span>
-          )}
+            <div id="tabletop-chat-panel" hidden={!chatOpen}>
+              <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
+            </div>
+          </div>
         </div>
-
-        <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
       </div>
     </DndContext>
   );

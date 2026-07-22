@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { clickUntilSettled, reloadUntilReady, waitForReady } from "./helpers.js";
+import { claimUsername, clickUntilSettled, reloadUntilReady, waitForReady } from "./helpers.js";
 
 // End-to-end Play vs Computer coverage (docs/opus-implementation-plan.md §12).
 // Runs across the whole project matrix in playwright.config.ts -- desktop
@@ -17,11 +17,18 @@ import { clickUntilSettled, reloadUntilReady, waitForReady } from "./helpers.js"
  * the tabletop is ready. */
 async function startVsComputerGame(page: Page): Promise<void> {
   await waitForReady(page);
+  // Room creation (including Play vs Computer, Phase 2) requires a claimed
+  // username; the resulting private room is named after it. A plain
+  // client-side nav link back to Home avoids an extra rate-limited
+  // full-page identity round trip.
+  const username = await claimUsername(page, "Solo");
+  await page.getByRole("link", { name: "Tile Meld", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Tile Meld", level: 1 })).toBeVisible();
 
   await clickUntilSettled(
     page,
     page.getByRole("button", { name: /Play vs Computer/ }),
-    page.getByRole("heading", { name: /^Room / }),
+    page.getByRole("heading", { name: username }),
   );
 
   // The computer opponent is clearly identified in the waiting room.

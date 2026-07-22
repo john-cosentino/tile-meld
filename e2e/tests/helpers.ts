@@ -62,13 +62,55 @@ async function retryOnRateLimit(
 }
 
 /** Navigates to "/" and waits for the identity bootstrap to complete,
- * tolerating a transient rate limit (see retryOnRateLimit). */
+ * tolerating a transient rate limit (see retryOnRateLimit). Waits on the
+ * dashboard's large page-title heading (Phase 6) -- the one heading that's
+ * always rendered the instant the Home page mounts, before its own
+ * separate room-list fetch resolves. */
 export async function waitForReady(page: Page): Promise<void> {
   await retryOnRateLimit(
     page,
     () => page.goto("/"),
-    page.getByRole("heading", { name: "Your games" }),
+    page.getByRole("heading", { name: "Tile Meld", level: 1 }),
   );
+}
+
+/** Generates a per-call-unique username from a readable base (Phase 2:
+ * docs/next-changes-implementation-plan.md). The whole matrix runs
+ * serially against one long-lived, never-truncated dev database (see
+ * playwright.config.ts), so a fixed literal like "Host" would collide with
+ * an identical claim from an earlier spec in the same run -- unlike the
+ * unit-test suite, which gets a freshly truncated DB per test. Stays
+ * within UsernameSchema's bounds (3-24 chars, [A-Za-z0-9_-]). */
+function uniqueUsername(base: string): string {
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${base}${suffix}`.slice(0, 24);
+}
+
+/** Claims a username for `page`'s identity via the Recovery page -- room
+ * creation (Phase 2) now requires one. Returns the actual claimed username
+ * (suffixed for uniqueness -- see uniqueUsername) so callers can assert
+ * against the friendly room name it produces. Tolerates a transient rate
+ * limit like every other mutating action in this file. */
+export async function claimUsername(page: Page, base: string): Promise<string> {
+  const username = uniqueUsername(base);
+  await page.getByRole("navigation").getByRole("link", { name: "Recovery" }).click();
+  await page.getByLabel("Username").fill(username);
+  await clickUntilSettled(
+    page,
+    page.getByRole("button", { name: "Claim username" }),
+    page.getByText(/your username is/i),
+  );
+  return username;
+}
+
+/** Reads a room's invite code from WaitingRoomPage's dedicated "Room
+ * code:" line. The heading now shows the room's friendly name (Phase 2),
+ * which may differ from the code, so the code can no longer be parsed out
+ * of the heading the way it could before. */
+export async function readRoomCode(page: Page): Promise<string> {
+  const codeLine = page.getByText(/^Room code: /);
+  await codeLine.waitFor();
+  return (await codeLine.textContent())!.replace("Room code:", "").trim();
 }
 
 /** Reloads `page` and waits for `target`, tolerating a transient rate
@@ -114,40 +156,52 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   await waitForReady(hostPage);
   await waitForReady(guestPage);
 
+  // Room creation now requires a claimed username (Phase 2), and the
+  // resulting room is named after it.
+  const hostUsername = await claimUsername(hostPage, "Host");
+  await claimUsername(guestPage, "Guest");
+
   await hostPage.getByRole("link", { name: "Create Room" }).click();
-  await hostPage.getByLabel("Your display name").fill("Host");
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
-  const hostHeading = hostPage.getByRole("heading", { name: /^Room / });
+  const hostHeading = hostPage.getByRole("heading", { name: hostUsername });
   await clickUntilSettled(
     hostPage,
     hostPage.getByRole("button", { name: "Create room" }),
     hostHeading,
   );
-  const code = (await hostHeading.textContent())!.replace("Room ", "").trim();
+  // Still verifies the preserved "Room code:" compatibility/fallback line
+  // renders (Phase 3), even though the guest below no longer needs it.
+  await readRoomCode(hostPage);
   const roomId = /\/rooms\/([^/?#]+)/.exec(hostPage.url())?.[1];
   if (!roomId) throw new Error("startTwoPlayerGame: could not parse roomId from URL after create");
 
-  await guestPage.getByRole("navigation").getByRole("link", { name: "Join by Code" }).click();
-  await guestPage.getByLabel("Room code").fill(code);
-  await guestPage.getByLabel("Your display name").fill("Guest");
+  // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
+  // room's name IS the host's username for a private room, already known.
+  // Capacity 2: this join fills the room and auto-starts it immediately
+  // (Phase 4) -- no manual ready/start round trip is needed, or safe to
+  // attempt (the Waiting Room's controls can already be gone by the time a
+  // click would land, once each page's own 3s poll observes the status
+  // flip). The wait target below tolerates landing on either the
+  // (possibly momentary) Waiting Room or -- if the redirect already
+  // happened -- the Tabletop directly.
+  await guestPage.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
+  await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
     guestPage,
     guestPage.getByRole("button", { name: "Join room" }),
-    guestPage.getByRole("heading", { name: `Room ${code}` }),
+    guestPage
+      .getByRole("heading", { name: hostUsername })
+      .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
   );
 
-  await hostPage.getByRole("button", { name: "Mark ready" }).click();
-  await guestPage.getByRole("button", { name: "Mark ready" }).click();
-  await hostPage.getByRole("button", { name: /Start game/ }).click();
-
-  // The host reliably lands on the game once Start succeeds; the game URL is
-  // then known. The guest's waiting-room poll normally follows on its own, but
-  // under cumulative rate-limit pressure that poll can lag -- so give it a
-  // brief window, then send the guest straight to the same game URL. This is
-  // test SETUP getting both clients seated, not the behavior under test (the
-  // in-app auto-navigation is exercised directly by turn-timeout/reconnect
-  // specs); it does not change any production polling or rate limit.
+  // Auto-start (Phase 4) already dealt the game -- both pages get carried
+  // there by their own waiting-room poll (or may already be there). The
+  // host reliably reaches /games/ on its own; give the guest a brief
+  // window, then fall back to the known game URL. This is test SETUP
+  // getting both clients seated, not the behavior under test (the in-app
+  // auto-navigation is exercised directly by turn-timeout/reconnect specs);
+  // it does not change any production polling or rate limit.
   await expect(hostPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
   const gameUrl = hostPage.url();
   try {
@@ -193,37 +247,53 @@ export async function startNPlayerGame(
   const hostPage = pages[0]!;
   const guestPages = pages.slice(1);
 
+  // Room creation now requires a claimed username (Phase 2), and the
+  // resulting room is named after it.
+  const hostUsername = await claimUsername(hostPage, "P1");
+  for (const [index, guestPage] of guestPages.entries()) {
+    await claimUsername(guestPage, `P${index + 2}`);
+  }
+
   await hostPage.getByRole("link", { name: "Create Room" }).click();
-  await hostPage.getByLabel("Your display name").fill("P1");
   await hostPage.getByRole("radio", { name: `${capacity} players` }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
-  const hostHeading = hostPage.getByRole("heading", { name: /^Room / });
+  const hostHeading = hostPage.getByRole("heading", { name: hostUsername });
   await clickUntilSettled(
     hostPage,
     hostPage.getByRole("button", { name: "Create room" }),
     hostHeading,
   );
-  const code = (await hostHeading.textContent())!.replace("Room ", "").trim();
+  // Still verifies the preserved "Room code:" compatibility/fallback line
+  // renders (Phase 3), even though the guests below no longer need it.
+  await readRoomCode(hostPage);
 
-  for (const [index, guestPage] of guestPages.entries()) {
-    await guestPage.getByRole("navigation").getByRole("link", { name: "Join by Code" }).click();
-    await guestPage.getByLabel("Room code").fill(code);
-    await guestPage.getByLabel("Your display name").fill(`P${index + 2}`);
+  // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
+  // room's name IS the host's username for a private room, already known.
+  // The LAST join fills the room to capacity and auto-starts it (Phase 4);
+  // earlier joins leave it open. No manual ready/start round trip is
+  // needed, or safe to attempt once the room has started (see
+  // startTwoPlayerGame's comment on the same race). The wait target below
+  // tolerates landing on either the Waiting Room or -- if already
+  // redirected -- the Tabletop.
+  for (const guestPage of guestPages) {
+    await guestPage
+      .getByRole("navigation")
+      .getByRole("link", { name: "Join Room by Name" })
+      .click();
+    await guestPage.getByLabel("Room name").fill(hostUsername);
     await clickUntilSettled(
       guestPage,
       guestPage.getByRole("button", { name: "Join room" }),
-      guestPage.getByRole("heading", { name: `Room ${code}` }),
+      guestPage
+        .getByRole("heading", { name: hostUsername })
+        .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
     );
   }
 
-  for (const page of pages) {
-    await page.getByRole("button", { name: "Mark ready" }).click();
-  }
-  await hostPage.getByRole("button", { name: /Start game/ }).click();
-
-  // Same safe setup fallback as startTwoPlayerGame: the host enters the game
-  // reliably; each other seat's waiting-room poll normally follows, but if it
-  // lags under load, send that page straight to the known game URL.
+  // Auto-start (Phase 4) already dealt the game once the room filled. Same
+  // safe setup fallback as startTwoPlayerGame: the host enters the game
+  // reliably; each other seat's waiting-room poll normally follows, but if
+  // it lags under load, send that page straight to the known game URL.
   await expect(hostPage).toHaveURL(/\/games\//, { timeout: GAME_ENTRY_TIMEOUT });
   const gameUrl = hostPage.url();
   for (const page of guestPages) {
