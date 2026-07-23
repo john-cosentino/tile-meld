@@ -92,6 +92,20 @@ export default defineConfig({
         // OPPONENT is deliberately left unset so the feature runs in its
         // default (enabled) production configuration.
         BOT_TURN_DELAY_MS: "1200",
+        // Real per-IP rate limits (apps/server/src/http/rateLimits.ts) are
+        // correct, intentional production behavior, but this whole matrix
+        // project's ~33 tests run serially against one shared local IP
+        // (workers: 1, above) and legitimately burst past them -- this was
+        // stalling setup helpers (claimUsername, retryOnRateLimit) waiting
+        // out real backoff windows instead of exercising the behavior under
+        // test. isE2ERateLimitBypassEnabled (apps/server/src/env.ts) turns
+        // this into a full bypass, gated on NODE_ENV !== "production" so a
+        // production-configured process could never honor it even by
+        // accident. This is the ONLY place this flag is ever set -- never
+        // render.yaml, and this exact block is what CI's E2E matrix jobs
+        // use too (reuseExistingServer is false in CI, so CI always spawns
+        // the server fresh through this same config, not a separate path).
+        E2E_DISABLE_RATE_LIMITS: "true",
       },
     },
     {

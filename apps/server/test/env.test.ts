@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadEnv, isRetentionSweepEnabled } from "../src/env.js";
+import { loadEnv, isRetentionSweepEnabled, isE2ERateLimitBypassEnabled } from "../src/env.js";
 
 const REQUIRED = {
   DATABASE_URL: "postgres://tilemeld:tilemeld@localhost:5432/tilemeld",
@@ -107,5 +107,43 @@ describe("ENABLE_RETENTION_SWEEP / isRetentionSweepEnabled", () => {
     // consulted by loadEnv's result.
     const env = loadEnv({ ...REQUIRED, RETENTION_COMPLETED_GAME_HOURS: "4" });
     expect((env as Record<string, unknown>)["RETENTION_COMPLETED_GAME_HOURS"]).toBeUndefined();
+  });
+});
+
+// Release-CI-stabilization follow-up -- the E2E-only rate-limit bypass.
+// Like ENABLE_RETENTION_SWEEP, off unless explicitly "true"; unlike it,
+// also requires NODE_ENV !== "production" so the flag alone can never
+// disable production's real per-IP limits.
+describe("E2E_DISABLE_RATE_LIMITS / isE2ERateLimitBypassEnabled", () => {
+  it("keeps rate limits enabled by default when the var is entirely absent", () => {
+    const env = loadEnv(REQUIRED);
+    expect(env.E2E_DISABLE_RATE_LIMITS).toBeUndefined();
+    expect(isE2ERateLimitBypassEnabled(env)).toBe(false);
+  });
+
+  it('keeps rate limits enabled for an explicit "false"', () => {
+    const env = loadEnv({ ...REQUIRED, E2E_DISABLE_RATE_LIMITS: "false" });
+    expect(isE2ERateLimitBypassEnabled(env)).toBe(false);
+  });
+
+  it('bypasses rate limits only for an explicit "true" outside production', () => {
+    const env = loadEnv({ ...REQUIRED, E2E_DISABLE_RATE_LIMITS: "true", NODE_ENV: "test" });
+    expect(isE2ERateLimitBypassEnabled(env)).toBe(true);
+  });
+
+  it('never bypasses rate limits when NODE_ENV is "production", even with the flag "true"', () => {
+    // The exact accidental-misconfiguration scenario this function must
+    // resist: someone (or some deploy config) sets both at once.
+    const env = loadEnv({
+      ...REQUIRED,
+      E2E_DISABLE_RATE_LIMITS: "true",
+      NODE_ENV: "production",
+    });
+    expect(isE2ERateLimitBypassEnabled(env)).toBe(false);
+  });
+
+  it("rejects an invalid value the same way other boolean-style env vars are validated", () => {
+    expect(() => loadEnv({ ...REQUIRED, E2E_DISABLE_RATE_LIMITS: "yes" })).toThrow();
+    expect(() => loadEnv({ ...REQUIRED, E2E_DISABLE_RATE_LIMITS: "1" })).toThrow();
   });
 });
