@@ -8,6 +8,42 @@ import { expect, type Browser, type Locator, type Page } from "@playwright/test"
 // headroom without masking a genuinely stuck game (the per-test timeout is 90s).
 const GAME_ENTRY_TIMEOUT = 30000;
 
+/** Builds a short, human-readable dump of `page`'s current state for a
+ * failure message: URL, the first visible heading, whether the
+ * username-claim prompt is showing (the exact state JoinRoomPage.tsx
+ * renders instead of its form when identity bootstrap hasn't resolved a
+ * username yet), and a short body-text excerpt. Every `.catch` here
+ * exists because this itself only runs while something has ALREADY gone
+ * wrong -- it must never throw a second, more confusing error on top of
+ * the original failure it's trying to explain. */
+async function describePageState(page: Page): Promise<string> {
+  const url = page.url();
+  const heading = await page
+    .getByRole("heading")
+    .first()
+    .textContent()
+    .catch(() => null);
+  const usernamePromptVisible = await page
+    .getByText(/you need a username/i)
+    .isVisible()
+    .catch(() => false);
+  const bodyExcerpt = (
+    await page
+      .locator("body")
+      .innerText()
+      .catch(() => "")
+  )
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300);
+  return (
+    `  URL: ${url}\n` +
+    `  Heading: ${heading ?? "(none found)"}\n` +
+    `  Username-claim prompt present: ${usernamePromptVisible}\n` +
+    `  Body excerpt: "${bodyExcerpt}"`
+  );
+}
+
 /** Retries `attempt` (a navigation, reload, or click that may land on the
  * app's own transient-rate-limit UI) until `target` becomes visible.
  * Several of this app's endpoints -- identity creation, session recovery
@@ -55,7 +91,27 @@ async function retryOnRateLimit(
     } catch {
       break;
     }
-    if (await target.isVisible()) return;
+    // Check for the EXCEPTIONAL condition (the rate-limit banner) rather
+    // than re-checking `target` itself. A real, reproduced bug in the
+    // previous version of this check (`if (await target.isVisible())
+    // return`) treated "target isn't visible *this exact instant*" as
+    // proof of rate-limiting -- but the combined toBeVisible() above only
+    // proves target WAS visible at some point during its own wait, not
+    // that it still is right now. A target that's part of a fast
+    // multi-step transition (e.g. Waiting Room -> Tabletop once a room
+    // auto-starts) can legitimately have a brief gap where neither the
+    // old nor the new page content is rendered yet -- landing exactly in
+    // that gap made this `isVisible()` call return false on a genuinely
+    // successful path, which made the loop wrongly assume rate-limiting,
+    // back off, and re-click a submit button that had already navigated
+    // away for good -- confirmed via a real CI trace (guest already on
+    // /games/... , `isVisible()` still returned false, then the retried
+    // click hung forever waiting for a "Join room" button that no longer
+    // existed). Checking for the banner specifically, and defaulting to
+    // success when it's absent, can't make that mistake: the banner
+    // doesn't have a transient "briefly gone" state the way a
+    // multi-step navigation's content does.
+    if (!(await rateLimited.isVisible())) return;
     lastSawRateLimit = true;
 
     // Read the banner's backoff seconds atomically, with its own short
@@ -133,7 +189,15 @@ function uniqueUsername(base: string): string {
  * (UsernameSection returns null before `state.status === "ready"`), so
  * waiting for it via retryOnRateLimit's `target` is itself an explicit,
  * authoritative wait for both identity bootstrap AND the form being ready
- * -- not two separate waits bolted together. */
+ * -- not two separate waits bolted together.
+ *
+ * Only returns once `clickUntilSettled` has confirmed the "your username
+ * is <name>" confirmation text is showing, not merely once the claim
+ * request was sent -- that text is rendered from AuthProvider's own
+ * `state.username`, the same shared context every other page (including
+ * the "/rooms/join" form this claim usually precedes) reads, so seeing it
+ * IS proof the authenticated client state has actually updated, not a
+ * separate, weaker signal bolted on afterward. */
 export async function claimUsername(page: Page, base: string): Promise<string> {
   const username = uniqueUsername(base);
   const usernameField = page.getByLabel("Username");
@@ -167,13 +231,117 @@ export async function reloadUntilReady(page: Page, target: Locator): Promise<voi
 
 /** Clicks `submit`, tolerating a transient rate limit (see
  * retryOnRateLimit) -- e.g. RecoveryPage's "Recover session" button hits
- * the recovery endpoint's especially tight 5 req/min bucket directly. */
+ * the recovery endpoint's especially tight 5 req/min bucket directly.
+ *
+ * Only for a `submit` that is already known to exist on the current page
+ * (e.g. a button in a form the caller just navigated to and confirmed is
+ * rendered) -- it is NOT a substitute for waiting on a page/form that
+ * might not have loaded yet. A bare `submit.click()` with no timeout of
+ * its own would otherwise wait, unbounded, for the whole test timeout to
+ * expire if `submit` never appears at all, producing a confusing
+ * "Test ended -- waiting for <role>" failure with no indication of what
+ * the page actually looked like. Failing fast here, with a bounded
+ * precondition and real diagnostics, catches that case immediately
+ * instead. */
 export async function clickUntilSettled(
   page: Page,
   submit: Locator,
   target: Locator,
 ): Promise<void> {
+  try {
+    await expect(submit).toBeVisible({ timeout: 15000 });
+    await expect(submit).toBeEnabled({ timeout: 15000 });
+  } catch (err) {
+    throw new Error(
+      `clickUntilSettled: submit locator never became visible/enabled before clicking.\n` +
+        `${await describePageState(page)}\n` +
+        `  Original error: ${String(err)}`,
+    );
+  }
   await retryOnRateLimit(page, () => submit.click(), target);
+}
+
+/** Navigates `page` directly to "/rooms/join" and waits until the Join
+ * Room by Name form is authoritatively ready -- not just the page
+ * heading (which renders identically whether or not a username is
+ * claimed -- see JoinRoomPage.tsx's early `if (!username)` return, which
+ * shows the SAME "Join Room by Name" <h1> with no form at all), but the
+ * actual "Room name" input and an enabled "Join room" submit button.
+ * Never relies on the nav bar's own link being already rendered and
+ * clickable (same reasoning as claimUsername's direct "/recovery"
+ * navigation). `page.goto` here is itself a full page reload -- it
+ * re-runs identity bootstrap via session recovery -- so waiting on the
+ * form fields specifically (not just the heading) is what actually
+ * distinguishes "still bootstrapping" and "bootstrapped but no username"
+ * from "genuinely ready," rather than racing into a fill/click against a
+ * page that only looks ready. */
+export async function openJoinRoomByNamePage(page: Page): Promise<void> {
+  const heading = page.getByRole("heading", { name: "Join Room by Name" });
+  const roomNameField = page.getByLabel("Room name");
+  const submitButton = page.getByRole("button", { name: "Join room" });
+  try {
+    await retryOnRateLimit(page, () => page.goto("/rooms/join"), heading);
+    await expect(page).toHaveURL(/\/rooms\/join/, { timeout: 15000 });
+    await expect(roomNameField).toBeVisible({ timeout: 15000 });
+    await expect(submitButton).toBeVisible({ timeout: 15000 });
+    await expect(submitButton).toBeEnabled({ timeout: 15000 });
+  } catch (err) {
+    throw new Error(
+      `openJoinRoomByNamePage: the Join Room by Name form never became ready.\n` +
+        `${await describePageState(page)}\n` +
+        `  Original error: ${String(err)}`,
+    );
+  }
+}
+
+/** Fills and submits the Join Room by Name form (already navigated to via
+ * openJoinRoomByNamePage) with `roomName`, then waits for one of the
+ * three legitimate outcomes: the Waiting Room (still filling), the
+ * Tabletop (capacity auto-start, Phase 4, already redirected before this
+ * wait even started), or a visible, actionable server error (e.g. "room
+ * not found") -- never silently returning on a request that was merely
+ * *sent*.
+ *
+ * Deliberately a single click, not clickUntilSettled's retry loop: once
+ * submitted, the button either produces one of the three outcomes above
+ * or a genuine, distinct error -- there is no legitimate reason to click
+ * "Join room" a second time. A real CI failure (traced in detail --
+ * docs/ci-e2e-join-navigation-followup.md) showed exactly what goes
+ * wrong when a generic retry helper's own transient-visibility check
+ * misfires here: the join had already succeeded and the guest had
+ * already navigated to the Tabletop, but the retry loop wrongly
+ * concluded it needed to try again and clicked a "Join room" button that
+ * no longer existed anywhere on the page, hanging until the whole test
+ * timed out. */
+export async function joinRoomByName(page: Page, roomName: string): Promise<void> {
+  await openJoinRoomByNamePage(page);
+
+  const roomNameField = page.getByLabel("Room name");
+  await roomNameField.fill(roomName);
+  await expect(roomNameField).toHaveValue(roomName);
+
+  const joinButton = page.getByRole("button", { name: "Join room" });
+  await expect(joinButton).toBeVisible();
+  await expect(joinButton).toBeEnabled();
+  await joinButton.click();
+
+  const waitingRoomHeading = page.getByRole("heading", { name: roomName });
+  const tabletopHeading = page.getByRole("heading", { name: "Your rack (14)" });
+  const serverError = page.locator(".error-banner[role='alert']");
+  try {
+    await expect(waitingRoomHeading.or(tabletopHeading).or(serverError)).toBeVisible({
+      timeout: GAME_ENTRY_TIMEOUT,
+    });
+  } catch (err) {
+    throw new Error(
+      `joinRoomByName: no outcome (Waiting Room, Tabletop, or a server error) appeared after ` +
+        `clicking "Join room".\n${await describePageState(page)}\n  Original error: ${String(err)}`,
+    );
+  }
+  if (await serverError.isVisible()) {
+    const message = await serverError.textContent();
+    throw new Error(`joinRoomByName: the server rejected the join -- ${message}`);
+  }
 }
 
 /** Gets two pages seated in a fresh, started 2-player game and returns
@@ -223,21 +391,11 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
   // room's name IS the host's username for a private room, already known.
   // Capacity 2: this join fills the room and auto-starts it immediately
-  // (Phase 4) -- no manual ready/start round trip is needed, or safe to
-  // attempt (the Waiting Room's controls can already be gone by the time a
-  // click would land, once each page's own 3s poll observes the status
-  // flip). The wait target below tolerates landing on either the
+  // (Phase 4) -- no manual ready/start round trip is needed. joinRoomByName
+  // (see its own comment) already tolerates landing on either the
   // (possibly momentary) Waiting Room or -- if the redirect already
   // happened -- the Tabletop directly.
-  await guestPage.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
-  await guestPage.getByLabel("Room name").fill(hostUsername);
-  await clickUntilSettled(
-    guestPage,
-    guestPage.getByRole("button", { name: "Join room" }),
-    guestPage
-      .getByRole("heading", { name: hostUsername })
-      .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
-  );
+  await joinRoomByName(guestPage, hostUsername);
 
   // Auto-start (Phase 4) already dealt the game -- both pages get carried
   // there by their own waiting-room poll (or may already be there). The
@@ -314,24 +472,11 @@ export async function startNPlayerGame(
   // The normal join path is now exact-name (Phase 3, corrected DR-8) -- the
   // room's name IS the host's username for a private room, already known.
   // The LAST join fills the room to capacity and auto-starts it (Phase 4);
-  // earlier joins leave it open. No manual ready/start round trip is
-  // needed, or safe to attempt once the room has started (see
-  // startTwoPlayerGame's comment on the same race). The wait target below
-  // tolerates landing on either the Waiting Room or -- if already
+  // earlier joins leave it open. joinRoomByName (see its own comment)
+  // already tolerates landing on either the Waiting Room or -- if already
   // redirected -- the Tabletop.
   for (const guestPage of guestPages) {
-    await guestPage
-      .getByRole("navigation")
-      .getByRole("link", { name: "Join Room by Name" })
-      .click();
-    await guestPage.getByLabel("Room name").fill(hostUsername);
-    await clickUntilSettled(
-      guestPage,
-      guestPage.getByRole("button", { name: "Join room" }),
-      guestPage
-        .getByRole("heading", { name: hostUsername })
-        .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
-    );
+    await joinRoomByName(guestPage, hostUsername);
   }
 
   // Auto-start (Phase 4) already dealt the game once the room filled. Same

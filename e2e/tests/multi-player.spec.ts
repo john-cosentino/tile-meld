@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { startNPlayerGame, waitForReady, claimUsername, clickUntilSettled } from "./helpers.js";
+import {
+  startNPlayerGame,
+  waitForReady,
+  claimUsername,
+  clickUntilSettled,
+  joinRoomByName,
+} from "./helpers.js";
 
 // The plan requires 2-4 isolated browser contexts as separate players (Sec
 // 11.3); two-player-smoke.spec.ts covers the 2-player floor, this file
@@ -76,13 +82,7 @@ test("3-player room: host manually starts early with only 2 of 3 seats filled", 
     hostPage.getByRole("heading", { name: hostUsername }),
   );
 
-  await guestPage.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
-  await guestPage.getByLabel("Room name").fill(hostUsername);
-  await clickUntilSettled(
-    guestPage,
-    guestPage.getByRole("button", { name: "Join room" }),
-    guestPage.getByRole("heading", { name: hostUsername }),
-  );
+  await joinRoomByName(guestPage, hostUsername);
 
   // Only 2 of 3 seats are filled -- the room stays "open" (no auto-start
   // yet, since capacity hasn't been reached), so the Start Game button is
