@@ -66,6 +66,19 @@ const EnvSchema = z.object({
   // defaulted) so it stays absent-able in the Env type; interpret via
   // isRetentionSweepEnabled().
   ENABLE_RETENTION_SWEEP: z.enum(["true", "false"]).optional(),
+  // E2E-only escape hatch (release-CI-stabilization follow-up): the real
+  // per-IP token buckets (http/rateLimits.ts) are correct, intentional
+  // production behavior, but a ~33-test Playwright run against one shared
+  // local IP legitimately bursts past them, which was causing E2E setup
+  // helpers to stall waiting out rate-limit backoffs instead of exercising
+  // the behavior under test. This lets an E2E run skip the limiter
+  // entirely rather than weakening the limits themselves. Interpret via
+  // isE2ERateLimitBypassEnabled(), which additionally requires
+  // NODE_ENV !== "production" -- see that function's comment. Set only in
+  // e2e/playwright.config.ts's webServer env (never in render.yaml or any
+  // other deployment config, and never set by ordinary unit/integration
+  // tests, which must keep exercising the real limiter).
+  E2E_DISABLE_RATE_LIMITS: z.enum(["true", "false"]).optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -81,6 +94,17 @@ export function isComputerOpponentEnabled(env: Env): boolean {
  * verify in staging, then enable -- see docs/deploy-render.md. */
 export function isRetentionSweepEnabled(env: Env): boolean {
   return env.ENABLE_RETENTION_SWEEP === "true";
+}
+
+/** Whether production per-IP rate limits are bypassed for an E2E test run.
+ * Disabled by default; requires BOTH an explicit E2E_DISABLE_RATE_LIMITS=
+ * "true" AND NODE_ENV !== "production", combined with `&&` so a mistaken
+ * NODE_ENV=production always wins regardless of the flag's value -- this
+ * function can never return true for a production-configured process, even
+ * if the flag were set on it by accident. See E2E_DISABLE_RATE_LIMITS's
+ * schema comment for where this is (and is never) set. */
+export function isE2ERateLimitBypassEnabled(env: Env): boolean {
+  return env.E2E_DISABLE_RATE_LIMITS === "true" && env.NODE_ENV !== "production";
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {

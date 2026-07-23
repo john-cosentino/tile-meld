@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { startTwoPlayerGame, dragTo } from "./helpers.js";
+import { startTwoPlayerGame, dragTo, clickAndConfirm } from "./helpers.js";
 
 // Complements the click/tap path already covered in two-player-smoke.spec.ts
 // with a genuine pointer drag, proving the dnd-kit PointerSensor
@@ -54,12 +54,15 @@ test("real mouse drag: rack tile onto a new table set, then a second tile onto t
   // Undo unwinds one move at a time back to the original 14-tile rack. Each
   // Undo is verified by the full resulting state (rack count AND Set 1 count),
   // and the button becoming disabled proves the stack emptied cleanly.
-  await undoButton.click();
-  await expect(activePage.getByRole("heading", { name: "Your rack (13)" })).toBeVisible();
+  // clickAndConfirm (see helpers.ts) retries the click once if nothing
+  // changes within a short window, rather than trusting a single click to
+  // have landed -- see that helper's comment for why.
+  const rack13 = activePage.getByRole("heading", { name: "Your rack (13)" });
+  await clickAndConfirm(undoButton, rack13);
   await expect(setOneZone.locator(".tile")).toHaveCount(1);
 
-  await undoButton.click();
-  await expect(activePage.getByRole("heading", { name: "Your rack (14)" })).toBeVisible();
+  const rack14 = activePage.getByRole("heading", { name: "Your rack (14)" });
+  await clickAndConfirm(undoButton, rack14);
   await expect(activePage.getByText(/^Set 1 --/)).toHaveCount(0);
   await expect(undoButton).toBeDisabled();
 });

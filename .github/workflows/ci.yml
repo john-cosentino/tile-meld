@@ -57,10 +57,33 @@ jobs:
         run: pnpm run build
 
   e2e:
-    name: End-to-end (Playwright, full browser/viewport matrix)
+    name: End-to-end (${{ matrix.project }})
     needs: checks
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Each matrix entry runs exactly one Playwright project on its own
+    # runner -- the matrix split (not this number) is the real fix for the
+    # old one-hour serial-job timeout. 30 minutes gives one project
+    # reasonable headroom for CI retries and real rate-limit backoff waits
+    # (an isolated Mobile WebKit run has already taken slightly over 20
+    # minutes under those conditions) without being so large it would mask
+    # a genuinely runaway job.
+    timeout-minutes: 30
+    strategy:
+      # One project's failure must not cancel the other four in-flight
+      # runners -- each project's pass/fail is independent signal.
+      fail-fast: false
+      matrix:
+        include:
+          - project: chromium
+            browser: chromium
+          - project: firefox
+            browser: firefox
+          - project: webkit
+            browser: webkit
+          - project: mobile-chrome
+            browser: chromium
+          - project: mobile-webkit
+            browser: webkit
     services:
       postgres:
         image: postgres:16
@@ -95,27 +118,40 @@ jobs:
 
       # --with-deps pulls in the OS-level codec/font libraries each engine
       # needs (e.g. WebKit's libavif16) -- safe here since GitHub's runners
-      # give real, unprompted sudo, unlike a typical local sandbox.
-      - name: Install Playwright browsers
+      # give real, unprompted sudo, unlike a typical local sandbox. Only
+      # the browser engine this matrix entry's project actually runs on is
+      # installed (see the project/browser mapping above -- mobile-chrome
+      # and mobile-webkit are device emulations of the desktop chromium/
+      # webkit engines, not separate browser binaries).
+      - name: Install Playwright browser (${{ matrix.browser }})
         working-directory: e2e
-        run: npx playwright install --with-deps chromium firefox webkit
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
       # e2e/playwright.config.ts's `webServer` entries start both the API
       # server and the Vite dev server automatically (reuseExistingServer
-      # is false in CI, so this always spins up its own fresh pair); the
-      # full 2-page-app suite is otherwise serialized to one worker there
-      # too, for the same real-per-IP-rate-limit reasons noted in that
-      # config -- this job's 60-minute timeout gives that plenty of room
-      # (a local full 5-project run took ~28 minutes).
-      - name: Run Playwright E2E suite (all projects)
+      # is false in CI, so this always spins up its own fresh pair).
+      # --project scopes this run to the one project this matrix entry
+      # owns; playwright.config.ts's workers: 1 (see the comment there)
+      # still applies within that single project's own test files, so the
+      # per-IP rate-limit behavior that setting protects against is
+      # unchanged -- only the previously-serial cross-project execution is
+      # now parallelized, each project against its own runner/IP.
+      - name: Run Playwright E2E suite (${{ matrix.project }})
         working-directory: e2e
-        run: npx playwright test
+        run: npx playwright test --project=${{ matrix.project }}
 
-      - name: Upload Playwright report
+      # Unique per-project artifact name -- actions/upload-artifact@v4
+      # rejects re-uploading the same artifact name twice in one workflow
+      # run, which a shared "playwright-report" name would hit as soon as
+      # a second matrix job tried to upload. e2e/playwright.config.ts's
+      # `reporter: "html"` writes to e2e/playwright-report/ by default, so
+      # this path matches what the reporter actually produces; if:always()
+      # keeps a failed project's diagnostic output uploaded too.
+      - name: Upload Playwright report (${{ matrix.project }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: e2e/playwright-report/
           retention-days: 14
 

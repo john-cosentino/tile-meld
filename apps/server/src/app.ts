@@ -14,7 +14,7 @@ import {
 } from "fastify-type-provider-zod";
 import type { Kysely } from "kysely";
 import type { Database } from "./db/types.js";
-import type { Env } from "./env.js";
+import { isE2ERateLimitBypassEnabled, type Env } from "./env.js";
 import type { AppInstance } from "./http/types.js";
 import { registerHealthRoutes } from "./http/routes/health.js";
 import { registerIdentityRoutes } from "./http/routes/identity.js";
@@ -82,7 +82,26 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
   // per-route rate limit below -- no error, it just never triggers.
   // Found by deliberately hammering a rate-limited route in a test and
   // getting zero 429s; confirmed via a minimal repro before fixing here.
-  await app.register(rateLimit, { global: false });
+  //
+  // isE2ERateLimitBypassEnabled (env.ts) skips registering this plugin
+  // entirely: with no rate-limit plugin present, every route's
+  // `config.rateLimit` is simply inert (nothing interprets it), so the
+  // whole app behaves identically to production except for per-IP
+  // throttling. This is deliberately an all-or-nothing registration
+  // decision, not a per-route env check -- an E2E run's own setup
+  // (creating multiple identities/rooms per test, reconnecting,
+  // recovering sessions) legitimately bursts every one of these buckets
+  // from one shared local IP across a long run, not just one of them.
+  // Gated on NODE_ENV !== "production" inside that function, so a
+  // mistakenly production-configured process can never end up with rate
+  // limiting silently off. Only e2e/playwright.config.ts's webServer env
+  // ever sets E2E_DISABLE_RATE_LIMITS=true -- never render.yaml, and
+  // never an ordinary unit/integration test's env (e.g.
+  // test/http/security.test.ts), which must keep exercising the real
+  // limiter.
+  if (!isE2ERateLimitBypassEnabled(options.env)) {
+    await app.register(rateLimit, { global: false });
+  }
 
   registerHealthRoutes(app);
   registerIdentityRoutes(app);
