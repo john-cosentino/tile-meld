@@ -15,19 +15,19 @@ without asking first.
 
 ## Non-negotiable rules
 
-- **Never run a Git write/history command** — no `add`, `commit`, `push`,
-  `pull`, `merge`, `rebase`, `reset`, `restore`, `clean`, `stash`, `tag`,
-  `checkout`, `switch`, or `branch`. Read-only Git inspection
-  (`status`, `diff`, `log`) is fine.
+- **Git is fully permitted** (changed 2026-07-25) — staging, committing,
+  branching, merging, rebasing, pushing, and force-pushing may be run without
+  asking. This supersedes Decision D-GITGUARD in
+  `docs/opus-implementation-plan.md` §1.6, which has not yet been updated to
+  match. Show the diff before committing, and never commit secrets.
 - **Ask before any system-level install** (apt packages, Docker, database
   engines, global system config). Project-level dependencies inside this repo
   (via `pnpm install`) do not require asking.
 - **Implement one phase at a time** (see plan §13). Do not start the next
-  phase until the user has confirmed the manual Git checkpoint for the
-  current one.
-- **Stop at every phase checkpoint** and print the exact single-line
-  inspect/commit/push commands, rooted at `~/git/tile-meld`, for the user to
-  run themselves.
+  phase until the user has confirmed the checkpoint for the current one.
+- **Stop at every phase checkpoint** for manual testing and review. Commit the
+  completed phase and summarize what changed, then wait for the user to confirm
+  before starting the next phase.
 - **Keep `packages/engine` pure** — no React, DB, network, `Date.now()`, or
   `Math.random()`. Time and randomness are always injected. The server is
   authoritative; the client's copy of the engine is hints only, never a

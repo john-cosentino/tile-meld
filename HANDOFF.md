@@ -132,8 +132,8 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.67.
   (`node dist/index.js` / `dist/migrate-cli.js` / healthcheck use `node` only)
   because the Node base image's bundled npm vendors a flagged `undici`. Don't
   reintroduce npm at runtime; the build stages still use pnpm via corepack.
-- **Never run Git write/history commands** yourself (CLAUDE.md). Print exact
-  single-line commands for the human to run, rooted at `~/git/tile-meld`.
+- **Git is fully permitted** as of 2026-07-25 (see `CLAUDE.md`). Earlier
+  guidance to print commands for the human to run no longer applies.
 
 ## 7. Deferred / future work (clean seams, not started)
 
@@ -151,8 +151,8 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.67.
 1. `git status` (expect clean on `main`) and `git --no-pager log --oneline -5`.
 2. Confirm local Postgres is up and migrated.
 3. Run the standard gate once to confirm a green baseline before changing code.
-4. Branch for new work (human runs the command); implement one reviewable
-   change at a time; keep the engine/bot pure and the server authoritative.
+4. Branch for new work; implement one reviewable change at a time; keep the
+   engine/bot pure and the server authoritative.
 5. For anything touching draft/undo, drag-and-drop, or E2E setup, re-read §6.
-6. Run the full gate + relevant E2E specs before proposing a commit; stop at a
-   manual Git checkpoint and print the exact commit/push commands.
+6. Run the full gate + relevant E2E specs before committing; stop at the phase
+   checkpoint for manual review before starting the next phase.
