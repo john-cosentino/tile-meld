@@ -31,3 +31,6 @@ pnpm-debug.log*
 
 # Vite
 apps/web/dist/
+
+# Claude Code local notes (machine-specific)
+CLAUDE.local.md
