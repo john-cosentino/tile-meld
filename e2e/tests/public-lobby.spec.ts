@@ -77,14 +77,30 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   // browsing the list. Not asserted to land in THIS specific room:
   // findQuickJoinableRoom (apps/server/src/db/repositories/rooms.ts)
   // intentionally matches the oldest-idle eligible open public room
-  // system-wide, which in a long-lived local dev database could be a
-  // different leftover room -- or even the room above, which still has
-  // headroom (2/4). Both candidate rooms are deliberately left with at
-  // least 2 free seats, so the Quick Join arrival below can never be the
-  // one that reaches capacity and auto-starts (Phase 4) whichever it
-  // picks -- what matters here is that the endpoint places the player into
-  // *some* open public room's waiting view, end to end, and that waiting
-  // view is reliably still the Waiting Room afterward.
+  // system-wide -- which, in a long-lived local dev database OR across
+  // repeated runs of THIS spec itself, is not necessarily one of the two
+  // rooms just created above. Confirmed by direct investigation (Meld
+  // Masters Phase 1, Checkpoint A -- see docs/meld-masters-phase-1-summary.md):
+  // running this spec repeatedly (`--repeat-each`) against a single
+  // database, with no other spec involved at all, reproduces an
+  // intermittent failure starting from the second run onward. The cause
+  // isn't a bug in this test's own two rooms (both are deliberately left
+  // with >= 2 free seats, so quick-joining either one here can never fill
+  // it) -- it's that a *previous* run's successful Quick Join leaves
+  // whichever room it joined with exactly 1 free seat, still open. A later
+  // run's Quick Join can legitimately match that leftover room (oldest
+  // idle first, by design) and complete it to capacity, which correctly
+  // triggers the same real, shared auto-start-on-capacity behavior any
+  // last-seat join uses (game/roomStart.ts) -- redirecting straight to the
+  // Tabletop instead of leaving the player in the Waiting Room. Nothing in
+  // this app promises Quick Join will never fill a room; that was an
+  // assumption this test made about its OWN two rooms, which doesn't
+  // extend to whatever a prior run left behind. So the assertion below
+  // accepts BOTH real outcomes production can produce: landing in the
+  // Waiting Room ("Leave room"), or -- if the matched room happened to
+  // fill and auto-start -- landing directly on the Tabletop with a dealt
+  // rack. Either one proves the same thing this test cares about: the
+  // endpoint placed the player into a real, live public room, end to end.
   await quickJoinHostPage.getByRole("link", { name: "Create Room" }).click();
   await quickJoinHostPage.getByRole("radio", { name: "3 players" }).check();
   await quickJoinHostPage.getByRole("radio", { name: "Public (listed in the lobby)" }).check();
@@ -95,12 +111,16 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   );
 
   await quickJoinPage.getByRole("navigation").getByRole("link", { name: "Public Lobby" }).click();
-  // Landing anywhere in a waiting room (the "Leave room" control) is the
-  // definitive signal here -- which specific room is intentionally not
-  // asserted, per the comment above.
+  // Which specific room is intentionally not asserted, per the comment
+  // above -- only that Quick Join actually placed the player somewhere
+  // real: either the Waiting Room, or (if the matched room filled and
+  // auto-started) straight onto a dealt Tabletop.
+  const quickJoinLanded = quickJoinPage
+    .getByRole("button", { name: "Leave room" })
+    .or(quickJoinPage.getByRole("heading", { name: /Your rack \(\d+\)/ }));
   await clickUntilSettled(
     quickJoinPage,
     quickJoinPage.getByRole("button", { name: "Quick Join" }),
-    quickJoinPage.getByRole("button", { name: "Leave room" }),
+    quickJoinLanded,
   );
 });
