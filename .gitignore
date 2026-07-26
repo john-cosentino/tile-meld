@@ -27,7 +27,8 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea/
-.claude/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Vite
 apps/web/dist/
