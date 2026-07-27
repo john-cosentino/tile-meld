@@ -63,6 +63,25 @@ describe("public/sw.js", () => {
   });
 });
 
+describe("src/styles/global.css -- Silkscreen self-hosting (Phase 2)", () => {
+  const css = readWebFile("src/styles/global.css");
+
+  it("declares Silkscreen via @font-face with a local, relative asset path", () => {
+    expect(css).toMatch(/@font-face\s*{[^}]*font-family:\s*"Silkscreen"/);
+    expect(css).toContain('url("../assets/fonts/Silkscreen-Regular.woff2") format("woff2")');
+    expect(css).toContain('url("../assets/fonts/Silkscreen-Bold.woff2") format("woff2")');
+  });
+
+  it("uses font-display: swap so the fallback stack is never invisible while it loads", () => {
+    expect(css).toMatch(/font-display:\s*swap/);
+  });
+
+  it("makes no runtime request to Google Fonts or any other external host", () => {
+    expect(css).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
+    expect(css).not.toMatch(/@font-face[^}]*url\(\s*["']?https?:/);
+  });
+});
+
 describe("obsolete-asset guard", () => {
   it("public/ contains only the expected, allowlisted files", () => {
     // A minimal guard against reintroducing old-branding or mahjong-themed

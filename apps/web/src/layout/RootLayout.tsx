@@ -2,6 +2,7 @@ import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider.js";
 import { PRODUCT_NAME } from "@tile-meld/shared";
 import { NotificationsControl } from "../push/NotificationsControl.js";
+import monogramSrc from "../assets/brand/meld-masters-monogram-header.png";
 
 export function RootLayout() {
   const { state } = useAuth();
@@ -31,22 +32,16 @@ export function RootLayout() {
       <a href="#main-content" className="visually-hidden">
         Skip to main content
       </a>
-      <header
-        className="row"
-        style={{
-          padding: "var(--space-4)",
-          borderBottom: "1px solid var(--color-border)",
-          justifyContent: "space-between",
-        }}
-      >
+      <header className="app-header row" style={{ justifyContent: "space-between" }}>
         <div className="row">
-          <Link
-            to="/"
-            style={{ fontWeight: 700, textDecoration: "none", color: "var(--color-text)" }}
-          >
-            {PRODUCT_NAME}
+          <Link to="/" className="brand-wordmark">
+            {/* Decorative only -- the link's accessible name comes from the
+                text below; an empty alt keeps this image invisible to
+                assistive technology instead of doubling the name up. */}
+            <img src={monogramSrc} alt="" width={32} height={32} className="brand-monogram" />
+            <span className="brand-wordmark-text">{PRODUCT_NAME}</span>
           </Link>
-          <nav className="row" aria-label="Main navigation">
+          <nav className="app-nav row" aria-label="Main navigation">
             <Link to="/">Home</Link>
             <Link to="/rooms/new">Create Room</Link>
             <Link to="/rooms/join">Join Room by Name</Link>

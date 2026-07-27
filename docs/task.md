@@ -4,15 +4,19 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 1 — branding centralization and public rename.**
-Public product name: **Meld Masters**. `tile-meld` remains the internal
-repository name, package scope, and deployment identifier.
+**Current checkpoint: Phase 2 — design tokens and the global arcade
+foundation — completed.** Public product name: **Meld Masters**.
+`tile-meld` remains the internal repository name, package scope, and
+deployment identifier.
 
-**Implementation state:** the public rename is implemented (in progress —
-verification underway, see `docs/meld-masters-phase-1-summary.md` once
-written). No visual/CSS redesign, no icon derivation, and no game-behavior
-change occurred — Phase 1 is scoped to branding text and centralization
-only.
+**Implementation state:** the arcade design-token system, dark-only theme,
+self-hosted Silkscreen display font, site-wide static grid background, the
+`.arcade-panel` foundation, and the new header/nav/wordmark/monogram are
+implemented and verified (see `docs/meld-masters-phase-2-summary.md`). No
+Phase 3 (dashboard/lobby/room), Phase 4 (tabletop), Phase 5 (portraits), or
+Phase 6 (icons/PWA) work occurred — individual screens still use their
+existing component layout, now rendering in the new palette purely through
+the legacy-token remap.
 
 ## Open blocker
 
@@ -44,26 +48,48 @@ identity — were resolved 2026-07-26; see
   application code. Verified via `--repeat-each=10` (including against an
   already-polluted database) and the full chromium project, both 100%
   clean. See `docs/meld-masters-phase-1-summary.md`.
-- **Phase 1, Checkpoint B** (public rename) — in progress this session.
+- **Phase 1, Checkpoint B** (public rename) — committed `c48ddfc`
+  (2026-07-26/27). Full gate green; chromium+mobile-chrome verified
+  earlier, full 5-project matrix run twice showed persistent WebKit-only
+  timeout flakiness (never reproducible in isolation, zero failures in
+  chromium/firefox/mobile-chrome across both runs) — reported to the user
+  in full, who explicitly authorized committing with it documented rather
+  than requiring further multi-hour investigation. See
+  `docs/meld-masters-phase-1-summary.md`.
+- **Phase 2** (design tokens and global arcade foundation) — completed
+  2026-07-27. All three previously-pending decisions were approved by the
+  user and implemented: dark-only arcade theme (D2), self-hosted
+  Silkscreen display font (D5), and a decorative header monogram beside
+  the live-text wordmark. Full design-token system, site-wide static grid
+  background, `.arcade-panel` foundation, and restyled header/nav
+  implemented. Full gate green; chromium+mobile-chrome e2e 66/66 (includes
+  every existing axe and mobile-overflow check, none weakened). 12 review
+  screenshots captured. See `docs/meld-masters-phase-2-summary.md` for the
+  full contrast-ratio table, font/monogram provenance, and file list.
 
-## Pending approvals (needed before Phase 2 begins)
+## Approved decisions (implemented in Phase 2)
 
-These are recorded as pending, not silently treated as approved:
+Previously recorded as pending; all three were approved by the user and
+implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 
-1. Retiring the functional light theme — both `prefers-color-scheme`
-   branches would resolve to the dark arcade palette regardless of system
-   preference (plan §15 D2).
-2. Adding and self-hosting the Silkscreen font (SIL OFL license) for
-   display type (plan §8.3, §15 D5).
-3. Optionally placing the Meld Masters monogram
-   (`meld-masters-concept-logo.png`) beside the live-text header wordmark,
-   as a small decorative `alt=""` emblem (plan §7.1, §2).
+1. **Dark-only theme** — implemented. The `prefers-color-scheme: dark`
+   media-query override was removed; `:root` holds the arcade dark values
+   directly, so both OS preferences resolve identically. No theme toggle.
+2. **Silkscreen display font** — implemented. Self-hosted from the
+   official Google Fonts repository, SIL OFL 1.1, used only for the
+   wordmark/headings/panel titles/nav labels — never body text, forms,
+   chat, tile numbers, or recovery codes.
+3. **Header monogram** — implemented. A 96×96 decorative derivative of the
+   approved logo master sits beside the live-text wordmark; `alt=""`; the
+   header link's accessible name remains exactly "Meld Masters" (test-verified).
 
 ## Next phase
 
-**Phase 2 — Design tokens and global arcade foundation** (plan §11), gated
-on Phase 1 being reviewed and approved, and on the pending approvals above
-being resolved.
+**Phase 3 — Dashboard, lobby, and room presentation** (plan §11). Not
+started. Applies the design system from Phase 2 to the pre-game screens
+(Home dashboard, Public Lobby, Create/Join Room, Waiting Room, Recovery)
+while preserving behavior — the detailed, screen-by-screen work Phase 2
+deliberately did not perform.
 
 ## Structure to use when work begins on a new, unrelated task
 

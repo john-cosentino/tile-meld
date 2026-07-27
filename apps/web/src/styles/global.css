@@ -1,18 +1,91 @@
-/* Layout/typography design tokens -- the tile-color tokens (--tile-color-*)
-   are set at runtime from packages/shared (see applyBrandingTokens.ts), the
-   single source of truth for the palette (§10.4). Everything else here is
-   presentation-only and safe to hand-edit. */
+/* Meld Masters arcade design system (Phase 2:
+   docs/meld-masters-visual-refresh-plan.md §8, approved decisions D2/D5).
+   The tile-color tokens (--tile-color-*) are set at runtime from
+   packages/shared (see applyBrandingTokens.ts), the single source of truth
+   for the palette (§10.4) -- unchanged by this phase. Everything else here
+   is presentation-only and safe to hand-edit.
+
+   Dark-only theme (D2): the arcade palette is the ONLY palette. There is no
+   `prefers-color-scheme: dark` override below and there is no separate
+   light theme -- both an OS light preference and an OS dark preference
+   resolve to the same values, because they are the only values that exist.
+   This is a deliberate omission, not a gap: keeping a media query around
+   that would set every token to the value it already has is dead code that
+   only invites a future reader to wonder what it does. The legacy
+   `--color-*` names are kept and remapped onto the new arcade tokens
+   (rather than deleted) so every existing component/class below inherits
+   the new foundation without needing to migrate token names in this phase
+   -- that migration can happen incrementally in Phase 3/4 as each screen
+   gets its detailed redesign. */
 :root {
+  /* Body/UI font: unchanged system stack, used for everything except the
+     display contexts below (§10.3 -- legibility for body copy, forms,
+     chat, tile numbers, and recovery codes is a hard requirement, not a
+     style preference). */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --color-bg: #ffffff;
-  --color-surface: #f4f5f7;
-  --color-border: #d0d4da;
-  --color-text: #1a1d23;
-  --color-text-muted: #5a6270;
-  --color-accent: #2f6fb4;
-  --color-danger: #b3261e;
-  --color-success: #2e7d43;
-  --color-warning: #8a6314;
+  /* Display font (D5): the wordmark, major headings, panel titles, and
+     compact arcade labels only -- see the Silkscreen @font-face below and
+     apps/web/src/assets/fonts/README.md for source/license. Falls back to
+     the system stack if the font is still loading or fails to load. */
+  --font-display: "Silkscreen", var(--font-sans);
+
+  /* Page and surface layers (navy stack, darkest to lightest). */
+  --bg-page: #0a0e1a;
+  --bg-panel: #101828;
+  --bg-panel-raised: #16223a;
+  --bg-inset: #0c1322;
+
+  /* Primary arcade accents. */
+  --neon-cyan: #3fe0ff;
+  --neon-cyan-dim: rgba(63, 224, 255, 0.28);
+  --neon-orange: #ff9f2e;
+  --neon-gold: #ffc94d;
+
+  /* Secondary arcade accents -- restrained use only (§ "Approved visual
+     direction"): small state/variant accents, never the dominant color of
+     a large area. */
+  --neon-purple: #b06aff;
+  --neon-green: #58e08a;
+  --neon-pink: #ff5fa8;
+  --grid-line: rgba(63, 224, 255, 0.1);
+
+  /* Text -- contrast-verified against --bg-page and --bg-panel, see
+     docs/meld-masters-phase-2-summary.md for the full ratio table. */
+  --text-primary: #edf2fb;
+  --text-muted: #9fb0c9;
+  --text-on-accent: #0a0e1a;
+
+  /* State colors -- each is a light, saturated hue, so anywhere it is used
+     as a background needs --text-on-accent (dark) text, not white; see
+     button.primary/button.danger below for the concrete fix this required. */
+  --state-success: #58e08a;
+  --state-warning: #ffc94d;
+  --state-error: #ff6b5e;
+  --state-active: #3fe0ff;
+  --state-waiting: #9fb0c9;
+  --state-disabled-opacity: 0.5;
+
+  /* Legacy semantic tokens -- kept for every existing rule below and every
+     component that already consumes them; remapped onto the arcade tokens
+     above rather than deleted (see the file-level comment). */
+  --color-bg: var(--bg-page);
+  --color-surface: var(--bg-panel);
+  --color-border: var(--neon-cyan-dim);
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--neon-cyan);
+  --color-danger: var(--state-error);
+  --color-success: var(--state-success);
+  --color-warning: var(--state-warning);
+
+  /* Framing -- shared vocabulary for .arcade-panel and the header/nav
+     shell below; selective notched corners are an available tool (§
+     "Reusable arcade-panel foundation"), not applied everywhere. */
+  --frame-width: 2px;
+  --corner-notch: 10px;
+  --glow-sm: 0 0 6px var(--neon-cyan-dim);
+  --glow-focus: 0 0 0 3px rgba(63, 224, 255, 0.85);
+
   --radius-md: 0.5rem;
   --radius-lg: 0.9rem;
   --space-1: 0.25rem;
@@ -21,17 +94,37 @@
   --space-4: 1rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+
+  /* Motion -- short, restrained, and always subject to the
+     prefers-reduced-motion clamp further down this file. Nothing in this
+     phase introduces looping/ambient animation; these tokens exist for
+     ordinary state transitions (hover/focus/expand) only. */
+  --duration-fast: 120ms;
+  --duration-medium: 200ms;
+  --ease-arcade: cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #14161a;
-    --color-surface: #1d2027;
-    --color-border: #333844;
-    --color-text: #eef0f3;
-    --color-text-muted: #a2a9b5;
-  }
+/* Silkscreen (SIL OFL 1.1) -- self-hosted, apps/web/src/assets/fonts/,
+   sourced directly from the official Google Fonts repository (see that
+   directory's README.md for provenance). No external font request is ever
+   made; font-display: swap shows the --font-sans fallback immediately and
+   swaps in Silkscreen once it loads, so the wordmark and headings are never
+   invisible while it fetches. */
+@font-face {
+  font-family: "Silkscreen";
+  src: url("../assets/fonts/Silkscreen-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Silkscreen";
+  src: url("../assets/fonts/Silkscreen-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
 * {
@@ -44,10 +137,35 @@ body,
   height: 100%;
 }
 
+/* Site-wide arcade background (§ "Site-wide arcade background"): a static
+   near-black/navy field with a faint cyan grid, plus a soft fade near the
+   top so the grid reads as receding into the distance rather than tiling
+   uniformly all the way to the header. Pure CSS gradients, no image asset,
+   no animation, no backdrop-filter, no blur -- it is strictly the bottommost
+   paint layer behind every panel's own opaque background, so it can never
+   reduce foreground text contrast or intercept a pointer/drag event
+   (background-image is never interactive). --grid-line's alpha (0.1) keeps
+   the lines readable as texture without competing with content. */
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: var(--color-bg);
+  background-color: var(--bg-page);
+  background-image:
+    linear-gradient(180deg, var(--bg-page) 0%, transparent 32%),
+    repeating-linear-gradient(
+      0deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 48px
+    );
   color: var(--color-text);
   line-height: 1.5;
 }
@@ -76,22 +194,34 @@ button:disabled {
   opacity: 0.5;
 }
 
+/* --color-accent and --color-danger are now light, saturated arcade hues
+   (cyan / coral) rather than the old dark blue/red -- white text on either
+   measured well under WCAG AA (1.58:1 and 2.79:1). --text-on-accent (dark)
+   against them measures 12.2:1 and 6.9:1, so that replaces the hardcoded
+   #fff here. This is the token remap's one required knock-on fix, not a
+   button redesign -- shape, padding, and states are unchanged. */
 button.primary {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: #fff;
+  color: var(--text-on-accent);
 }
 
 button.danger {
   background: var(--color-danger);
   border-color: var(--color-danger);
-  color: #fff;
+  color: var(--text-on-accent);
 }
 
-/* Visible, high-contrast focus ring for keyboard operability (§10.3). */
+/* Visible, high-contrast focus ring for keyboard operability (§10.3),
+   layered with a matching glow so it stays obvious against dark navy
+   panels, the page background, and accent-colored buttons alike (measured
+   11-12:1 against --bg-page/--bg-panel; see the Phase 2 summary for the
+   full table). The glow is a fixed shadow, not an animation -- safe under
+   prefers-reduced-motion without needing that rule to touch it. */
 :focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 3px solid var(--neon-cyan);
   outline-offset: 2px;
+  box-shadow: var(--glow-focus);
 }
 
 .visually-hidden {
@@ -114,6 +244,143 @@ button.danger {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* Reusable arcade-panel foundation (§ "Reusable arcade-panel foundation").
+   A plain border-and-glow treatment by default -- readable, cheap, and safe
+   to apply anywhere a panel needs to read as part of the arcade shell.
+   Notched corners are deliberately a separate opt-in modifier, not the
+   default: clip-path on a fully-bordered box clips the border itself, so a
+   notched panel needs the two-layer technique below, and that complexity
+   is reserved for major shell panels where it visibly earns its keep, not
+   applied universally to ordinary cards and forms (those keep the plain
+   .card treatment already inheriting the new tokens via the legacy remap
+   above). Phase 2 does not apply --notched to anything; it exists as an
+   available tool for Phase 3/4. */
+.arcade-panel {
+  background: var(--bg-panel);
+  border: var(--frame-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glow-sm);
+}
+
+.arcade-panel--raised {
+  background: var(--bg-panel-raised);
+}
+
+.arcade-panel--accent-cyan {
+  border-color: var(--neon-cyan);
+}
+
+.arcade-panel--accent-orange {
+  border-color: var(--neon-orange);
+}
+
+.arcade-panel--accent-gold {
+  border-color: var(--neon-gold);
+}
+
+/* Two-layer notch: the outer element supplies the neon "border" color and
+   is clipped to the notched octagon; the inner element supplies the panel
+   fill and is clipped to a slightly smaller version of the same shape, so
+   a --frame-width ring of the outer color shows through as the border
+   without clip-path ever cutting a `border` property (which would clip
+   unevenly and defeat the point). Not used by any Phase 2 component; see
+   the comment above .arcade-panel. */
+.arcade-panel--notched {
+  clip-path: polygon(
+    var(--corner-notch) 0,
+    calc(100% - var(--corner-notch)) 0,
+    100% var(--corner-notch),
+    100% calc(100% - var(--corner-notch)),
+    calc(100% - var(--corner-notch)) 100%,
+    var(--corner-notch) 100%,
+    0 calc(100% - var(--corner-notch)),
+    0 var(--corner-notch)
+  );
+}
+
+/* Global application shell: header, brand wordmark, decorative monogram,
+   and navigation (§ "Header and navigation implementation"). */
+
+.app-header {
+  background: var(--bg-panel);
+  border-bottom: var(--frame-width) solid var(--color-border);
+  box-shadow: var(--glow-sm);
+  padding: var(--space-4);
+}
+
+.brand-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+}
+
+.brand-monogram {
+  display: block;
+  border-radius: var(--radius-md);
+}
+
+/* Hidden below a narrow phone width so it never competes with navigation
+   for space or forces the header to wrap awkwardly -- the live-text
+   wordmark (never hidden) remains the header's brand identity at every
+   width. */
+@media (max-width: 480px) {
+  .brand-monogram {
+    display: none;
+  }
+}
+
+.brand-wordmark-text {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  /* Solid fallback first -- always applied, always legible on its own
+     (11.25:1 against --bg-panel; see the Phase 2 summary). The gradient
+     below is a progressive enhancement layered on top via
+     background-clip; a browser without support for that simply shows the
+     solid cyan text, never invisible or low-contrast text. */
+  color: var(--neon-cyan);
+  background-image: linear-gradient(90deg, var(--neon-cyan), var(--neon-gold));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Some engines lack `background-clip: text` support (or a user has forced
+   colors on); this guards against invisible text by keeping the solid
+   fallback color exactly where -webkit-text-fill-color isn't honored. */
+@supports not (-webkit-background-clip: text) {
+  .brand-wordmark-text {
+    background-image: none;
+    color: var(--neon-cyan);
+  }
+}
+
+.app-nav {
+  gap: var(--space-1);
+}
+
+.app-nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: border-color var(--duration-fast) var(--ease-arcade);
+}
+
+.app-nav a:hover {
+  border-color: var(--color-border);
+  color: var(--neon-cyan);
 }
 
 .page {
