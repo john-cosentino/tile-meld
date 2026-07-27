@@ -68,6 +68,18 @@ describe("WaitingRoomPage -- computer opponent", () => {
     const readyMarkers = screen.getAllByLabelText("ready");
     expect(readyMarkers.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("keeps the exact ready/not-ready text visible in the DOM, independent of the Phase 3 seat-state styling -- never color alone", async () => {
+    getRoom.mockResolvedValue(roomWithBot());
+    render(
+      <MemoryRouter>
+        <WaitingRoomPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("✅ Ready")).toBeInTheDocument();
+    expect(screen.getByText("Not ready")).toBeInTheDocument();
+  });
 });
 
 describe("WaitingRoomPage -- room name display", () => {

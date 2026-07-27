@@ -72,6 +72,14 @@ describe("PublicLobbyPage -- room name display", () => {
     expect(screen.queryByText(/room abcd1234/i)).not.toBeInTheDocument();
   });
 
+  it("labels the room list with its own panel heading (Phase 3 room-browser framing)", async () => {
+    publicRooms.mockResolvedValue({ rooms: [roomWithName] });
+    renderPage();
+    await screen.findByText("public_John");
+
+    expect(screen.getByRole("heading", { level: 2, name: "Open Rooms" })).toBeInTheDocument();
+  });
+
   it("falls back to Room {code} for a legacy room with no name", async () => {
     publicRooms.mockResolvedValue({
       rooms: [

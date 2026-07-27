@@ -47,7 +47,7 @@ export function GameStatusCard({ room }: { readonly room: DashboardRoomSummary }
   if (!href) {
     return (
       <li>
-        <div className={`card dashboard-card dashboard-card--${status.tone}`}>
+        <div className={`arcade-panel dashboard-card dashboard-card--${status.tone}`}>
           {body}
           <p className="muted">This room is no longer available.</p>
         </div>
@@ -57,7 +57,7 @@ export function GameStatusCard({ room }: { readonly room: DashboardRoomSummary }
 
   return (
     <li>
-      <Link to={href} className={`card dashboard-card dashboard-card--${status.tone}`}>
+      <Link to={href} className={`arcade-panel dashboard-card dashboard-card--${status.tone}`}>
         {body}
       </Link>
     </li>

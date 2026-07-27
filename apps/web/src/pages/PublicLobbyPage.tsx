@@ -51,10 +51,10 @@ export function PublicLobbyPage() {
 
   return (
     <div className="stack">
-      <h1>Public lobby</h1>
+      <h1 className="page-title">Public lobby</h1>
 
       {!username && (
-        <div className="card stack" role="status">
+        <div className="arcade-panel stack" role="status">
           <p>
             You need a username before joining games. <Link to="/recovery">Claim a username</Link>{" "}
             to get started.
@@ -62,7 +62,7 @@ export function PublicLobbyPage() {
         </div>
       )}
 
-      <div className="card stack">
+      <div className="arcade-panel stack">
         <p className="muted">
           Joining as <strong>{username ?? "…"}</strong>.
         </p>
@@ -80,13 +80,15 @@ export function PublicLobbyPage() {
         )}
       </div>
 
+      <h2 className="panel-title">Open Rooms</h2>
+
       {rooms === undefined && <p>Loading public rooms…</p>}
       {rooms?.length === 0 && <p className="muted">No open public rooms right now.</p>}
 
       <ul className="stack" style={{ listStyle: "none", padding: 0 }}>
         {rooms?.map((room) => (
-          <li key={room.roomId} className="card row" style={{ justifyContent: "space-between" }}>
-            <div>
+          <li key={room.roomId} className="room-row arcade-panel row">
+            <div className="room-row-meta">
               <strong>{formatRoomName(room)}</strong>
               <div className="muted">
                 {room.memberCount}/{room.capacity} players -- {room.turnLimitHours}h turn limit

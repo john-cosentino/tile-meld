@@ -40,8 +40,8 @@ export function JoinRoomPage() {
 
   if (!username) {
     return (
-      <div className="stack card">
-        <h1>Join Room by Name</h1>
+      <div className="stack arcade-panel">
+        <h1 className="page-title">Join Room by Name</h1>
         <p>
           You need a username before joining a room. <Link to="/recovery">Claim a username</Link> to
           continue.
@@ -51,8 +51,8 @@ export function JoinRoomPage() {
   }
 
   return (
-    <form className="stack card" onSubmit={(e) => void onSubmit(e)}>
-      <h1>Join Room by Name</h1>
+    <form className="stack arcade-panel" onSubmit={(e) => void onSubmit(e)}>
+      <h1 className="page-title">Join Room by Name</h1>
       <p className="muted">
         Joining as <strong>{username}</strong>.
       </p>
@@ -68,7 +68,7 @@ export function JoinRoomPage() {
         </div>
       )}
 
-      <button type="submit" className="primary" disabled={submitting}>
+      <button type="submit" className="accent-gold" disabled={submitting}>
         {submitting ? "Joining…" : "Join room"}
       </button>
     </form>

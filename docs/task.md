@@ -4,19 +4,20 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 2 — design tokens and the global arcade
-foundation — completed.** Public product name: **Meld Masters**.
+**Current checkpoint: Phase 3 — dashboard, lobby, room, and recovery
+presentation — completed.** Public product name: **Meld Masters**.
 `tile-meld` remains the internal repository name, package scope, and
 deployment identifier.
 
-**Implementation state:** the arcade design-token system, dark-only theme,
-self-hosted Silkscreen display font, site-wide static grid background, the
-`.arcade-panel` foundation, and the new header/nav/wordmark/monogram are
-implemented and verified (see `docs/meld-masters-phase-2-summary.md`). No
-Phase 3 (dashboard/lobby/room), Phase 4 (tabletop), Phase 5 (portraits), or
-Phase 6 (icons/PWA) work occurred — individual screens still use their
-existing component layout, now rendering in the new palette purely through
-the legacy-token remap.
+**Implementation state:** all seven pre-game/identity screens (Home
+dashboard, game-status cards, Public Lobby, Create Room, Join Room by
+Name, Waiting Room, Recovery) now use the arcade design system established
+in Phase 2 — new CSS classes on existing markup only, zero route/API/
+behavior change (see `docs/meld-masters-phase-3-summary.md`). No Phase 4
+(tabletop), Phase 5 (portraits), or Phase 6 (icons/PWA) work occurred —
+`TabletopPage.tsx` and every `.tabletop-*`/`.tile`/`.drop-zone` rule are
+untouched, and `.card` itself (shared with ChatPanel) was never modified;
+Phase 3 panels use a separate `.arcade-panel` class instead.
 
 ## Open blocker
 
@@ -66,6 +67,22 @@ identity — were resolved 2026-07-26; see
   every existing axe and mobile-overflow check, none weakened). 12 review
   screenshots captured. See `docs/meld-masters-phase-2-summary.md` for the
   full contrast-ratio table, font/monogram provenance, and file list.
+- **Phase 3** (dashboard, lobby, room, and recovery presentation) —
+  completed 2026-07-27. Applied the Phase 2 arcade system to all seven
+  pre-game/identity screens: new `.page-title`/`.panel-title` heading
+  classes, `.arcade-action` dashboard buttons (cyan/gold/purple/green),
+  `.room-row` browser rows with a new "Open Rooms" panel heading,
+  `.arcade-choice` segmented radios (native inputs, `:has()`-driven, no
+  parallel selection mechanism), `.seat-panel` waiting-room member rows
+  (per-seat accent, ready/waiting state, structured for a future Phase 5
+  portrait with no placeholder art), and `.code-readout` for every
+  recovery/room code (plain monospace, no glow/letter-spacing). Every
+  panel/card uses a new `.arcade-panel` class, never `.card` itself, so
+  `.card` (shared with ChatPanel's Phase-4 tabletop usage) was never
+  touched. Full gate green (177 web tests, 3 new); chromium+mobile-webkit
+  targeted e2e 38/38 clean on the first attempt (all 7 axe checks × 2
+  projects, plus mobile-overflow) — no WebKit flakiness this run. 28
+  review screenshots captured. See `docs/meld-masters-phase-3-summary.md`.
 
 ## Approved decisions (implemented in Phase 2)
 
@@ -85,11 +102,11 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 
 ## Next phase
 
-**Phase 3 — Dashboard, lobby, and room presentation** (plan §11). Not
-started. Applies the design system from Phase 2 to the pre-game screens
-(Home dashboard, Public Lobby, Create/Join Room, Waiting Room, Recovery)
-while preserving behavior — the detailed, screen-by-screen work Phase 2
-deliberately did not perform.
+**Phase 4 — Tabletop, rack, tiles, controls, and game status** (plan §11).
+Not started. The highest-risk remaining phase — drag-and-drop precision,
+tile contrast, and the active-game surface all need care (see
+`CLAUDE.md`'s "Areas that require special care"). Gated on this Phase 3
+checkpoint being reviewed.
 
 ## Structure to use when work begins on a new, unrelated task
 

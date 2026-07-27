@@ -40,8 +40,8 @@ export function CreateRoomPage() {
 
   if (!username) {
     return (
-      <div className="stack card">
-        <h1>Create a room</h1>
+      <div className="stack arcade-panel">
+        <h1 className="page-title">Create a room</h1>
         <p>
           You need a username before creating a room. <Link to="/recovery">Claim a username</Link>{" "}
           to continue.
@@ -51,17 +51,17 @@ export function CreateRoomPage() {
   }
 
   return (
-    <form className="stack card" onSubmit={(e) => void onSubmit(e)}>
-      <h1>Create a room</h1>
+    <form className="stack arcade-panel" onSubmit={(e) => void onSubmit(e)}>
+      <h1 className="page-title">Create a room</h1>
       <p className="muted">
         Creating as <strong>{username}</strong>.
       </p>
 
       <fieldset>
         <legend>Capacity</legend>
-        <div className="row">
+        <div className="arcade-choice-group">
           {([2, 3, 4] as const).map((n) => (
-            <label key={n} className="row">
+            <label key={n} className="arcade-choice">
               <input
                 type="radio"
                 name="capacity"
@@ -76,8 +76,8 @@ export function CreateRoomPage() {
 
       <fieldset>
         <legend>Visibility</legend>
-        <div className="row">
-          <label className="row">
+        <div className="arcade-choice-group">
+          <label className="arcade-choice">
             <input
               type="radio"
               name="visibility"
@@ -86,7 +86,7 @@ export function CreateRoomPage() {
             />
             Private (invite by code)
           </label>
-          <label className="row">
+          <label className="arcade-choice">
             <input
               type="radio"
               name="visibility"
@@ -100,9 +100,9 @@ export function CreateRoomPage() {
 
       <fieldset>
         <legend>Turn time limit</legend>
-        <div className="row">
+        <div className="arcade-choice-group">
           {TURN_LIMIT_OPTIONS.map((opt) => (
-            <label key={opt.hours} className="row">
+            <label key={opt.hours} className="arcade-choice">
               <input
                 type="radio"
                 name="turnLimit"
@@ -121,7 +121,7 @@ export function CreateRoomPage() {
         </div>
       )}
 
-      <button type="submit" className="primary" disabled={submitting}>
+      <button type="submit" className="accent-gold" disabled={submitting}>
         {submitting ? "Creating…" : "Create room"}
       </button>
     </form>

@@ -111,7 +111,7 @@ export function WaitingRoomPage() {
 
   return (
     <div className="stack">
-      <h1>{formatRoomName(room)}</h1>
+      <h1 className="page-title">{formatRoomName(room)}</h1>
       <p className="muted">
         {room.visibility === "public" ? "Public" : "Private"} -- {room.capacity} players max --{" "}
         {room.turnLimitHours}h turn limit
@@ -119,32 +119,42 @@ export function WaitingRoomPage() {
       {/* The heading now shows the friendly name (which may differ from the
           code), so the invite code -- still the authoritative join
           credential -- needs its own always-visible line. */}
-      <p className="muted">Room code: {room.code}</p>
+      <p className="muted">
+        Room code: <code className="code-readout">{room.code}</code>
+      </p>
 
       {room.status === "between_games" && (
-        <p className="card" role="status">
+        <p className="arcade-panel" role="status">
           The last game finished. Ready up for a rematch when you're ready to play again.
         </p>
       )}
 
-      <ul className="stack" style={{ listStyle: "none", padding: 0 }}>
-        {room.members.map((m) => (
-          <li key={m.playerId} className="row card" style={{ justifyContent: "space-between" }}>
-            <span>
-              {m.displayName}
+      <ul className="seat-list">
+        {room.members.map((m, index) => (
+          <li
+            key={m.playerId}
+            className={`seat-panel arcade-panel seat-panel--accent-${index % 4}`}
+          >
+            {/* Identity region: name plus host/you/BOT labels. A future
+                Phase 5 portrait would land here, before the name -- no
+                placeholder is reserved visibly in this phase. */}
+            <span className="seat-identity">
+              <span className="seat-name">{m.displayName}</span>
               {m.isComputer && (
-                <span
-                  className="badge"
-                  aria-label="computer opponent"
-                  style={{ marginLeft: "var(--space-1)" }}
-                >
+                <span className="badge" aria-label="computer opponent">
                   🤖 BOT
                 </span>
               )}
-              {m.playerId === room.hostPlayerId && " (host)"}
-              {m.playerId === myPlayerId && " (you)"}
+              {m.playerId === room.hostPlayerId && <span className="muted">(host)</span>}
+              {m.playerId === myPlayerId && <span className="muted">(you)</span>}
             </span>
-            <span aria-label={m.isReady ? "ready" : "not ready"}>
+            {/* State region: the exact existing ready/not-ready text and
+                aria-label are unchanged -- only the visual treatment (a
+                lit/unlit badge) is new. */}
+            <span
+              className={`seat-state ${m.isReady ? "seat-state--ready" : "seat-state--waiting"}`}
+              aria-label={m.isReady ? "ready" : "not ready"}
+            >
               {m.isReady ? "✅ Ready" : "Not ready"}
             </span>
           </li>
@@ -159,13 +169,13 @@ export function WaitingRoomPage() {
 
       <div className="row">
         {me && (
-          <button disabled={busy} onClick={() => void toggleReady()}>
+          <button className="accent-cyan" disabled={busy} onClick={() => void toggleReady()}>
             {me.isReady ? "Mark not ready" : "Mark ready"}
           </button>
         )}
         {isHost && (
           <button
-            className="primary"
+            className="accent-gold"
             disabled={busy || !canStart}
             onClick={() => void startOrRematch()}
           >

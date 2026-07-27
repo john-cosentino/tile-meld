@@ -18,8 +18,8 @@ function UsernameSection() {
 
   if (state.username) {
     return (
-      <div className="card stack">
-        <h2>Username</h2>
+      <div className="arcade-panel stack">
+        <h2 className="panel-title">Username</h2>
         <p>
           Your username is <strong>{state.username}</strong>. It's globally unique and can't be
           changed once claimed.
@@ -48,8 +48,8 @@ function UsernameSection() {
   }
 
   return (
-    <form className="card stack" onSubmit={(e) => void onSubmit(e)}>
-      <h2>Choose a username</h2>
+    <form className="arcade-panel stack" onSubmit={(e) => void onSubmit(e)}>
+      <h2 className="panel-title">Choose a username</h2>
       <p className="muted">
         3-24 characters: letters, numbers, underscores, and hyphens only, no spaces. Globally unique
         and permanent once claimed.
@@ -69,7 +69,7 @@ function UsernameSection() {
           {error}
         </div>
       )}
-      <button type="submit" className="primary" disabled={submitting}>
+      <button type="submit" className="accent-gold" disabled={submitting}>
         {submitting ? "Claiming…" : "Claim username"}
       </button>
     </form>
@@ -89,7 +89,7 @@ function RecoveryCodeDisplay({
     setCopied(true);
   }
   return (
-    <div className="card stack" role="alert">
+    <div className="arcade-panel stack" role="alert">
       <strong>Save this recovery code now -- it will never be shown again.</strong>
       <p className="muted">
         Anyone with this code can access your games. Store it somewhere safe (a password manager is
@@ -98,11 +98,15 @@ function RecoveryCodeDisplay({
       <dl className="stack" style={{ gap: "var(--space-1)" }}>
         <div>
           <dt className="muted">Player ID</dt>
-          <dd style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{playerId}</dd>
+          <dd>
+            <code className="code-readout">{playerId}</code>
+          </dd>
         </div>
         <div>
           <dt className="muted">Recovery secret</dt>
-          <dd style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{secret}</dd>
+          <dd>
+            <code className="code-readout">{secret}</code>
+          </dd>
         </div>
       </dl>
       <button onClick={() => void copy()}>{copied ? "Copied!" : "Copy to clipboard"}</button>
@@ -149,12 +153,12 @@ export function RecoveryPage() {
 
   return (
     <div className="stack">
-      <h1>Recovery</h1>
+      <h1 className="page-title">Recovery</h1>
 
       {state.newRecoverySecret && (
         <div className="stack">
           <RecoveryCodeDisplay playerId={state.playerId} secret={state.newRecoverySecret} />
-          <button className="primary" onClick={acknowledgeRecoverySecret}>
+          <button className="accent-gold" onClick={acknowledgeRecoverySecret}>
             I've saved it
           </button>
         </div>
@@ -164,8 +168,8 @@ export function RecoveryPage() {
 
       <UsernameSection />
 
-      <div className="card stack">
-        <h2>Rotate your recovery code</h2>
+      <div className="arcade-panel stack">
+        <h2 className="panel-title">Rotate your recovery code</h2>
         <p className="muted">
           Generates a new recovery secret and immediately invalidates the old one. Use this if you
           think your old code was exposed.
@@ -178,8 +182,8 @@ export function RecoveryPage() {
         <button onClick={() => void onRotate()}>Rotate recovery code</button>
       </div>
 
-      <form className="card stack" onSubmit={(e) => void onRecoverSubmit(e)}>
-        <h2>Recover a session on this device</h2>
+      <form className="arcade-panel stack" onSubmit={(e) => void onRecoverSubmit(e)}>
+        <h2 className="panel-title">Recover a session on this device</h2>
         <p className="muted">
           Already have a recovery code from another device or browser? Enter it here to switch this
           browser to that identity.
@@ -205,7 +209,7 @@ export function RecoveryPage() {
             {recoverError}
           </div>
         )}
-        <button type="submit" className="primary">
+        <button type="submit" className="accent-gold">
           Recover session
         </button>
       </form>

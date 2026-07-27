@@ -90,10 +90,12 @@ export function HomePage() {
       </header>
 
       <section className="stack" aria-labelledby="create-game-heading">
-        <h2 id="create-game-heading">Create a Game</h2>
+        <h2 id="create-game-heading" className="panel-title">
+          Create a Game
+        </h2>
 
         {!username && (
-          <div className="card stack" role="status">
+          <div className="arcade-panel stack" role="status">
             <p>
               You need a username before creating games.{" "}
               <Link to="/recovery">Claim a username</Link> to get started.
@@ -103,20 +105,20 @@ export function HomePage() {
 
         <div className="row">
           <button
-            className="primary"
+            className="primary arcade-action arcade-action--cyan"
             disabled={startingBot || !username}
             onClick={() => void playVsComputer()}
           >
             {startingBot ? "Starting…" : "Play vs Computer (beta)"}
           </button>
           <Link to="/rooms/new">
-            <button>New Game</button>
+            <button className="arcade-action arcade-action--gold">New Game</button>
           </Link>
           <Link to="/rooms/join">
-            <button>Join Room by Name</button>
+            <button className="arcade-action arcade-action--purple">Join Room by Name</button>
           </Link>
           <Link to="/lobby">
-            <button>Browse Public Lobby</button>
+            <button className="arcade-action arcade-action--green">Browse Public Lobby</button>
           </Link>
         </div>
 
@@ -133,7 +135,9 @@ export function HomePage() {
       </section>
 
       <section className="stack" aria-labelledby="your-games-heading">
-        <h2 id="your-games-heading">Your Games</h2>
+        <h2 id="your-games-heading" className="panel-title">
+          Your Games
+        </h2>
 
         {rooms === undefined && !loadError && <p role="status">Loading your games…</p>}
         {loadError && (

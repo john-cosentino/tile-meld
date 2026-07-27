@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -55,6 +55,25 @@ describe("CreateRoomPage", () => {
 
     expect(screen.getByText(/claim a username/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /create room/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps every fieldset/legend accessible as a named group of radios (Phase 3 arcade-choice styling)", () => {
+    renderPage();
+
+    for (const [name, count] of [
+      ["Capacity", 3],
+      ["Visibility", 2],
+      ["Turn time limit", 4],
+    ] as const) {
+      const group = screen.getByRole("group", { name });
+      const radios = within(group).getAllByRole("radio");
+      expect(radios).toHaveLength(count);
+      // The native input stays present and checkable -- not replaced by a
+      // div-based custom control -- so the browser's own checked-state
+      // affordance is always there regardless of the new border/background
+      // styling.
+      expect(radios.every((r) => r.tagName === "INPUT")).toBe(true);
+    }
   });
 
   it("shows the creating-as username and the form when a username is claimed", () => {

@@ -262,6 +262,14 @@ button.danger {
   border: var(--frame-width) solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--glow-sm);
+  /* Matches .card's padding, so Phase 3 can use .arcade-panel in place of
+     .card on pre-game screens without also needing .card -- keeping the
+     two classes independent (rather than composing card+arcade-panel on
+     the same element and fighting cascade order between two same-
+     specificity rules) is what keeps this phase from ever touching how
+     .card itself renders elsewhere, including ChatPanel's Phase-4 tabletop
+     surface. */
+  padding: var(--space-4);
 }
 
 .arcade-panel--raised {
@@ -278,6 +286,14 @@ button.danger {
 
 .arcade-panel--accent-gold {
   border-color: var(--neon-gold);
+}
+
+.arcade-panel--accent-purple {
+  border-color: var(--neon-purple);
+}
+
+.arcade-panel--accent-green {
+  border-color: var(--neon-green);
 }
 
 /* Two-layer notch: the outer element supplies the neon "border" color and
@@ -521,6 +537,8 @@ button.danger {
    place a bigger-than-body-copy title is wanted (§ "large, prominent
    Meld Masters page heading"). */
 .dashboard-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
   font-size: 2.5rem;
   margin: 0;
 }
@@ -708,5 +726,258 @@ a.dashboard-card:hover {
 
   .tabletop-chat {
     align-self: stretch;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Phase 3: dashboard, lobby, room, and recovery presentation
+   (docs/meld-masters-visual-refresh-plan.md §11 Phase 3). Reuses the
+   Phase 2 token system and .arcade-panel foundation only -- no new token
+   set. Every class below is scoped to the pre-game/identity screens this
+   phase covers; none of it touches .tabletop-*, .tile, .drop-zone, or
+   ChatPanel's own .card usage above, so the active-game surface (Phase 4)
+   is unaffected.
+   --------------------------------------------------------------------- */
+
+/* Page-level heading (Public Lobby, Create Room, Join Room, Recovery, the
+   Waiting Room's room-name heading) -- one step down from HomePage's own
+   larger .dashboard-title, which stays the single biggest heading in the
+   app. Both are Silkscreen; only size differs, to keep a clear two-level
+   hierarchy across screens. */
+.page-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+/* Section/panel heading (Create a Game, Your Games, Open Rooms, Choose a
+   username, Rotate your recovery code, Recover a session on this device).
+   Compact, uppercase, and clearly a step below .page-title. */
+.panel-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+/* Home dashboard's four primary actions (§ "Screen 1 -- Home dashboard").
+   A restrained arcade-panel-style button: consistent uppercase Silkscreen
+   label and a colored border identifying the action, layered on top of
+   the plain `button` base rule (padding/radius/cursor) from Phase 1/2.
+   Play vs Computer additionally carries `.primary` (solid cyan fill,
+   Phase 2's contrast-corrected dark-on-accent text) so it reads as the
+   most prominent of the four, matching its existing default-selected
+   role; the other three stay outlined so all four are legible at a glance
+   without four competing solid fills. */
+.arcade-action {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-arcade);
+}
+
+.arcade-action:disabled {
+  opacity: var(--state-disabled-opacity);
+}
+
+.arcade-action--cyan {
+  border-color: var(--neon-cyan);
+}
+
+.arcade-action--gold {
+  border-color: var(--neon-gold);
+}
+
+.arcade-action--purple {
+  border-color: var(--neon-purple);
+}
+
+.arcade-action--green {
+  border-color: var(--neon-green);
+}
+
+/* Public lobby room-browser rows (§ "Screen 2 -- Public lobby"). Each
+   existing <li> becomes a distinct row panel; gold hover/focus emphasis
+   per the concept reference, layered on top of .arcade-panel's base cyan
+   border via normal cascade order (this rule is defined after
+   .arcade-panel above). Metadata keeps its existing stacked-text
+   structure -- no columns were added or removed. */
+.room-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  transition: border-color var(--duration-fast) var(--ease-arcade);
+}
+
+.room-row:hover,
+.room-row:focus-within {
+  border-color: var(--neon-gold);
+}
+
+.room-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Create Room's segmented radio groups (§ "Screen 3 -- Create room").
+   The native <input type="radio"> stays fully present and visible (never
+   display:none / appearance:none / opacity:0) -- its own filled/unfilled
+   dot remains a real, non-color affordance for the checked state, on top
+   of the border/background change below. `:has()` reacts to the input's
+   actual DOM state, so this is pure CSS, not a parallel selection
+   mechanism. */
+.arcade-choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.arcade-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-arcade);
+}
+
+.arcade-choice:has(input:checked) {
+  border-color: var(--neon-cyan);
+  background: color-mix(in srgb, var(--neon-cyan) 12%, var(--bg-panel));
+}
+
+/* Belt-and-suspenders alongside the input's own native :focus-visible
+   outline (unchanged, still fires) -- highlights the whole choice, not
+   just the small native control, so the focused option is obvious at a
+   glance. */
+.arcade-choice:has(input:focus-visible) {
+  outline: 3px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+/* Digital-readout treatment for values that must stay easy to read and
+   transcribe: recovery codes (Player ID, Recovery secret) and the Waiting
+   Room's invite code. Monospace only -- no letter-spacing, glow, blur, or
+   decorative background beyond a plain inset panel, per the explicit
+   instruction that code readability must never be traded for style. */
+.code-readout {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.95rem;
+  word-break: break-all;
+  background: var(--bg-inset);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Waiting Room seat panels (§ "Screen 5 -- Waiting room"). Two-region
+   structure -- identity (name + host/you/BOT labels) and state (ready
+   indicator) -- so a Phase 5 portrait has a clean, obvious place to land
+   later (inside .seat-identity, before the name) without restructuring
+   this row. No portrait slot is reserved visibly in this phase. */
+.seat-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.seat-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  transition: border-color var(--duration-fast) var(--ease-arcade);
+}
+
+.seat-identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.seat-name {
+  font-weight: 700;
+}
+
+/* Cycles through four existing accents by seat position -- purely
+   decorative per-seat variety (§ "per-seat accent treatment"), never the
+   only way to tell seats apart (name text is always present and always
+   the primary identifier). */
+.seat-panel--accent-0 {
+  border-color: var(--neon-cyan);
+}
+
+.seat-panel--accent-1 {
+  border-color: var(--neon-gold);
+}
+
+.seat-panel--accent-2 {
+  border-color: var(--neon-purple);
+}
+
+.seat-panel--accent-3 {
+  border-color: var(--neon-green);
+}
+
+.seat-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.seat-state--ready {
+  border-color: var(--state-success);
+  color: var(--state-success);
+}
+
+.seat-state--waiting {
+  color: var(--text-muted);
+}
+
+/* Button accents beyond the base .primary (cyan)/.danger (coral) pair from
+   Phase 2, for the established hierarchy on the Waiting Room's action row:
+   Mark ready outlined cyan, Start game/rematch filled gold, Leave room
+   stays .danger (unchanged). Both text-on-surface combinations were
+   measured in Phase 2 (neon-cyan text ≥11:1 on the button's own
+   --bg-panel background; --text-on-accent on --neon-gold = 12.57:1) --
+   see docs/meld-masters-phase-2-summary.md §6, no new failing combination
+   is introduced. */
+button.accent-cyan {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+button.accent-gold {
+  background: var(--neon-gold);
+  border-color: var(--neon-gold);
+  color: var(--text-on-accent);
+}
+
+@media (max-width: 480px) {
+  .arcade-action {
+    text-align: center;
   }
 }
