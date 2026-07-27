@@ -13,6 +13,17 @@
 
 export const PRODUCT_NAME = "Meld Masters";
 
+/** The arcade-navy page background (`--bg-page`, apps/web/src/styles/
+ * global.css, Phase 2 of the visual refresh) -- the single source of
+ * truth for installed-app metadata that can't reach a CSS custom property
+ * (manifest.json's theme_color/background_color, index.html's
+ * <meta name="theme-color">, and the maskable/Apple-touch icon full-bleed
+ * background baked in by scripts/derive-icons.py). A test
+ * (manifestIcons.test.ts) asserts all of those literals equal this
+ * constant AND that global.css still defines --bg-page with the same
+ * value, so the two can never silently drift apart. */
+export const THEME_COLOR = "#0a0e1a";
+
 export type TileColorCode = "C1" | "C2" | "C3" | "C4";
 
 export type TileColorToken = {

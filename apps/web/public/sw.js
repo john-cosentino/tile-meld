@@ -34,8 +34,8 @@ self.addEventListener("push", (event) => {
       // Replaces an older notification of the same kind (e.g. a second
       // "your turn" for the same game) instead of stacking duplicates.
       renotify: true,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
       data: { gameId: payload.gameId },
     }),
   );

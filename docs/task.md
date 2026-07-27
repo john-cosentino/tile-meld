@@ -4,30 +4,33 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 4 — tabletop, rack, tiles, controls, and game
-status — verification completed, ready for human-reviewed closure.**
-Public product name: **Meld Masters**. `tile-meld` remains the internal
-repository name, package scope, and deployment identifier.
+**Current checkpoint: Phase 6 — logo derivatives, favicon, PWA icons,
+manifest, and browser metadata — completed, pending user device
+verification and human review.** Public product name: **Meld Masters**.
+`tile-meld` remains the internal repository name, package scope, and
+deployment identifier.
 
-**Implementation state:** the Tabletop screen (board, rack, tiles, action
-bar, status frame) now uses the arcade design system established in Phases
-2–3 — tile visuals moved from inline styles to CSS classes/custom
-properties, new CSS classes on the five other tabletop components, zero
-route/API/game-logic change (see `docs/meld-masters-phase-4-summary.md`).
-No Phase 5 (portraits) or Phase 6 (icons/PWA) work occurred. This phase's
-work was originally written and left uncommitted when the machine running
-the assistant session crashed mid-phase; a later session recovered and
-fully verified it (gate, full e2e matrix, screenshots) rather than
-re-authoring it, then closed out a set of remaining verification/
-documentation gaps (a CSS comment correction, isolated re-verification of
-two e2e failures against a fresh database, and rounding the screenshot set
-out from 6 to 13 tabletop states) — see the summary's §2 and §18–20.
+**Implementation state:** the full installed-app icon pipeline is derived
+mechanically from the approved logo master
+(`docs/design-reference/meld-masters/meld-masters-concept-logo.png`,
+confirmed unmodified) via a deterministic script
+(`scripts/derive-icons.py`) — standard (`any`) and maskable PWA icons,
+Apple touch icon, and favicon.ico/favicon.svg, all served from
+`apps/web/public/icons/` and wired into `manifest.json`, `index.html`, and
+`sw.js`. Theme/background color updated from the old Tile Meld blue to the
+Phase 2 arcade navy (`#0a0e1a`), traced to a single new shared constant
+(`THEME_COLOR`) with a consistency test. Old root icon paths kept for one
+transitional release per the plan. Full gate green (714 tests, 21 new);
+Chromium e2e 32/33 (the one failure is the already-documented local
+rate-limit artifact from Phase 4 closure, not a Phase 6 regression). See
+`docs/meld-masters-phase-6-summary.md` for the full writeup, including the
+manual Android/iOS/desktop-installed-PWA checklists that still need a
+human with real devices (§30-33) — do not treat those as passed.
 
-**Next unblocked implementation phase after Phase 4 is approved: Phase 6**
-(logo, favicon, manifest, and smartphone icon — plan §11). Phase 6 has not
-started. Phase 5 (portraits) remains blocked on Blocker B3 below and may be
-taken after Phase 6 or whenever B3 resolves, per the plan's own
-phase-ordering note (§11 intro).
+No Phase 5 (portraits) or Phase 7 (responsive/accessibility) work
+occurred. **Next unblocked implementation phase after Phase 6 is approved:
+Phase 7** (responsive refinement and accessibility — plan §11). Not
+started. Phase 5 (portraits) remains blocked on Blocker B3 below.
 
 ## Open blocker
 
@@ -115,6 +118,25 @@ identity — were resolved 2026-07-26; see
   a machine crash before verification or commit; the following session
   recovered, verified, and completed it. See
   `docs/meld-masters-phase-4-summary.md`.
+- **Phase 6** (logo derivatives, favicon, PWA icons, manifest, and browser
+  metadata) — completed 2026-07-27. Full icon pipeline mechanically
+  derived from the approved logo master via a new deterministic script
+  (`scripts/derive-icons.py`) — standard/maskable PWA icons, Apple touch
+  icon, favicon.ico (16/32/48) and a self-contained raster-backed
+  favicon.svg — wired into `manifest.json`, `index.html`, and `sw.js`; old
+  root icon paths kept serving for one transitional release. Theme/
+  background color changed from the old Tile Meld blue (`#2f6fb4`) to the
+  Phase 2 arcade navy (`#0a0e1a`), single-sourced via a new `THEME_COLOR`
+  shared constant with a consistency test against `--bg-page`. Full gate
+  green (714 tests, 21 new: `manifestIcons.test.ts` + 1
+  `brandConsistency.test.ts` addition); production-server static-asset
+  check confirmed every new path serves with correct content-type and
+  byte-identical bytes; Chromium e2e 32/33 (the one failure is the
+  already-documented Phase 4 local rate-limit artifact, not a Phase 6
+  regression). Phase 6 does not require the full 5-project matrix (no
+  interaction-geometry change) per the plan. Manual Android/iOS/desktop-
+  installed-PWA verification still requires the user with real devices —
+  not claimed as passed. See `docs/meld-masters-phase-6-summary.md`.
 
 ## Approved decisions (implemented in Phase 2)
 
@@ -134,16 +156,21 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 
 ## Next phase
 
-**Phase 6 — Logo, favicon, manifest, and smartphone icon** (plan §11) is
-the next unblocked implementation phase once Phase 4 is approved. Not
-started.
+**Phase 7 — Responsive refinement and accessibility** (plan §11) is the
+next unblocked implementation phase once Phase 6 is approved. Not started.
+Real-device icon verification (Android/iOS/desktop-installed-PWA, per
+`docs/meld-masters-phase-6-summary.md` §30-33) still requires the user —
+not automatically satisfied, and not a precondition Claude can complete
+alone.
 
 **Phase 5 — Original character portrait system** (plan §11) remains
 *gated on Blocker B3* (supplied portrait assets — still open, unaffected
-by Phase 4). Not started. Per the plan's own phase-ordering note, Phase 6
+by Phase 6). Not started. Per the plan's own phase-ordering note, Phase 7
 may be taken instead without blocking Phase 5 while B3 is outstanding.
 
-Both are gated on this Phase 4 checkpoint being reviewed and approved.
+Phase 7 is gated on this Phase 6 checkpoint (including the user's device
+verification) being reviewed and approved. No later phase was started
+automatically.
 
 ## Structure to use when work begins on a new, unrelated task
 

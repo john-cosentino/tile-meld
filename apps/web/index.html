@@ -3,13 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#2f6fb4" />
+    <meta name="theme-color" content="#0a0e1a" />
+    <meta
+      name="description"
+      content="A turn-based tile-melding strategy game for friends and computer opponents."
+    />
     <!-- iOS ignores the manifest's icons; it needs its own link tag, and
          requires the site be added to the Home Screen before Web Push can
          work at all (docs/opus-implementation-plan.md §8.4). -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" href="/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <!-- Modern SVG favicon first (browsers that support it prefer it over
+         the PNG/ICO that follow); the ICO fallback via <link> covers
+         browsers that support neither this tag nor auto-fetching
+         /favicon.ico -- Phase 6 of docs/meld-masters-visual-refresh-plan.md
+         §6.2. -->
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- Open Graph: og:url/og:image intentionally omitted -- no canonical
+         production URL is documented in this repo to build an absolute
+         image URL from, and a bare relative og:image is unreliable for
+         social-media crawlers (docs/meld-masters-phase-6-summary.md §19). -->
+    <meta property="og:title" content="Meld Masters" />
+    <meta
+      property="og:description"
+      content="A turn-based tile-melding strategy game for friends and computer opponents."
+    />
+    <meta property="og:type" content="website" />
     <title>Meld Masters</title>
   </head>
   <body>

@@ -89,15 +89,37 @@ describe("obsolete-asset guard", () => {
     // list. A new file failing this test is a prompt to update the list
     // deliberately, not evidence of a bug by itself.
     const allowed = new Set([
+      // Phase 6 (docs/meld-masters-visual-refresh-plan.md §6.2): the old
+      // root icon trio is kept for one transitional release so previously
+      // installed PWAs and cached HTML never 404 (see
+      // docs/meld-masters-phase-6-summary.md) -- no active metadata
+      // references them anymore (manifestIcons.test.ts asserts that).
       "apple-touch-icon.png",
       "icon-192.png",
       "icon-512.png",
+      "favicon.ico",
+      "icons",
       "manifest.json",
       "sw.js",
     ]);
     const actual = readdirSync(path.join(webRoot, "public"));
     for (const file of actual) {
       expect(allowed.has(file), `unexpected file in public/: ${file}`).toBe(true);
+    }
+  });
+
+  it("public/icons/ contains only the expected Phase 6 icon set", () => {
+    const allowed = new Set([
+      "icon-192.png",
+      "icon-512.png",
+      "icon-maskable-192.png",
+      "icon-maskable-512.png",
+      "apple-touch-icon.png",
+      "favicon.svg",
+    ]);
+    const actual = readdirSync(path.join(webRoot, "public/icons"));
+    for (const file of actual) {
+      expect(allowed.has(file), `unexpected file in public/icons/: ${file}`).toBe(true);
     }
   });
 });
