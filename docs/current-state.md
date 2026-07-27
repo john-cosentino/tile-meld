@@ -1,4 +1,10 @@
-# Current state — Tile Meld
+# Current state — Meld Masters
+
+Public product name: **Meld Masters** (renamed from Tile Meld, Phase 1 of
+`docs/meld-masters-visual-refresh-plan.md`, 2026-07-26). `tile-meld` remains
+the internal repository name, package scope, and deployment identifier —
+see the plan's §5.5. The verification below predates the rename and
+describes the state as of the date given.
 
 - **Last verified:** 2026-07-25
 - **Last verified commit:** `7d6248a`

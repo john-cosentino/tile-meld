@@ -1,4 +1,4 @@
-# Tile Meld
+# Meld Masters
 
 A browser-based, asynchronous multiplayer tile-melding game (2-4 players),
 with a single-player **Play vs Computer** mode (a simple, deterministic
@@ -6,6 +6,11 @@ computer opponent — see `docs/computer-opponent.md`).
 See `docs/opus-implementation-plan.md` for the full approved architecture,
 data model, and phased delivery plan, and `CLAUDE.md` for the working rules
 this repo is built under.
+
+**Meld Masters is the public product name.** `tile-meld` remains the
+internal repository name, package scope (`@tile-meld/*`), and deployment
+identifier — see `docs/meld-masters-visual-refresh-plan.md` §5.5 for why
+those are deliberately not renamed.
 
 **Status:** Phase 9 (deployment & ops) — the app is feature-complete
 (Phases 0-8) and ready to actually run somewhere real. `apps/server` now

@@ -251,8 +251,8 @@ button.danger {
 
 /* Home dashboard (Phase 6). The large page title deliberately sits above
    the normal heading scale used elsewhere in the app -- this is the one
-   place a bigger-than-body-copy title is wanted (§ "larger, prominent
-   Tile Meld page heading"). */
+   place a bigger-than-body-copy title is wanted (§ "large, prominent
+   Meld Masters page heading"). */
 .dashboard-title {
   font-size: 2.5rem;
   margin: 0;

@@ -1,8 +1,9 @@
 // Centralized branding/design tokens -- docs/opus-implementation-plan.md
-// §10.4. Renaming "Tile Meld" or reskinning the four tile colors is a
-// config change here, not a code hunt through apps/web. No copied logos,
-// artwork, or typography from any commercial tile-melding game -- these
-// are original names/palette/symbols.
+// §10.4. Renaming the product (Tile Meld -> Meld Masters, Phase 1 of
+// docs/meld-masters-visual-refresh-plan.md) or reskinning the four tile
+// colors is a config change here, not a code hunt through apps/web. No
+// copied logos, artwork, or typography from any commercial tile-melding
+// game -- these are original names/palette/symbols.
 //
 // Every color token carries a `symbol` alongside its hex value: §10.3
 // requires that color is never the *only* way to distinguish a tile, for
@@ -10,7 +11,7 @@
 // `Color` type ("C1".."C4") without importing it, matching this package's
 // zod-only dependency boundary (see src/schemas/game.ts).
 
-export const PRODUCT_NAME = "Tile Meld";
+export const PRODUCT_NAME = "Meld Masters";
 
 export type TileColorCode = "C1" | "C2" | "C3" | "C4";
 

@@ -8,7 +8,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { INITIAL_MELD_THRESHOLD } from "@tile-meld/shared";
+import { INITIAL_MELD_THRESHOLD, PRODUCT_NAME } from "@tile-meld/shared";
 import { useGame } from "../tabletop/useGame.js";
 import { useDraftState } from "../tabletop/useDraftState.js";
 import type { Destination } from "../tabletop/draftState.js";
@@ -106,7 +106,7 @@ export function TabletopPage() {
   if (game.notFound) {
     return (
       <div className="stack">
-        <h1 className="visually-hidden">Tile Meld</h1>
+        <h1 className="visually-hidden">{PRODUCT_NAME}</h1>
         <p>This game doesn't exist, or you're not seated in it.</p>
         <Link to="/">Back home</Link>
       </div>
@@ -115,7 +115,7 @@ export function TabletopPage() {
   if (!view) {
     return (
       <div className="stack">
-        <h1 className="visually-hidden">Tile Meld</h1>
+        <h1 className="visually-hidden">{PRODUCT_NAME}</h1>
         <p>Loading table…</p>
       </div>
     );

@@ -13,7 +13,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("push", (event) => {
   let payload = {
-    title: "Tile Meld",
+    title: "Meld Masters",
     body: "You have a notification.",
     tag: "tile-meld",
     gameId: null,

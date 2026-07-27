@@ -86,9 +86,9 @@ beforeEach(() => {
 });
 
 describe("HomePage -- page hierarchy", () => {
-  it("shows a large, prominent Tile Meld page heading", async () => {
+  it("shows a large, prominent Meld Masters page heading", async () => {
     renderHome();
-    const heading = await screen.findByRole("heading", { level: 1, name: "Tile Meld" });
+    const heading = await screen.findByRole("heading", { level: 1, name: "Meld Masters" });
     expect(heading).toBeInTheDocument();
   });
 

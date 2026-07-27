@@ -155,7 +155,7 @@ export async function waitForReady(page: Page): Promise<void> {
   await retryOnRateLimit(
     page,
     () => page.goto("/"),
-    page.getByRole("heading", { name: "Tile Meld", level: 1 }),
+    page.getByRole("heading", { name: "Meld Masters", level: 1 }),
   );
 }
 

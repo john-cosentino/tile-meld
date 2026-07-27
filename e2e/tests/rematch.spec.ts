@@ -67,8 +67,8 @@ test("play vs computer: one-click rematch from Game Over reseats the human and t
   test.setTimeout(60000);
   await waitForReady(page);
   const username = await claimUsername(page, "SoloRematch");
-  await page.getByRole("link", { name: "Tile Meld", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Tile Meld", level: 1 })).toBeVisible();
+  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Meld Masters", level: 1 })).toBeVisible();
 
   await clickUntilSettled(
     page,

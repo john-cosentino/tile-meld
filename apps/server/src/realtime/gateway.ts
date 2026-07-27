@@ -6,6 +6,7 @@ import {
   TurnPassPayloadSchema,
   TurnResignPayloadSchema,
   ChatSendPayloadSchema,
+  PRODUCT_NAME,
 } from "@tile-meld/shared";
 import type { AppInstance } from "../http/types.js";
 import { SESSION_COOKIE_NAME } from "../security/session.js";
@@ -178,7 +179,7 @@ async function notifyPushForTransition(
     if (playerId) {
       await sendPushToPlayer(app, playerId, {
         title: "Your turn!",
-        body: "It's your turn in Tile Meld.",
+        body: `It's your turn in ${PRODUCT_NAME}.`,
         gameId,
         tag: `turn:${gameId}`,
       });
@@ -203,7 +204,7 @@ async function notifyPushForWarning(app: AppInstance, warned: Warned): Promise<v
   if (!playerId) return;
   await sendPushToPlayer(app, playerId, {
     title: "15 minutes left",
-    body: "Your turn in Tile Meld ends soon.",
+    body: `Your turn in ${PRODUCT_NAME} ends soon.`,
     gameId: warned.gameId,
     tag: `warning:${warned.gameId}`,
   });

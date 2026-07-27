@@ -77,7 +77,7 @@ describe("pushSender", () => {
 
     await sendPushToPlayer(app, player.id, {
       title: "Your turn!",
-      body: "It's your turn in Tile Meld.",
+      body: "It's your turn in Meld Masters.",
       gameId: "game-1",
       tag: "turn:game-1",
     });
@@ -95,7 +95,7 @@ describe("pushSender", () => {
     });
     expect(JSON.parse(payload as string)).toEqual({
       title: "Your turn!",
-      body: "It's your turn in Tile Meld.",
+      body: "It's your turn in Meld Masters.",
       gameId: "game-1",
       tag: "turn:game-1",
     });

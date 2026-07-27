@@ -1,4 +1,8 @@
-# Tile Meld — working rules for Claude
+# Meld Masters — working rules for Claude
+
+Public product name: **Meld Masters**. `tile-meld` remains the internal
+repository name, package scope (`@tile-meld/*`), and deployment identifier —
+see `docs/meld-masters-visual-refresh-plan.md` §5.5.
 
 This file is **guidance for the model, not a hard control**. It cannot stop a
 misbehaving tool call by itself — the enforceable guard is the Git-permission

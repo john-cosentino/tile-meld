@@ -33,5 +33,5 @@ test("direct navigation to a nonexistent/unavailable game shows a clear message 
   expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
 
   await homeLink.click();
-  await expect(page.getByRole("heading", { level: 1, name: "Tile Meld" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Meld Masters" })).toBeVisible();
 });

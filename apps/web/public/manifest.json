@@ -1,6 +1,6 @@
 {
-  "name": "Tile Meld",
-  "short_name": "Tile Meld",
+  "name": "Meld Masters",
+  "short_name": "Meld Masters",
   "description": "An asynchronous, turn-based multiplayer tile-melding game.",
   "start_url": "/",
   "scope": "/",

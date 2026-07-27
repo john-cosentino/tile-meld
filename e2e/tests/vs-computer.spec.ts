@@ -22,8 +22,8 @@ async function startVsComputerGame(page: Page): Promise<void> {
   // client-side nav link back to Home avoids an extra rate-limited
   // full-page identity round trip.
   const username = await claimUsername(page, "Solo");
-  await page.getByRole("link", { name: "Tile Meld", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Tile Meld", level: 1 })).toBeVisible();
+  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Meld Masters", level: 1 })).toBeVisible();
 
   await clickUntilSettled(
     page,

@@ -56,7 +56,7 @@ visually fits.
 ## Originality and copyright
 
 - **No copyrighted Rummikub artwork, logos, tile faces, screenshots, or
-  traced commercial layouts.** Tile Meld is not Rummikub and must not
+  traced commercial layouts.** Meld Masters is not Rummikub and must not
   visually pass as it, or as a skin of it.
 - **No NES, Konami, Nintendo, Game Boy, or other third-party console/
   publisher logos, branded assets, or copied UI chrome.** Any retro/

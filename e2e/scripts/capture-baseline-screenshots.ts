@@ -87,8 +87,8 @@ async function run(): Promise<void> {
   // 3. Home dashboard again, now with a claimed identity (Play vs Computer
   // enabled) -- the more typical returning-user view.
   await capture("home-dashboard-claimed", page, async () => {
-    await page.getByRole("link", { name: "Tile Meld", exact: true }).click();
-    await page.getByRole("heading", { level: 1, name: "Tile Meld" }).waitFor();
+    await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+    await page.getByRole("heading", { level: 1, name: "Meld Masters" }).waitFor();
   });
 
   // 4. Public lobby.
@@ -113,7 +113,7 @@ async function run(): Promise<void> {
   // seat, the computer seat with its BOT badge, and the Mark ready /
   // Start game controls together.
   await capture("waiting-room-vs-computer", page, async () => {
-    await page.getByRole("link", { name: "Tile Meld", exact: true }).click();
+    await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
     const playVsComputer = page.getByRole("button", { name: /play vs computer/i });
     await playVsComputer.waitFor();
     await playVsComputer.click();

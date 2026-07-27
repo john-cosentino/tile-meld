@@ -1,4 +1,8 @@
-# Environment — Tile Meld
+# Environment — Meld Masters
+
+Public product name: **Meld Masters**. `tile-meld` remains the internal
+repository name, package scope, and deployment identifier — see
+`docs/meld-masters-visual-refresh-plan.md` §5.5.
 
 Last verified: 2026-07-25.
 
