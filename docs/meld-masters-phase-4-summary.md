@@ -92,18 +92,21 @@ tray).
 | `--tile-invalid-border` | `#d42534` | 4.49:1 | 3.63:1 (bg-inset) | pass both |
 | `--tile-ivory-edge` (default bevel border) | `#c9b98c` | **1.71:1** | 9.54:1 (bg-inset), 9.13:1 (bg-panel) | see note |
 
-**Note on `--tile-ivory-edge`:** the CSS comment introducing these tokens
-claims all six "clear 3:1 against BOTH the ivory tile body and the dark
-board/rack surface." That holds for five of the six; the default bevel
-border does not clear 3:1 against the tile's own fill (1.71:1) — it reads
-as a deliberate low-contrast bevel accent (matching the "physical chip"
-styling goal), not a state-communicating boundary. This does not leave the
-tile's boundary imperceptible: the tile as a whole (ivory fill against the
-dark board/rack) measures 9.1–9.5:1, so the interactive element's boundary
-is unambiguous regardless of the bevel's own contrast. Flagging this as a
-minor, non-blocking discrepancy between the code comment's blanket claim
-and the actual measured value, per this project's evidence-discipline
-standard, rather than silently repeating the claim.
+**Note on `--tile-ivory-edge` (corrected during closure):** the CSS comment
+introducing these tokens originally claimed all six "clear 3:1 against BOTH
+the ivory tile body and the dark board/rack surface." That holds for five
+of the six; the default bevel border does not clear 3:1 against the tile's
+own fill (1.71:1). Rather than change the token to force the old claim
+true — visual review found the bevel legible as a deliberate low-contrast
+accent, not illegible — the CSS comment itself
+(`apps/web/src/styles/global.css`, the `--tile-ivory` token block) was
+corrected to state plainly: the four state-communicating rings/borders and
+the numeral colors clear 3:1 against both surfaces; `--tile-ivory-edge` is
+the tile's always-on decorative bevel, not a state signal, and is
+deliberately low-contrast against the tile body while still clearing
+>9:1 against the dark board/rack; no state (selected/invalid/dragging/
+joker) is ever communicated through it alone. The code and this document
+now agree.
 
 ## 7. Other tabletop surfaces (plan §11 Phase 4 tasks)
 
@@ -266,46 +269,147 @@ same rate limit.
 
 `full-lifecycle.spec.ts:11` (firefox) and `dashboard.spec.ts:150`
 (mobile-chrome) were each a single, non-repeating failure during the same
-1.4-hour, heavily-loaded serial run; they were not individually
-re-verified in isolation. Both are far outside this phase's changed files
-(rematch/resign flow and dashboard status-card polling — neither reads
-any tabletop component), so a Phase 4 regression is implausible on the
-code alone, but that inference is weaker than the recovery finding above
-since it isn't backed by an isolated rerun or a matching server-log root
-cause. Flagging this distinction rather than presenting both at the same
-confidence level.
+1.4-hour, heavily-loaded serial run. At the time this was first written
+they had not been individually re-verified — that gap was closed during
+this phase's closure pass (below), which upgrades both from "implausible
+on the code alone" to "confirmed non-reproducing."
+
+### Closure verification: isolated reruns against a fresh database
+
+The `reconnect-recovery.spec.ts` failures above are already conclusively
+explained by the logged 429s and were **not** re-run again (repeating them
+back-to-back would just re-exhaust the same limiter, as a first closure
+attempt confirmed before this section was rewritten to stop doing that).
+For the two less-conclusively-classified failures, a genuinely clean
+environment was built instead of guessing: a brand-new disposable database
+(`tilemeld_e2e_closure4`, `pnpm --filter @tile-meld/server run migrate`
+against it) with a freshly-launched server process pointed at it (the old
+dev-DB-backed server process was killed first), and no screenshot script
+run against that server before this verification.
+
+```
+cd e2e && DATABASE_URL=postgres://tilemeld:tilemeld@localhost:5432/tilemeld_e2e_closure4 \
+  npx playwright test tests/full-lifecycle.spec.ts --project=firefox
+# 1 passed (39.7s)
+
+cd e2e && DATABASE_URL=postgres://tilemeld:tilemeld@localhost:5432/tilemeld_e2e_closure4 \
+  npx playwright test tests/dashboard.spec.ts --project=mobile-chrome -g "Completed vs Resigned"
+# 1 passed (17.9s)
+```
+
+**Both passed cleanly.** Combined with zero files touched in either
+spec's code path (rematch/resign flow, dashboard status-card polling —
+neither reads any tabletop component this phase changed), this reclassifies
+all 5 of the original full-matrix failures as **non-reproducible,
+load/rate-limit-related harness timeouts** from running the full 165-test
+matrix serially against one shared, already-warm local server — not Phase
+4 regressions. The full 5-project matrix was not rerun for this
+(unnecessary: the isolated reruns plus the code-diff evidence already
+settle it, and CLAUDE.md's own guidance is not to loosen or re-run against
+rate limits unnecessarily).
 
 ## 13. Screenshot inventory
 
 - **Path:** `docs/design-reference/phase-4-review/`
-- **Count:** 24 (6 states × 4 viewports)
-- **States:** `tabletop-your-turn`, `tabletop-computer-turn`,
-  `tabletop-tile-selected`, `tabletop-invalid-set`,
-  `tabletop-completed-rematch`, `tabletop-unavailable-game` — the same six
-  tabletop states `docs/design-reference/baseline/` captured pre-redesign,
-  so each has a direct before/after pair.
-- **Viewports:** 1440×900, 1280×720, 390×844, 844×390.
+- **Count:** 52 (13 states × 4 viewports).
+- **Viewports:** 1440×900, 1280×720, 390×844, 844×390 — every state at
+  every viewport.
+- **All 13 states:**
+  1. `tabletop-your-turn` — clean rack, the player's own turn.
+  2. `tabletop-computer-turn` — "Computer is playing…".
+  3. `tabletop-tile-selected` — gold selection ring.
+  4. `tabletop-invalid-set` — red border, "not a valid run or group".
+  5. `tabletop-completed-rematch` — Game over, gold `.card--accent-gold`.
+  6. `tabletop-unavailable-game` — purged/never-issued game id.
+  7. `tabletop-opponent-turn` *(new)* — a genuine human opponent's turn
+     (private 2-player game, captured from the waiting player's side), not
+     a substitute for `tabletop-computer-turn`: no BOT badge, no 🤖, a real
+     opponent display name and "Waiting on seat N".
+  8. `tabletop-drag-active` *(new)* — a real mid-drag frame (pointer held
+     down, not released, `.is-dragging` + the drop zone's `.is-over` both
+     genuinely active), captured independently at all 4 viewports rather
+     than resized mid-drag. No substitute was needed; see the drag-state
+     exception note below for why this was in question at all.
+  9. `tabletop-valid-set` *(new)* — a valid table set.
+  10. `tabletop-multiple-sets` *(new)* — two sets on the table at once.
+  11. `tabletop-rack-sorted` *(new)* — "Sort by number" active
+      (`aria-pressed`/filled state visibly different from "Manual").
+  12. `tabletop-commit-enabled` *(new)* — Commit turn enabled (filled gold,
+      not disabled-gray) once the current draft has a set of the player's
+      own.
+  13. `tabletop-chat-messages` *(new)* — chat expanded with 3 disposable,
+      clearly-fake test messages ("Nice move!", "gg", "Phase 4 review test
+      message") from a disposable per-run identity.
 - Captured with `e2e/scripts/capture-phase-4-review.ts` (kept outside
-  `e2e/tests`, same pattern as the Phase 0/2/3 scripts). The script's
-  first run crashed on an uncaught `TimeoutError` (missing the
-  "click the Meld Masters home link before looking for Play vs Computer"
-  step every prior capture script has) and, because the crash happened
-  before `browser.close()`, orphaned a headless Chromium that kept the
-  Node process alive indefinitely rather than exiting — fixed by adding
-  the missing navigation step and wrapping the whole run in `try/finally`
-  so `browser.close()` always executes, even on a setup failure.
-- **Visual review (this session, against `meld-masters-concept-01.png` and
-  `-04.png`, and against the matching baseline captures):** the grid-floor
-  board background, ivory tile chips with colored numeral-over-symbol, and
-  colored arcade action buttons read as a coherent match to the concept
-  art within Phase 4's actual (restrained) scope — no move log, portraits,
-  or robot mascot, all correctly out of scope. Tile selection shows a
-  visible gold ring; the invalid-set state shows the existing red-dashed
-  DropZone border plus its unchanged text caption; the completed-game card
-  shows the new gold accent border/glow. The bot-goes-first non-determinism
-  visible in `tabletop-your-turn` (the computer's opening meld already on
-  the table) matches the same non-determinism already present in the
-  pre-redesign baseline capture of the same state — not a capture bug.
+  `e2e/tests`, same pattern as the Phase 0/2/3 scripts, `try/finally`
+  around the whole browser session so it always closes).
+- **Substitution — drag-state exception:** not needed. A true mid-drag
+  screenshot (state 8 above) turned out to be capturable reliably by
+  holding the mouse down without releasing it, once each viewport was
+  handled independently rather than resized mid-drag.
+- **Substitution — opponent-turn exception:** not needed. A real 2-player
+  game (state 7 above) was reliably reachable via the same
+  `startTwoPlayerGame`-equivalent setup the real e2e suite already uses,
+  distinct from `tabletop-computer-turn` as required.
+- **Substitution — `tabletop-valid-set` (documented, occurs on decks
+  without a computer-opponent meld):** the computer opponent has its own
+  valid meld on the table by this point in most deals (its dealing/hand
+  logic is deterministic in this environment), which alone satisfies
+  "valid table set" with zero moves from the player. On a deal where it
+  doesn't, the script builds a real 3-tile set of the player's own instead
+  — using the app's own click-to-select/click-to-place accessible-move
+  primitive, not raw mouse drag (see below) — which is not guaranteed to
+  itself be a valid run/group (its 3 tiles are arbitrary rack tiles, not
+  selected for meldability). This is clearly logged by the script
+  (`substitutions` array → console output) whenever it triggers.
+- **A real, non-cosmetic bug found and fixed in this script**, worth
+  recording because it consumed most of the closure pass and reflects a
+  genuine interaction constraint of the app, not just script polish: an
+  earlier version built multi-tile sets via raw mouse drag (`dragTo`,
+  mirroring the working `tabletop-invalid-set`/baseline pattern), which
+  intermittently scattered tiles into several stray one-tile sets instead
+  of one real set. Root-caused to dnd-kit's pointer-coordinate collision
+  detection occasionally resolving a drop near a small set's edge to the
+  adjacent "start a new set" zone instead — CLAUDE.md's documented
+  drag-precision risk, but here it recurred even when the drop target was
+  a tile inside the set (its documented mitigation) and even with
+  pixel-precise, ordinal-addressed locators, because the *pixel geometry*
+  of a small target is the actual cause, not locator precision. The fix
+  was to stop using raw drag for multi-tile construction entirely and use
+  the app's own accessible click-to-select-then-click-to-place flow
+  instead (`e2e/tests/two-player-smoke.spec.ts`'s "click/tap tile
+  selection and move" pattern) — its destination resolves via each zone's
+  bound `onClick` handler, an ordinary DOM event with no pointer-coordinate
+  ambiguity at all. A second, related bug (the post-construction "Undo"
+  step waiting for a hardcoded rack count that was wrong from partway
+  through the script onward, because `game.draw()` — the earlier
+  `tabletop-computer-turn` capture's "Draw tile" click — is a real,
+  immediately-committed server call, not undoable local draft state, so
+  the rack's true baseline permanently increases by one from that point)
+  was found the same way and fixed to compare against the actual
+  pre-construction count instead of an assumed one.
+- **Sensitivity review:** all 52 screenshots were opened and reviewed this
+  session (not merely generated). No recovery secret, credential, token,
+  connection string, or private URL appears in any of them — every
+  identity is a disposable per-run username (`Phase4Review*`,
+  `Phase4Host*`, `Phase4Guest*`), every room/game is disposable test data,
+  and the chat messages are explicitly fake/test content chosen for that
+  purpose.
+- **Visual review (against `meld-masters-concept-01.png`/`-04.png` and the
+  matching baseline captures):** the grid-floor board background, ivory
+  tile chips with colored numeral-over-symbol, and colored arcade action
+  buttons read as a coherent match to the concept art within Phase 4's
+  actual (restrained) scope — no move log, portraits, or robot mascot, all
+  correctly out of scope. Tile selection shows a visible gold ring; the
+  invalid-set state shows a genuinely invalid (3-tile, red-bordered,
+  "not a valid run or group") set — not just an under-3-tile "needs more"
+  neutral state, which an earlier pass through this same script mistakenly
+  produced before the click-based fix above; the completed-game card shows
+  the new gold accent border/glow. The bot-goes-first non-determinism
+  visible in some `tabletop-your-turn` captures (the computer's opening
+  meld already on the table) matches the same non-determinism already
+  present in the pre-redesign baseline capture of the same state — not a
+  capture bug.
 
 ## 14. Confirmation: no server, engine, or bot behavior changed
 
@@ -332,7 +436,7 @@ Blocks only Phase 5.
 | `apps/web/src/pages/TabletopPage.tsx` | `.card--accent-gold` on the completed-game card; accent classes on the four non-resign action buttons |
 | `apps/web/test/Tile.test.tsx` | +3 tests (§10) |
 | `e2e/scripts/capture-phase-4-review.ts` | New: Phase 4 screenshot capture script |
-| `docs/design-reference/phase-4-review/*.png` (24 files) | New: Phase 4 manual-review screenshots |
+| `docs/design-reference/phase-4-review/*.png` (52 files) | New: Phase 4 manual-review screenshots (13 states × 4 viewports) |
 | `docs/meld-masters-phase-4-summary.md` | This document |
 | `docs/task.md` | Phase 4 checkpoint recorded, Phase 5 next-but-gated-on-B3 |
 
@@ -349,7 +453,62 @@ Blocks only Phase 5.
   `pnpm --filter @tile-meld/web run dev`) and play a game live.
 - **New tests:** `apps/web/test/Tile.test.tsx`.
 
-## 18. Recommended next step
+## 18. Closure confirmations
+
+- **No Phase 5 or Phase 6 work occurred.** No file under
+  `apps/web/src/assets/portraits/`, no `Portrait.tsx`, no icon/favicon/
+  manifest file, no `apps/web/public/*` change. `git diff --stat` against
+  the pre-closure commit (`7bf9ec2`) touches only: one CSS comment
+  (`global.css`), the capture script, the 52 screenshots, and these two
+  docs.
+- **Tile geometry** is still 2.75rem × 3.5rem (44×56px) — unchanged by
+  closure (no CSS rule touching `.tile`'s `width`/`height` was edited).
+- **Drag-and-drop application logic** (`dnd-kit`, `apps/web/src/tabletop/
+  DropZone.tsx`, `TableSet.tsx`'s `onActivateZone`) is unchanged — only
+  the *screenshot capture script* changed how it drives the UI (switching
+  from raw mouse drag to the app's own existing click-to-select/
+  click-to-place accessible-move path, both of which already existed and
+  are already covered by `two-player-smoke.spec.ts`).
+- **No internal identifier was renamed.** `tile-meld` remains the
+  repository/package-scope/deployment name throughout.
+- `docs/design-reference/meld-masters/` (concept art),
+  `docs/design-reference/baseline/`, `docs/design-reference/phase-2-review/`,
+  and `docs/design-reference/phase-3-review/` are untouched — confirmed by
+  `git status` showing no change to any path under those directories.
+
+## 19. Planned commit message
+
+This closure pass is a follow-up to the already-landed Phase 4 commit
+(`7bf9ec2`, pushed in a prior session turn before these closure
+requirements were raised) — it is a new commit, not an amend, and uses a
+message distinct from that commit's subject line rather than duplicating
+it:
+
+```
+fix(theme): Phase 4 closure — contrast comment, isolated e2e verification, full screenshot set
+
+- Correct the tile-ivory-edge CSS comment to match its measured contrast
+  (was overstated; now states plainly it's a decorative low-contrast bevel,
+  not a state signal).
+- Re-verify the two previously load-attributed e2e failures in isolation
+  against a fresh disposable database and freshly-started server; both pass
+  cleanly, reclassifying all 5 original full-matrix failures as
+  non-reproducible harness timeouts, not Phase 4 regressions.
+- Extend the Phase 4 screenshot capture script from 6 to 13 tabletop
+  states (52 screenshots total): opponent turn, active drag, valid set,
+  multiple sets, non-default rack sort, Commit-turn-enabled, and chat with
+  messages. Along the way, fixed a real drag-precision limitation in the
+  script itself (raw mouse drag onto a small existing set can mis-resolve
+  to the adjacent "start a new set" zone) by switching to the app's own
+  accessible click-to-select/click-to-place move path.
+
+See docs/meld-masters-phase-4-summary.md for the full writeup.
+```
+
+(No commit hash is recorded in this document, per instruction — see the
+git log for the actual hash once created.)
+
+## 20. Recommended next step
 
 **Human review before Phase 5.** Phase 5 (original character portraits) is
 gated on Blocker B3 (supplied portrait artwork), which remains open and

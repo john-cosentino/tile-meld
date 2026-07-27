@@ -92,9 +92,18 @@
      accents -- all tuned for legibility against the dark panels above --
      fail WCAG non-text contrast (3:1) against it outright (measured
      ~1.2-2:1). These are darker, tile-scoped variants of the same hue
-     families, verified to clear 3:1 against BOTH the ivory tile body and
-     the dark board/rack surface a tile sits on -- see
-     docs/meld-masters-phase-4-summary.md for the full ratio table. */
+     families -- see docs/meld-masters-phase-4-summary.md for the full ratio
+     table. The four state-communicating rings/borders below
+     (--tile-selected-ring, --tile-focus-ring, --tile-invalid-border, and
+     the numeral colors) clear 3:1 against BOTH the ivory tile body and the
+     dark board/rack surface a tile sits on. --tile-ivory-edge is the
+     exception: it is the tile's default, always-on bevel border, not a
+     state signal, and is deliberately low-contrast against the tile body
+     (~1.7:1) for a subtle "physical chip" edge -- visually confirmed
+     legible as a bevel, not illegible. It still clears >9:1 against the
+     dark board/rack, so the tile's boundary as an interactive element
+     stays unambiguous either way; no state (selected/invalid/dragging/
+     joker) is ever communicated through this token alone. */
   --tile-ivory: #f7f0dd;
   --tile-ivory-edge: #c9b98c;
   --tile-joker-color: #8a6314;

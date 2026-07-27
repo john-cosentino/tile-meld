@@ -5,9 +5,9 @@ Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
 **Current checkpoint: Phase 4 — tabletop, rack, tiles, controls, and game
-status — completed.** Public product name: **Meld Masters**. `tile-meld`
-remains the internal repository name, package scope, and deployment
-identifier.
+status — verification completed, ready for human-reviewed closure.**
+Public product name: **Meld Masters**. `tile-meld` remains the internal
+repository name, package scope, and deployment identifier.
 
 **Implementation state:** the Tabletop screen (board, rack, tiles, action
 bar, status frame) now uses the arcade design system established in Phases
@@ -16,9 +16,18 @@ properties, new CSS classes on the five other tabletop components, zero
 route/API/game-logic change (see `docs/meld-masters-phase-4-summary.md`).
 No Phase 5 (portraits) or Phase 6 (icons/PWA) work occurred. This phase's
 work was originally written and left uncommitted when the machine running
-the assistant session crashed mid-phase; the following session recovered
-and fully verified it (gate, full e2e matrix, screenshots) rather than
-re-authoring it — see the summary's §2.
+the assistant session crashed mid-phase; a later session recovered and
+fully verified it (gate, full e2e matrix, screenshots) rather than
+re-authoring it, then closed out a set of remaining verification/
+documentation gaps (a CSS comment correction, isolated re-verification of
+two e2e failures against a fresh database, and rounding the screenshot set
+out from 6 to 13 tabletop states) — see the summary's §2 and §18–20.
+
+**Next unblocked implementation phase after Phase 4 is approved: Phase 6**
+(logo, favicon, manifest, and smartphone icon — plan §11). Phase 6 has not
+started. Phase 5 (portraits) remains blocked on Blocker B3 below and may be
+taken after Phase 6 or whenever B3 resolves, per the plan's own
+phase-ordering note (§11 intro).
 
 ## Open blocker
 
@@ -125,11 +134,16 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 
 ## Next phase
 
-**Phase 5 — Original character portrait system** (plan §11), *gated on
-Blocker B3* (supplied portrait assets — still open, unaffected by Phase
-4). Not started. Until B3 is resolved, Phase 6 (icons/PWA) may be taken
-instead without blocking Phase 5. Gated on this Phase 4 checkpoint being
-reviewed.
+**Phase 6 — Logo, favicon, manifest, and smartphone icon** (plan §11) is
+the next unblocked implementation phase once Phase 4 is approved. Not
+started.
+
+**Phase 5 — Original character portrait system** (plan §11) remains
+*gated on Blocker B3* (supplied portrait assets — still open, unaffected
+by Phase 4). Not started. Per the plan's own phase-ordering note, Phase 6
+may be taken instead without blocking Phase 5 while B3 is outstanding.
+
+Both are gated on this Phase 4 checkpoint being reviewed and approved.
 
 ## Structure to use when work begins on a new, unrelated task
 
