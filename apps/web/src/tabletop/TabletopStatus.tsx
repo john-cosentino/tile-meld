@@ -45,7 +45,11 @@ export function TabletopStatus({
           : `Waiting on seat ${view.activeSeat + 1}`;
 
   return (
-    <div className="tabletop-status" role="region" aria-label="Game status">
+    <div
+      className={`tabletop-status${isMyTurn ? " tabletop-status--active-turn" : ""}`}
+      role="region"
+      aria-label="Game status"
+    >
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h1 className="tabletop-turn">{turnText}</h1>
         <span className="muted">{connectionLabel(connectionState)}</span>

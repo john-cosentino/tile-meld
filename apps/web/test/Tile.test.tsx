@@ -33,6 +33,34 @@ describe("Tile", () => {
     expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("consumes the shared --tile-color-* custom property instead of an inline hex (Phase 4 token plumbing)", () => {
+    // packages/shared/src/branding.ts (via applyBrandingTokens.ts) is the
+    // single source of truth for the four tile hex values -- this asserts
+    // Tile.tsx reads that property rather than duplicating
+    // TILE_COLOR_BY_CODE[...].hex directly into a `color` style.
+    renderTile({ tile: { kind: "numbered", tileId: "C2-9-a", color: "C2", value: 9 } });
+    const button = screen.getByRole("button", { name: "Cobalt 9" });
+    expect(button.style.getPropertyValue("--tile-face-color")).toBe("var(--tile-color-C2)");
+    expect(button.style.color).toBe("");
+  });
+
+  it("marks a joker tile with a distinct class instead of an inline color (Phase 4)", () => {
+    renderTile({ tile: { kind: "joker", tileId: "J-a" } });
+    const button = screen.getByRole("button", { name: "Joker" });
+    expect(button.className).toContain("is-joker");
+    expect(button.style.getPropertyValue("--tile-face-color")).toBe("");
+  });
+
+  it("reflects invalid and dragging state via classes, not inline color/border overrides", () => {
+    renderTile({
+      tile: { kind: "numbered", tileId: "C1-2-a", color: "C1", value: 2 },
+      invalid: true,
+    });
+    const button = screen.getByRole("button", { name: "Crimson 2" });
+    expect(button.className).toContain("is-invalid");
+    expect(button.style.borderColor).toBe("");
+  });
+
   it("calls onActivate when clicked", () => {
     // A plain fireEvent.click, not userEvent.click: userEvent simulates a
     // full realistic pointerdown/pointerup/click sequence, which routes

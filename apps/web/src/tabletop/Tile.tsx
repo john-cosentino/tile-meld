@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -6,6 +7,12 @@ import {
   JOKER_LABEL,
   type TileColorCode,
 } from "@tile-meld/shared";
+
+// Note: TILE_COLOR_BY_CODE is still used for the accessible label ("Crimson
+// 7") and the non-color symbol -- only the *visual* fill color below is
+// read from the runtime CSS custom property instead of `.hex`, so the
+// palette still has exactly one source of truth (packages/shared/src/
+// branding.ts) but CSS never duplicates it as an inline hex value.
 
 export type TileFace =
   | {
@@ -44,17 +51,22 @@ export function Tile({
   const label =
     tile.kind === "joker" ? JOKER_LABEL : `${TILE_COLOR_BY_CODE[tile.color].label} ${tile.value}`;
 
+  const classes = ["tile"];
+  if (selected) classes.push("is-selected");
+  if (invalid) classes.push("is-invalid");
+  if (isDragging) classes.push("is-dragging");
+  if (tile.kind === "joker") classes.push("is-joker");
+
   return (
     <button
       ref={setNodeRef}
       type="button"
-      className="tile"
+      className={classes.join(" ")}
       style={{
         transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.4 : 1,
-        borderColor: invalid ? "var(--color-danger)" : "var(--color-border)",
-        boxShadow: selected ? "0 0 0 3px var(--color-accent)" : undefined,
-        color: tile.kind === "numbered" ? TILE_COLOR_BY_CODE[tile.color].hex : "var(--color-text)",
+        ...(tile.kind === "numbered"
+          ? ({ "--tile-face-color": `var(--tile-color-${tile.color})` } as CSSProperties)
+          : undefined),
       }}
       {...listeners}
       {...attributes}

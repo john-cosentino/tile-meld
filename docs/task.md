@@ -4,20 +4,21 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 3 — dashboard, lobby, room, and recovery
-presentation — completed.** Public product name: **Meld Masters**.
-`tile-meld` remains the internal repository name, package scope, and
-deployment identifier.
+**Current checkpoint: Phase 4 — tabletop, rack, tiles, controls, and game
+status — completed.** Public product name: **Meld Masters**. `tile-meld`
+remains the internal repository name, package scope, and deployment
+identifier.
 
-**Implementation state:** all seven pre-game/identity screens (Home
-dashboard, game-status cards, Public Lobby, Create Room, Join Room by
-Name, Waiting Room, Recovery) now use the arcade design system established
-in Phase 2 — new CSS classes on existing markup only, zero route/API/
-behavior change (see `docs/meld-masters-phase-3-summary.md`). No Phase 4
-(tabletop), Phase 5 (portraits), or Phase 6 (icons/PWA) work occurred —
-`TabletopPage.tsx` and every `.tabletop-*`/`.tile`/`.drop-zone` rule are
-untouched, and `.card` itself (shared with ChatPanel) was never modified;
-Phase 3 panels use a separate `.arcade-panel` class instead.
+**Implementation state:** the Tabletop screen (board, rack, tiles, action
+bar, status frame) now uses the arcade design system established in Phases
+2–3 — tile visuals moved from inline styles to CSS classes/custom
+properties, new CSS classes on the five other tabletop components, zero
+route/API/game-logic change (see `docs/meld-masters-phase-4-summary.md`).
+No Phase 5 (portraits) or Phase 6 (icons/PWA) work occurred. This phase's
+work was originally written and left uncommitted when the machine running
+the assistant session crashed mid-phase; the following session recovered
+and fully verified it (gate, full e2e matrix, screenshots) rather than
+re-authoring it — see the summary's §2.
 
 ## Open blocker
 
@@ -83,6 +84,28 @@ identity — were resolved 2026-07-26; see
   targeted e2e 38/38 clean on the first attempt (all 7 axe checks × 2
   projects, plus mobile-overflow) — no WebKit flakiness this run. 28
   review screenshots captured. See `docs/meld-masters-phase-3-summary.md`.
+- **Phase 4** (tabletop, rack, tiles, controls, and game status) —
+  completed 2026-07-27. Tile visuals moved from inline styles to CSS
+  classes (`.is-selected`/`.is-invalid`/`.is-dragging`/`.is-joker`) and a
+  `--tile-face-color` custom property sourced from the existing
+  `--tile-color-C1..C4` tokens (`packages/shared`'s `TILE_COLOR_TOKENS`
+  stays the single source of truth); tile geometry unchanged (44×56px, so
+  no drag-precision re-tuning was needed). `.card` restyled (plus a new
+  `.card--accent-gold` for the completed-game/Rematch panel — the first
+  change to `.card` since Phase 3 deliberately left it alone) and
+  `.tabletop-status`/`.tabletop-board`/`.tabletop-rack`/`.opponent-row`/
+  `.table-set`/action-bar accent classes added. Full gate green (693
+  tests, 3 new, up from 690); full 5-project e2e matrix 160/165 passed —
+  the 5 failures are all outside this phase's files (recovery/dashboard/
+  lifecycle, not tabletop) and one was root-caused directly via the
+  server's own request log to the local dev server's shared recovery-
+  endpoint rate limit (429s), not a code regression; every tabletop-
+  specific spec (drag-and-drop, mobile overflow, tabletop axe) passed
+  clean on all 5 projects. 24 review screenshots captured. This phase's
+  implementation was originally written in a prior session that ended in
+  a machine crash before verification or commit; the following session
+  recovered, verified, and completed it. See
+  `docs/meld-masters-phase-4-summary.md`.
 
 ## Approved decisions (implemented in Phase 2)
 
@@ -102,11 +125,11 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 
 ## Next phase
 
-**Phase 4 — Tabletop, rack, tiles, controls, and game status** (plan §11).
-Not started. The highest-risk remaining phase — drag-and-drop precision,
-tile contrast, and the active-game surface all need care (see
-`CLAUDE.md`'s "Areas that require special care"). Gated on this Phase 3
-checkpoint being reviewed.
+**Phase 5 — Original character portrait system** (plan §11), *gated on
+Blocker B3* (supplied portrait assets — still open, unaffected by Phase
+4). Not started. Until B3 is resolved, Phase 6 (icons/PWA) may be taken
+instead without blocking Phase 5. Gated on this Phase 4 checkpoint being
+reviewed.
 
 ## Structure to use when work begins on a new, unrelated task
 

@@ -86,6 +86,22 @@
   --glow-sm: 0 0 6px var(--neon-cyan-dim);
   --glow-focus: 0 0 0 3px rgba(63, 224, 255, 0.85);
 
+  /* Tile-specific tokens (Phase 4: docs/meld-masters-visual-refresh-plan.md
+     §11 Phase 4). The tile body is deliberately the one light surface in an
+     otherwise dark-only theme (an arcade tile tray), so the app-wide neon
+     accents -- all tuned for legibility against the dark panels above --
+     fail WCAG non-text contrast (3:1) against it outright (measured
+     ~1.2-2:1). These are darker, tile-scoped variants of the same hue
+     families, verified to clear 3:1 against BOTH the ivory tile body and
+     the dark board/rack surface a tile sits on -- see
+     docs/meld-masters-phase-4-summary.md for the full ratio table. */
+  --tile-ivory: #f7f0dd;
+  --tile-ivory-edge: #c9b98c;
+  --tile-joker-color: #8a6314;
+  --tile-selected-ring: #c15a10;
+  --tile-focus-ring: #14858f;
+  --tile-invalid-border: #d42534;
+
   --radius-md: 0.5rem;
   --radius-lg: 0.9rem;
   --space-1: 0.25rem;
@@ -418,18 +434,40 @@ button.danger {
   flex-wrap: wrap;
 }
 
+/* .card has exactly two consumers, both on the tabletop (Phase 4): the
+   chat panel and the completed-game/rematch panel -- Phase 3 deliberately
+   used `.arcade-panel` everywhere else and left `.card` untouched for
+   this phase to restyle (see docs/meld-masters-phase-3-summary.md). Same
+   frame treatment as `.arcade-panel` now, so both surfaces read as part
+   of the same arcade shell. */
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-panel);
+  border: var(--frame-width) solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--glow-sm);
+}
+
+/* Completed-game/rematch panel only (§ "Completed game and rematch") --
+   gold emphasis on top of the base .card treatment, never combined with a
+   confetti/medal/score invention; every existing button/text is unchanged. */
+.card--accent-gold {
+  border-color: var(--neon-gold);
+  box-shadow: 0 0 14px rgba(255, 201, 77, 0.25);
 }
 
 .muted {
   color: var(--color-text-muted);
 }
 
+/* Arcade tile token (Phase 4). Geometry (2.75rem x 3.5rem, ~44x56px) is
+   UNCHANGED from the pre-Phase-4 tile -- dnd-kit's collision detection and
+   the full drag-and-drop e2e matrix were tuned against this exact size, so
+   only the surface treatment changes here. `color` reads a per-tile CSS
+   custom property (`--tile-face-color`, set inline by Tile.tsx from
+   `--tile-color-C1..C4`/`--tile-joker-color`) rather than an inline hex --
+   packages/shared/src/branding.ts stays the single source of truth for the
+   four tile colors (§10.4). */
 .tile {
   display: inline-flex;
   flex-direction: column;
@@ -438,16 +476,52 @@ button.danger {
   width: 2.75rem;
   height: 3.5rem;
   padding: 0;
-  background: #fffdf7;
-  border: 2px solid var(--color-border);
+  background: var(--tile-ivory);
+  border: 2px solid var(--tile-ivory-edge);
   border-radius: var(--radius-md);
   font-weight: 700;
+  color: var(--tile-face-color, var(--tile-ivory-edge));
   touch-action: none;
+  transition:
+    box-shadow var(--duration-fast) var(--ease-arcade),
+    opacity var(--duration-fast) var(--ease-arcade);
+}
+
+/* Own focus treatment, not the app-wide neon-cyan :focus-visible rule --
+   cyan measures ~1.5:1 against the light tile body, well under the 3:1
+   non-text minimum. --tile-focus-ring is the same accent family, darkened
+   until it clears 3:1 against both the tile body and the dark surface
+   behind it (see the --tile-focus-ring definition above). */
+.tile:focus-visible {
+  outline: 3px solid var(--tile-focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.tile.is-selected {
+  box-shadow: 0 0 0 3px var(--tile-selected-ring);
+}
+
+.tile.is-invalid {
+  border-color: var(--tile-invalid-border);
+}
+
+.tile.is-dragging {
+  opacity: 0.4;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+.tile.is-joker {
+  color: var(--tile-joker-color);
 }
 
 .tile-symbol {
   font-size: 1rem;
   line-height: 1;
+}
+
+.tile.is-joker .tile-symbol {
+  text-shadow: 0 1px 1px rgba(10, 14, 26, 0.55);
 }
 
 .tile-value {
@@ -621,13 +695,26 @@ a.dashboard-card:hover {
 }
 
 .tabletop-status {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-panel);
+  border: var(--frame-width) solid var(--color-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--glow-sm);
   padding: var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  transition: border-color var(--duration-fast) var(--ease-arcade);
+}
+
+/* "Your turn" energy: a stronger cyan frame + glow while it's actually the
+   player's own turn, so the status frame itself reinforces the H1 text
+   rather than staying visually identical regardless of whose turn it is.
+   Text ("Your turn" / "Waiting on seat N" / "Game over") remains the
+   actual source of truth either way -- this is a redundant, not sole,
+   signal (§10.3). */
+.tabletop-status--active-turn {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 14px var(--neon-cyan-dim);
 }
 
 /* The page's single H1 -- turn ownership, substantially more prominent
@@ -636,17 +723,64 @@ a.dashboard-card:hover {
    which is a different kind of heading (a static brand title, not a
    dynamic, frequently-changing status). */
 .tabletop-turn {
-  font-size: 1.75rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  font-size: 1.5rem;
   margin: 0;
 }
 
 .tabletop-opponents {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-2) var(--space-3);
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* Compact competitor plaques -- a small bordered chip per opponent rather
+   than a bare text row, so the opponent strip reads as part of the same
+   arcade shell as every other panel. Per-seat accent border cycles through
+   the same four accents Phase 3's seat-panel rows already use (purely
+   decorative variety, never the only way to tell seats apart -- name text
+   is always present). No portrait slot is added here; `.opponent-row` is a
+   clean, obvious hook for a Phase 5 portrait to land in later without
+   restructuring this markup, same approach as Phase 3's `.seat-identity`. */
+.opponent-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.85rem;
+  list-style: none;
+}
+
+.opponent-row:nth-of-type(4n + 1) {
+  border-color: var(--neon-cyan);
+}
+
+.opponent-row:nth-of-type(4n + 2) {
+  border-color: var(--neon-gold);
+}
+
+.opponent-row:nth-of-type(4n + 3) {
+  border-color: var(--neon-purple);
+}
+
+.opponent-row:nth-of-type(4n + 4) {
+  border-color: var(--neon-green);
+}
+
+/* Active-seat marker: the existing hourglass text (⏳, already redundant
+   text, not color-only) plus a stronger border so the active opponent
+   plaque is scannable at a glance without reading every row. Layered after
+   the accent-cycle rules above so it wins regardless of seat position. */
+.opponent-row--active {
+  border-color: var(--state-active);
+  box-shadow: 0 0 8px var(--neon-cyan-dim);
 }
 
 /* Two columns on desktop -- primary column (opponents/board/rack/actions)
@@ -668,21 +802,75 @@ a.dashboard-card:hover {
 
 /* The visual center of the screen -- enough minimum height that it never
    reads as a narrow band between unrelated content, even with zero sets
-   on the table yet. */
+   on the table yet. Deep-navy arcade playfield: a restrained static grid
+   (the same repeating-linear-gradient technique as the site-wide body
+   background, at a smaller scale so it reads as a distinct "table felt"
+   texture rather than a continuation of the page background) plus a
+   brighter neon frame than an ordinary panel. Purely decorative --
+   `background-image` is never interactive/pointer-capturing, and the
+   board's own droppable geometry (TableSet/DropZone) is untouched. */
 .tabletop-board {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--bg-inset);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 24px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 24px
+    );
+  border: var(--frame-width) solid var(--neon-cyan);
   border-radius: var(--radius-lg);
+  box-shadow: var(--glow-sm);
   padding: var(--space-4);
   min-height: 18rem;
 }
 
-/* Visually distinct from the board via an accent top border, rather than
-   a different background -- keeps both regions legible in light and dark
-   mode without introducing a new color token. */
+/* Arcade plaque per table set -- a bordered inset panel around each
+   DropZone (rather than the DropZone's own dashed border alone) so a set
+   reads as a distinct "play" on the felt. Validity color still lives on
+   the DropZone itself (unchanged: --color-success/--color-danger via
+   .drop-zone.valid/.invalid) -- this wrapper only adds the plaque chrome,
+   never a second, competing validity signal. */
+.table-set {
+  background: var(--bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.table-set-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+/* Distinct arcade tray: a warm ivory-family accent (echoing the tile
+   bodies it holds) rather than the board's cool cyan frame, so rack and
+   board read as two different kinds of surface at a glance. */
 .tabletop-rack {
-  border-top: 3px solid var(--color-accent);
-  padding-top: var(--space-3);
+  background: var(--bg-panel);
+  border-top: 3px solid var(--tile-ivory-edge);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Segmented arcade control for the rack's Manual/Sort by number/Sort by
+   color buttons -- same aria-pressed toggle-button pattern as before,
+   `[aria-pressed="true"]` just adds a filled state on top so the current
+   mode is visually obvious, not only exposed to assistive tech. */
+.sort-button[aria-pressed="true"] {
+  background: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+  color: var(--text-on-accent);
 }
 
 .tabletop-actions {
@@ -703,6 +891,32 @@ a.dashboard-card:hover {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+
+/* Action-bar hierarchy (§ "Action bar"): Commit is the strongest emphasis
+   (reuses Phase 3's filled .accent-gold), Draw/Undo an outlined cyan,
+   Pass an outlined purple, Reset an outlined warning amber -- Resign/
+   Confirm resign keep the existing, unrelated .danger class untouched.
+   Every button keeps its exact existing text/disabled/onClick logic; only
+   className changed. */
+button.accent-purple {
+  border-color: var(--neon-purple);
+  color: var(--neon-purple);
+}
+
+button.accent-warn {
+  border-color: var(--state-warning);
+  color: var(--state-warning);
+}
+
+/* Arcade callout box for the feedback/hints stack (turn-cost notice,
+   initial-meld progress, hint text, and the existing .error-banner/
+   .warning-banner children, all unchanged) -- a left accent bar rather
+   than a full panel border keeps it from competing visually with the
+   board/rack panels above and below it. */
+.tabletop-feedback {
+  border-left: 3px solid var(--color-border);
+  padding-left: var(--space-3);
 }
 
 /* No card chrome of its own -- ChatPanel already renders its own `.card`

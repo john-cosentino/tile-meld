@@ -47,13 +47,25 @@ export function Rack({
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>Your rack ({tileIds.length})</h2>
         <div className="row" role="group" aria-label="Sort rack">
-          <button aria-pressed={sortMode === "manual"} onClick={() => setSortMode("manual")}>
+          <button
+            className="sort-button"
+            aria-pressed={sortMode === "manual"}
+            onClick={() => setSortMode("manual")}
+          >
             Manual
           </button>
-          <button aria-pressed={sortMode === "number"} onClick={() => applySort("number")}>
+          <button
+            className="sort-button"
+            aria-pressed={sortMode === "number"}
+            onClick={() => applySort("number")}
+          >
             Sort by number
           </button>
-          <button aria-pressed={sortMode === "color"} onClick={() => applySort("color")}>
+          <button
+            className="sort-button"
+            aria-pressed={sortMode === "color"}
+            onClick={() => applySort("color")}
+          >
             Sort by color
           </button>
         </div>

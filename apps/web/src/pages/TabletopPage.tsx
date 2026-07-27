@@ -223,7 +223,7 @@ export function TabletopPage() {
         )}
 
         {view.status === "completed" && (
-          <div className="card stack" role="status">
+          <div className="card card--accent-gold stack" role="status">
             <RematchPanel roomId={view.roomId} gameId={gameId!} />
             <Link to="/">
               <button>Back to your rooms</button>
@@ -299,26 +299,28 @@ export function TabletopPage() {
 
             <div className="tabletop-actions" role="group" aria-label="Game actions">
               <div className="tabletop-actions-primary">
-                <button disabled={!canUndo} onClick={undo}>
+                <button className="accent-cyan" disabled={!canUndo} onClick={undo}>
                   Undo
                 </button>
-                <button disabled={!draftChanged} onClick={reset}>
+                <button className="accent-warn" disabled={!draftChanged} onClick={reset}>
                   Reset turn
                 </button>
                 <button
+                  className="accent-cyan"
                   disabled={!isMyTurn || view.poolCount === 0}
                   onClick={() => void handleDraw()}
                 >
                   Draw tile
                 </button>
                 <button
+                  className="accent-purple"
                   disabled={!isMyTurn || view.poolCount > 0}
                   onClick={() => void handlePass()}
                 >
                   Pass
                 </button>
                 <button
-                  className="primary"
+                  className="accent-gold"
                   disabled={!isMyTurn || draft.sets.length === 0}
                   onClick={() => void handleCommit()}
                 >

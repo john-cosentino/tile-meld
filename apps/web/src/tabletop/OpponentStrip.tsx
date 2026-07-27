@@ -19,14 +19,20 @@ export function OpponentStrip({ opponents, activeSeat, gameStatus }: OpponentStr
   if (opponents.length === 0) return null;
   return (
     <ul className="tabletop-opponents" aria-label="Opponents">
-      {opponents.map((o) => (
-        <li key={o.seatIndex} className="muted">
-          {o.displayName}
-          {o.isComputer ? " 🤖" : ""}: {o.rackCount} tiles
-          {o.status === "resigned" ? " (resigned)" : ""}
-          {activeSeat === o.seatIndex && gameStatus === "active" ? " ⏳" : ""}
-        </li>
-      ))}
+      {opponents.map((o) => {
+        const isActive = activeSeat === o.seatIndex && gameStatus === "active";
+        return (
+          <li
+            key={o.seatIndex}
+            className={`opponent-row${isActive ? " opponent-row--active" : ""}`}
+          >
+            {o.displayName}
+            {o.isComputer ? " 🤖" : ""}: {o.rackCount} tiles
+            {o.status === "resigned" ? " (resigned)" : ""}
+            {isActive ? " ⏳" : ""}
+          </li>
+        );
+      })}
     </ul>
   );
 }

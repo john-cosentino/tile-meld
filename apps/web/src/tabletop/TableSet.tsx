@@ -27,8 +27,8 @@ export function TableSet({
   validityLabel,
 }: TableSetProps) {
   return (
-    <div className="stack" style={{ gap: "var(--space-1)" }}>
-      <span className="muted" style={{ fontSize: "0.85rem" }}>
+    <div className="table-set stack" style={{ gap: "var(--space-1)" }}>
+      <span className="table-set-label muted">
         Set {index + 1} -- {validityLabel}
       </span>
       <DropZone
