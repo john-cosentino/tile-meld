@@ -4,25 +4,38 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 8 — regression testing, visual review, and
-release preparation — completed, pending human review.** This is the
-plan's final phase (§11). The visual refresh implementation itself
-(Phases 0–8) is now functionally complete. Full repository gate green;
-local e2e (chromium/firefox/mobile-chrome) 42/42 each; CI independently
-confirmed chromium/firefox/webkit/mobile-chrome all green (mobile-webkit
+**Current checkpoint: dependency security remediation — completed,
+pending human review.** A focused follow-up on top of the completed
+Phase 8 checkpoint (below). Fresh `pnpm audit` found 5 vulnerabilities
+(4 high, 1 moderate); 4 resolved (`@fastify/static` 10.1.0→10.1.2,
+`find-my-way` 9.6.0→9.7.0, `react-router-dom`→`react-router` 8.3.0 — the
+only available fix, no patched 7.x exists, verified narrow before
+applying), 1 documented and left unresolved (`brace-expansion@1.1.16`,
+dev-only eslint toolchain, no production exposure, already the latest
+release of its maintained line — not silently suppressed). Full local
+gate green; local e2e chromium/firefox/mobile-chrome 42/42 each; a live
+path-traversal probe against the compiled server confirmed the
+`@fastify/static` fix is actually effective. See
+`docs/meld-masters-dependency-security-summary.md` for the complete
+writeup. Public product name: **Meld Masters**. `tile-meld` remains the
+internal repository name, package scope, and deployment identifier.
+
+**Before that: Phase 8 — regression testing, visual review, and release
+preparation — completed, pending human review.** This was the plan's
+final phase (§11). The visual refresh implementation itself (Phases 0–8)
+is functionally complete. Full repository gate green; local e2e
+(chromium/firefox/mobile-chrome) 42/42 each; CI independently confirmed
+chromium/firefox/webkit/mobile-chrome all green (mobile-webkit
 CI-inconclusive — infrastructure interruptions, not a test failure, see
 below); production-build static-asset serving verified; branding/
 obsolete-artwork sweep clean; 71 final review screenshots captured and
-compared against the concept references. **Deployment/device
-verification work remains** — see "Remaining work" below. Public product
-name: **Meld Masters**. `tile-meld` remains the internal repository name,
-package scope, and deployment identifier.
+compared against the concept references.
 
-**Implementation state:** see `docs/meld-masters-phase-8-summary.md` for
-the complete writeup and `docs/current-state.md` for the current
-verified-state snapshot. Phase 7 (responsive refinement and
-accessibility) is complete — see the Phase history entry below and
-`docs/meld-masters-phase-7-summary.md`.
+**Implementation state:** see `docs/meld-masters-dependency-security-summary.md`
+and `docs/meld-masters-phase-8-summary.md` for the complete writeups and
+`docs/current-state.md` for the current verified-state snapshot. Phase 7
+(responsive refinement and accessibility) is complete — see the Phase
+history entry below and `docs/meld-masters-phase-7-summary.md`.
 
 **Machine freeze (2026-07-28, first incident):** an earlier session
 working on Phase 7 was interrupted when this machine froze (black screen,
@@ -58,14 +71,17 @@ matrix job entirely since 2026-07-27) and a pre-existing, unpatched
 dependency-audit finding (4 high/1 moderate CVEs, out of this phase's
 scope) that now surfaces now that the format gate no longer blocks it.
 
-**Remaining work (not blocking phase completion, all require the user or
-a separate deliberate task):** real screen-reader checks (NVDA/
+**Remaining work (not blocking checkpoint completion, all require the
+user or a separate deliberate task):** real screen-reader checks (NVDA/
 VoiceOver/TalkBack), real Safari verification (desktop + iOS), Phase 6's
 manual Android/iOS/desktop-installed-PWA device checklists
-(`docs/meld-masters-phase-6-summary.md` §30-33), the pre-existing
-dependency-audit CVEs surfaced above, completing local webkit/
+(`docs/meld-masters-phase-6-summary.md` §30-33), the one remaining
+dev-only dependency finding (`brace-expansion@1.1.16` via eslint's
+toolchain — see the dependency security summary §14, no production
+exposure, revisit only if/when upstream `eslint`/`@eslint/config-array`
+moves off its current `minimatch` major), completing local webkit/
 mobile-webkit verification in small batches if full local coverage is
-wanted, and actual deployment (not performed or requested this phase).
+wanted, and actual deployment (not performed or requested).
 
 **No new phase started automatically.** The plan's Phase 8 (§11) was the
 final defined phase of this visual-refresh initiative; there is no
@@ -269,10 +285,13 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 ## Next phase
 
 **None.** Phase 8 — regression testing, visual review, and release
-preparation (plan §11) — is **completed, pending human review**, and was
-the final defined phase of the Meld Masters visual-refresh initiative.
-See the Phase history entry above and `docs/meld-masters-phase-8-summary.md`.
-No Phase 9 exists in the plan and none was started automatically.
+preparation (plan §11) — was the final defined phase of the Meld Masters
+visual-refresh initiative, and is complete. A separate, focused
+dependency security remediation checkpoint followed it (see the top of
+this document and `docs/meld-masters-dependency-security-summary.md`) —
+not itself a plan phase, a maintenance checkpoint outside the plan's
+numbering. No Phase 9 exists in the plan and none was started
+automatically.
 
 Remaining work, independent of and not blocking review of this
 checkpoint (none are preconditions Claude can complete alone; none were
@@ -282,10 +301,9 @@ performed or claimed as passed):
   verification (desktop + iOS) — `docs/meld-masters-phase-8-summary.md`.
 - Phase 6's manual Android/iOS/desktop-installed-PWA device checklists
   (`docs/meld-masters-phase-6-summary.md` §30-33).
-- The pre-existing dependency-audit findings surfaced once the CI
-  format gate was fixed (4 high/1 moderate CVEs — `@fastify/static`,
-  `find-my-way`, `react-router`, `brace-expansion`) — a separate,
-  deliberate dependency-update task, not touched this phase.
+- The one remaining dev-only dependency finding
+  (`brace-expansion@1.1.16` via `eslint`'s own toolchain, no production
+  exposure — `docs/meld-masters-dependency-security-summary.md` §14).
 - Completing local webkit/mobile-webkit verification in small batches,
   if full local coverage beyond CI is ever wanted.
 - Actual deployment (Render Blueprint or otherwise) — not performed or

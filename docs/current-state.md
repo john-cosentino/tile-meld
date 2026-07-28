@@ -5,21 +5,49 @@ Public product name: **Meld Masters** (renamed from Tile Meld, Phase 1 of
 the internal repository name, package scope, and deployment identifier —
 see the plan's §5.5.
 
-- **Last verified:** 2026-07-28 (Phase 8 — final regression verification
-  and release preparation)
-- **Commit at verification start:** `922ca4600630b395e5ced014ef4910eef3aee063`
-  (the Phase 7 completion checkpoint). Two Phase 8 commits landed on top of
-  it this session — see `git log` for the current `main` tip; the exact
-  hashes are deliberately not repeated here (see
-  `docs/meld-masters-phase-8-summary.md` for why).
+- **Last verified:** 2026-07-28 (dependency security remediation
+  checkpoint, on top of Phase 8)
+- **Commit at verification start:** `42abfb4c8c21a9d3757f6be038ae3e7f50a90ac7`
+  (the last Phase 8 commit). See `git log` for the current `main` tip;
+  the exact hash of this checkpoint's own commit(s) is deliberately not
+  repeated here — see `docs/meld-masters-dependency-security-summary.md`.
 - **Working tree at verification start:** clean, branch `main`, in sync
   with `origin/main` (0 ahead / 0 behind)
 
-The visual refresh (`docs/meld-masters-visual-refresh-plan.md`) is now
-functionally complete through Phase 8. This file replaces the
-pre-refresh-era verification snapshot; the visual-refresh phase summaries
-(`docs/meld-masters-phase-0-summary.md` through `-phase-8-summary.md`)
-are the authoritative record of what changed and why.
+The visual refresh (`docs/meld-masters-visual-refresh-plan.md`) is
+functionally complete through Phase 8. A focused dependency-security
+remediation checkpoint followed — see
+`docs/meld-masters-dependency-security-summary.md` for the full writeup.
+This file replaces the pre-refresh-era verification snapshot; the
+visual-refresh phase summaries (`docs/meld-masters-phase-0-summary.md`
+through `-phase-8-summary.md`) are the authoritative record of what
+changed and why.
+
+## Dependency security status, 2026-07-28
+
+Fresh `pnpm audit --audit-level=moderate` at the start of this
+checkpoint found 5 vulnerabilities (4 high, 1 moderate). **4 resolved:**
+`@fastify/static` (both a high path-traversal advisory and a moderate
+non-canonical-URL advisory, bumped `10.1.0` → `10.1.2`), `find-my-way`
+(high, HTTP/2 DDoS, `9.6.0` → `9.7.0` via a scoped override), and
+`react-router` (high, RSC-mode CSRF — no patched `7.x` exists, migrated
+`react-router-dom@7.18.1` → `react-router@8.3.0`; verified narrow: same
+7 APIs this app uses are exported unchanged, confirmed against the
+actual published package, not a secondhand summary). **1 remains,
+documented not suppressed:** `brace-expansion@1.1.16`, reached only
+through `eslint`'s own dev-only toolchain, already the latest available
+release of its independently-maintained major line, no production
+exposure — see `docs/meld-masters-dependency-security-summary.md` §14
+for the full evidence trail. Post-fix audit: `pnpm audit
+--audit-level=moderate` shows only that one documented, dev-only
+finding.
+
+Verification performed for this checkpoint: full local gate (format/
+lint/typecheck/317 tests/build) green; local chromium/firefox/
+mobile-chrome e2e all 42/42; a direct path-traversal exploit probe
+against the compiled production server confirming the `@fastify/static`
+fix is actually effective (404/403, not 200 with file content), not just
+a version-number check.
 
 ## Verified by running it, 2026-07-28 (Phase 8)
 
@@ -110,9 +138,15 @@ manual checklist.
 
 ## Deployment readiness
 
-Not deployed. See `docs/meld-masters-phase-8-summary.md` for the release-
-readiness recommendation and the full pre-deploy checklist. No deployment
-was performed or requested this phase.
+Not deployed. **Ready with documented residual risk** — the four
+production-relevant dependency advisories are now resolved and verified
+(§ "Dependency security status" above); the one remaining advisory is
+dev-only with no production exposure, documented not hidden. See
+`docs/meld-masters-phase-8-summary.md` for the full pre-deploy checklist
+and `docs/meld-masters-dependency-security-summary.md` for the
+dependency-specific detail. No deployment was performed or requested
+this session. Real screen-reader, real Safari, and real-device
+PWA-install checks remain pending, unchanged from Phase 8.
 
 ## Shipped and merged (from Git history)
 
