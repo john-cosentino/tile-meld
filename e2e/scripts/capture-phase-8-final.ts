@@ -9,15 +9,21 @@
 // Usage: pnpm exec tsx e2e/scripts/capture-phase-8-final.ts [outDir]
 // Both the server and Vite dev servers must already be running.
 
-import { chromium, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { chromium, type Browser, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { waitForReady, claimUsername, joinRoomByName, clickUntilSettled } from "../tests/helpers.js";
+import {
+  waitForReady,
+  claimUsername,
+  joinRoomByName,
+  clickUntilSettled,
+} from "../tests/helpers.js";
 
 const BASE_URL = process.env.BASELINE_BASE_URL ?? "http://localhost:5173";
 const OUT_DIR = path.resolve(
-  process.argv[2] ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../docs/design-reference/final"),
+  process.argv[2] ??
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../docs/design-reference/final"),
 );
 
 // The plan's own general-purpose viewport set (matches every earlier
@@ -83,13 +89,15 @@ async function withBrowser(fn: (browser: Browser) => Promise<void>): Promise<voi
 type ParsedTile = { label: string; color?: string; value?: number; isJoker: boolean };
 
 async function readRackTiles(page: Page): Promise<ParsedTile[]> {
-  const labels = await page.locator(".tabletop-rack .tile").evaluateAll((els) =>
-    els.map((el) => el.getAttribute("aria-label") ?? ""),
-  );
+  const labels = await page
+    .locator(".tabletop-rack .tile")
+    .evaluateAll((els) => els.map((el) => el.getAttribute("aria-label") ?? ""));
   return labels.map((label) => {
     if (/joker/i.test(label)) return { label, isJoker: true };
     const m = /^(\w+)\s+(\d+)$/.exec(label);
-    return m ? { label, color: m[1], value: Number(m[2]), isJoker: false } : { label, isJoker: false };
+    return m
+      ? { label, color: m[1], value: Number(m[2]), isJoker: false }
+      : { label, isJoker: false };
   });
 }
 
@@ -98,14 +106,17 @@ async function readRackTiles(page: Page): Promise<ParsedTile[]> {
  * each tile's real aria-label -- deterministic given whatever random
  * hand this run's game actually dealt, not a contrived/forced set. */
 function findValidTriple(tiles: ParsedTile[]): string[] | undefined {
-  const numbered = tiles.filter((t): t is ParsedTile & { color: string; value: number } => !t.isJoker && !!t.color);
+  const numbered = tiles.filter(
+    (t): t is ParsedTile & { color: string; value: number } => !t.isJoker && !!t.color,
+  );
   // Group: same value, 3 distinct colors.
   const byValue = new Map<number, ParsedTile[]>();
   for (const t of numbered) byValue.set(t.value, [...(byValue.get(t.value) ?? []), t]);
   for (const group of byValue.values()) {
     const distinctColors = new Map<string, ParsedTile>();
     for (const t of group) distinctColors.set(t.color, t);
-    if (distinctColors.size >= 3) return [...distinctColors.values()].slice(0, 3).map((t) => t.label);
+    if (distinctColors.size >= 3)
+      return [...distinctColors.values()].slice(0, 3).map((t) => t.label);
   }
   // Run: same color, 3 consecutive values.
   const byColor = new Map<string, number[]>();
@@ -192,7 +203,6 @@ async function run(): Promise<void> {
   });
 
   // 6. Waiting room, vs computer (fallback portrait).
-  let tabletopVsComputerPage: Page | undefined;
   await withBrowser(async (browser) => {
     const context = await browser.newContext({ baseURL: BASE_URL });
     const page = await context.newPage();
@@ -210,12 +220,19 @@ async function run(): Promise<void> {
     await page.getByRole("button", { name: /Start game/ }).click();
     await page.waitForURL(/\/games\//, { timeout: 15000 });
     await page.getByRole("heading", { name: /Your rack \(14\)/ }).waitFor({ timeout: 15000 });
-    const isMyTurn = await page.getByText("Your turn", { exact: true }).isVisible().catch(() => false);
+    const isMyTurn = await page
+      .getByText("Your turn", { exact: true })
+      .isVisible()
+      .catch(() => false);
     if (!isMyTurn) {
       await capture("tabletop-computer-turn", page);
     } else {
       // Draw/pass through until the bot's turn comes up, bounded.
-      for (let i = 0; i < 5 && (await page.getByText("Your turn", { exact: true }).isVisible()); i++) {
+      for (
+        let i = 0;
+        i < 5 && (await page.getByText("Your turn", { exact: true }).isVisible());
+        i++
+      ) {
         const draw = page.getByRole("button", { name: "Draw tile" });
         if (await draw.isEnabled()) await draw.click();
         else await page.getByRole("button", { name: "Pass" }).click();
@@ -223,8 +240,7 @@ async function run(): Promise<void> {
       }
       await capture("tabletop-computer-turn", page);
     }
-    tabletopVsComputerPage = page;
-    // Deliberately not closing this context -- reused by state 21 below.
+    await context.close();
   });
 
   // 7. Multiplayer waiting room, 3 of 4 seats -- multiple rival portraits.
@@ -384,7 +400,9 @@ async function run(): Promise<void> {
         await activePage.getByText(/^Set 2 --/).waitFor();
         await capture("tabletop-multiple-sets", activePage);
       } else {
-        missing.push("tabletop-multiple-sets -- no additional rack tile available to form a 2nd set");
+        missing.push(
+          "tabletop-multiple-sets -- no additional rack tile available to form a 2nd set",
+        );
       }
       await capture("tabletop-commit-enabled", activePage);
       await activePage.getByRole("button", { name: "Reset turn" }).click();
@@ -393,7 +411,10 @@ async function run(): Promise<void> {
     // 15. Invalid set -- any 3 tiles not already known-valid.
     await attempt("tabletop-invalid-set", async () => {
       const freshRack = await readRackTiles(activePage);
-      const three = freshRack.filter((t) => !t.isJoker).slice(0, 3).map((t) => t.label);
+      const three = freshRack
+        .filter((t) => !t.isJoker)
+        .slice(0, 3)
+        .map((t) => t.label);
       if (three.length !== 3) throw new Error("fewer than 3 non-joker tiles in rack");
       await placeIntoNewSet(activePage, three[0]!);
       await placeIntoSet(activePage, three[1]!, 1);
