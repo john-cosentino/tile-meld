@@ -11,13 +11,19 @@ export function NotificationsControl() {
     <div className="stack" style={{ gap: 2, alignItems: "flex-end" }}>
       <div className="row">
         {state === "subscribed" && (
-          <button onClick={() => void unsubscribe()}>🔔 Notifications on</button>
+          <button onClick={() => void unsubscribe()}>
+            <span aria-hidden="true">🔔</span> Notifications on
+          </button>
         )}
         {state === "default" && (
-          <button onClick={() => void subscribe()}>🔕 Enable notifications</button>
+          <button onClick={() => void subscribe()}>
+            <span aria-hidden="true">🔕</span> Enable notifications
+          </button>
         )}
         {state === "denied" && (
-          <span className="muted">🔕 Notifications blocked in this browser</span>
+          <span className="muted">
+            <span aria-hidden="true">🔕</span> Notifications blocked in this browser
+          </span>
         )}
       </div>
       {state === "default" && (

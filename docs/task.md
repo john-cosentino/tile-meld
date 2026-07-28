@@ -5,42 +5,66 @@ Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
 **Current checkpoint: Phase 7 — responsive refinement and accessibility —
-in progress, partial.** Three specific findings (skip-link focus reveal,
-a keyboard tile-selection bug, a narrow-viewport username-overflow bug)
-are fixed and verified (chromium-only); the plan's full §13.2 acceptance
-checklist (tablet/landscape breakpoints, a real screen-reader smoke test,
-contrast-ratio table, 200%-zoom pass, reduced-motion pass, decorative
-`aria-hidden` audit) has not been executed, and the full 5-project e2e
-matrix has been deferred to a session where it can run in the foreground
-with the user present (see "Machine freeze" note below). See
-`docs/meld-masters-phase-7-summary.md`. Public product name: **Meld
-Masters**. `tile-meld` remains the internal repository name, package
-scope, and deployment identifier.
+completed, pending human review.** The plan's full §13.2 acceptance
+checklist was executed: skip-link focus reveal, a keyboard tile-selection
+bug fix, a narrow-viewport username-overflow fix, 6 touch-target fixes,
+6 decorative-emoji `aria-hidden` fixes, a full contrast table, the full
+keyboard-only walkthrough, 200%/400% zoom, reduced motion, overflow at
+all 7 required viewports, and axe/semantics/live-region audits — all
+passing, all documented in `docs/meld-masters-phase-7-summary.md`. Local
+e2e verification: chromium, firefox, and mobile-chrome full projects all
+**42/42 passed**. Webkit and mobile-webkit are **explicitly deferred** —
+see "WebKit deferred" note below; this is a documented, user-approved
+scope decision, not an oversight. Real screen-reader checks (NVDA/
+VoiceOver/TalkBack) and the Phase 6 real-device checks remain open and
+require the user — see `docs/meld-masters-phase-7-summary.md` §39-42.
+Public product name: **Meld Masters**. `tile-meld` remains the internal
+repository name, package scope, and deployment identifier.
 
-**Implementation state:** see `docs/meld-masters-phase-7-summary.md` §4
-for the three fixes (skip-link focus reveal, keyboard tile-selection bug,
-narrow-viewport username overflow) and §6 for the explicit list of
-plan-§13.2 acceptance-checklist items not yet executed. Phase 5 (original
-character portrait system) is complete — see the Phase history entry
-below and `docs/meld-masters-phase-5-summary.md`.
+**Implementation state:** see `docs/meld-masters-phase-7-summary.md` for
+the complete writeup (findings, fixes, contrast table, browser-project
+results, screenshot inventory). Phase 5 (original character portrait
+system) is complete — see the Phase history entry below and
+`docs/meld-masters-phase-5-summary.md`.
 
-**Machine freeze (2026-07-28):** the prior session working on Phase 7 was
-interrupted when this machine froze (black screen, unresponsive, required
-a hard reboot) partway through an unattended, detached full 5-project
-Playwright matrix run left running overnight. No application-code bug was
-implicated — purely a local resource/infrastructure issue with that test
-run. This session re-verified and completed the in-progress diff as
-found; no code was lost. Going forward: Playwright runs default to
-`--project=chromium` only; the full 5-project matrix is run in the
-foreground, watched, with the user present — never detached/unattended.
+**Machine freeze (2026-07-28, first incident):** an earlier session
+working on Phase 7 was interrupted when this machine froze (black screen,
+unresponsive, required a hard reboot) partway through an unattended,
+detached full 5-project Playwright matrix run left running overnight. A
+later session re-verified and completed that in-progress diff; no code
+was lost.
 
-**Next unblocked phase after Phase 7's remaining §13.2 items (and the
-deferred full matrix) are completed and approved: Phase 8** (regression
-testing, visual review, and release preparation — plan §11). Not started.
-Phase 6's manual Android/iOS/desktop-installed-PWA device checklists
-(`docs/meld-masters-phase-6-summary.md` §30-33) remain open wherever the
-user has not yet performed them — unaffected by, and independent of,
-Phase 7.
+**WebKit deferred (2026-07-28, second incident):** during this Phase 7
+completion session, running the full 42-test webkit project in one
+continuous invocation caused a severe process leak — 29 leftover
+`WPEWebProcess` instances, ~17.7GB combined RSS, before being caught and
+stopped. Stopping the supervising task killed every leaked process
+instantly and memory recovered in full — strong evidence this is the same
+mechanism behind the first incident, just run unsupervised for hours that
+time. Separately (and unrelated to the leak), one test
+(`multi-player.spec.ts`'s 4-player-capacity case) fails reproducibly
+(3/3) on webkit specifically — the identical test passes cleanly on
+chromium and mobile-chrome, matching this project's own previously-
+documented pattern of WebKit-via-Playwright engine-level instability
+under concurrent multi-context tests (Phase 1, Phase 4). Per explicit
+user decision, webkit and mobile-webkit are deferred rather than run to
+completion locally. See `docs/meld-masters-phase-7-summary.md` §6/§35 for
+full detail, including a discovered, separately-tracked issue: CI's e2e
+matrix job has not run on any push since 2026-07-27 (blocked earlier, at
+format-check, by a pre-existing gap unrelated to Phase 7) — CI can't
+currently serve as an independent webkit cross-check either. Playwright
+runs continue to default to `--project=chromium` for ordinary iteration;
+any future full-matrix or webkit-specific run must stay in the foreground,
+watched, never detached/unattended, per both incidents above.
+
+**Next phase: Phase 8** (regression testing, visual review, and release
+preparation — plan §11), after this Phase 7 checkpoint is reviewed and
+approved. Not started. Independently and not blocking Phase 8: real
+screen-reader checks, Phase 6's manual Android/iOS/desktop-installed-PWA
+device checklists (`docs/meld-masters-phase-6-summary.md` §30-33), fixing
+the CI format-check gate, and completing local webkit/mobile-webkit
+verification in small batches if full local coverage is wanted later —
+none of these were performed or claimed as passed this phase.
 
 ## Open blocker
 
@@ -160,21 +184,28 @@ identity — were resolved 2026-07-26; see
   full-lifecycle + tabletopMobile, chromium + mobile-webkit) 22/22,
   including clean Waiting Room and Tabletop axe scans on both engines. 24
   review screenshots captured. See `docs/meld-masters-phase-5-summary.md`.
-- **Phase 7** (responsive refinement and accessibility) — **in progress,
-  partial**, as of 2026-07-28. Three findings fixed and verified
-  (chromium-only): skip-link `:focus` reveal (the plan's directly-named
-  gap), a keyboard tile-selection bug (dnd-kit's `KeyboardSensor` was
-  swallowing the native `<button>`'s Enter/Space activation before it
-  reached `onClick` — removed, since nothing uses its arrow-key drag),
-  and a narrow-viewport horizontal-overflow bug from max-length (24-char)
-  usernames (`overflow-wrap: break-word` on `.page-title`). Full gate
-  green; targeted Playwright (accessibility + two-player-smoke +
-  vs-computer, chromium only) 15/15. 4 review screenshots captured. The
-  plan's full §13.2 acceptance checklist and the full 5-project e2e
-  matrix are explicitly **not yet done** — see
-  `docs/meld-masters-phase-7-summary.md` §6. A machine freeze mid-session
-  (see "Machine freeze" note above) interrupted the prior attempt at this
-  same work; no code was lost, only the detached background test run.
+- **Phase 7** (responsive refinement and accessibility) — **completed**,
+  2026-07-28, pending human review. Full plan §13.2 acceptance checklist
+  executed: skip-link `:focus` reveal; a keyboard tile-selection bug fix
+  (dnd-kit's `KeyboardSensor` was swallowing native Enter/Space activation
+  — removed); a narrow-viewport username-overflow fix; 6 touch-target
+  fixes (buttons/nav links/radio choices, all previously 2-14px short of
+  44×44px — one deliberate exception, an inline text link, per WCAG
+  2.5.5's own named exception); 6 decorative-emoji `aria-hidden` fixes
+  (glyphs kept visible, screen-reader duplication removed); a full
+  contrast table (no failures); the full keyboard-only walkthrough (13/13
+  items); 200%/400% zoom; reduced motion (new automated test); zero
+  horizontal overflow at all 7 required viewports across 11 scenarios (new
+  automated 390px multi-route test added); axe/semantics/live-region
+  audits (all already correct). Full gate green. Local e2e: chromium
+  42/42, firefox 42/42, mobile-chrome 42/42, all clean. Webkit/
+  mobile-webkit explicitly deferred (see "WebKit deferred" note above) —
+  one test fails reproducibly on webkit specifically (passes on chromium
+  and mobile-chrome), and a severe webkit process leak was found and
+  safely stopped before it could repeat the original machine-freeze
+  mechanism. 18 review screenshots captured. Real screen-reader checks
+  (§39-42) not performed — requires the user. See
+  `docs/meld-masters-phase-7-summary.md` for the complete writeup.
 
 ## Approved decisions (implemented in Phase 2)
 
@@ -195,20 +226,21 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 ## Next phase
 
 **Phase 7 — Responsive refinement and accessibility** (plan §11) is
-**in progress, partial** — see the Phase history entry above and
-`docs/meld-masters-phase-7-summary.md`. Remaining before Phase 7 can be
-considered done: the rest of the plan's §13.2 acceptance checklist
-(tablet/landscape breakpoints, a full keyboard-only turn, a real
-screen-reader smoke test, contrast-ratio table, 200%-zoom pass,
-reduced-motion pass, decorative `aria-hidden` audit) and the full
-5-project e2e matrix, deferred until it can run in the foreground with
-the user present. **Phase 8** (regression testing, visual review, release
-prep) is the next phase after Phase 7, not started.
+**completed, pending human review** — see the Phase history entry above
+and `docs/meld-masters-phase-7-summary.md`. **Phase 8** (regression
+testing, visual review, release prep) is the next phase after Phase 7 is
+approved. Not started.
 
-Independently, Phase 6's manual Android/iOS/desktop-installed-PWA device
-checklists (`docs/meld-masters-phase-6-summary.md` §30-33) still require
-the user — not automatically satisfied, not a precondition Claude can
-complete alone, and not something Phase 5 or 7 depended on or resolved.
+Independently, and not blocking Phase 8: Phase 6's manual Android/iOS/
+desktop-installed-PWA device checklists (`docs/meld-masters-phase-6-summary.md`
+§30-33), real screen-reader checks (NVDA/VoiceOver/TalkBack —
+`docs/meld-masters-phase-7-summary.md` §39-42), fixing the CI
+format-check gate so it can independently verify webkit/mobile-webkit,
+and completing local webkit/mobile-webkit verification in small batches
+if full local coverage is wanted — none of these require the user's
+approval of the Phase 7 checkpoint itself, none were performed or claimed
+as passed this phase, and none are preconditions Claude can complete
+alone.
 
 ## Structure to use when work begins on a new, unrelated task
 

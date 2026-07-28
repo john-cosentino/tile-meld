@@ -11,6 +11,22 @@ vi.mock("react-router-dom", async (orig) => ({
 // ChatPanel pulls in the socket + chat API; stub it out for this page test.
 vi.mock("../src/chat/ChatPanel.js", () => ({ ChatPanel: () => null }));
 
+// Phase 7: the emoji beside "Computer" is now inside its own aria-hidden
+// <span> (decorative, redundant with the text -- see TabletopStatus.tsx/
+// OpponentStrip.tsx), so the target text is split across sibling DOM
+// nodes and plain getByText(regex) no longer matches (RTL's documented
+// behavior/limitation, not a real accessibility regression -- the text
+// is still fully present and visible, just no longer one text node).
+// This is RTL's own recommended workaround: match on the element whose
+// OWN full text satisfies the pattern, but whose children individually
+// don't (so the innermost/most specific match wins over an ancestor).
+function textAcrossElements(pattern: RegExp) {
+  return (_: string, element: Element | null) => {
+    if (!element || !pattern.test(element.textContent ?? "")) return false;
+    return Array.from(element.children).every((child) => !pattern.test(child.textContent ?? ""));
+  };
+}
+
 const useGameMock = vi.fn();
 vi.mock("../src/tabletop/useGame.js", () => ({ useGame: () => useGameMock() }));
 
@@ -81,7 +97,7 @@ describe("TabletopPage -- computer opponent turn state", () => {
     renderTabletop();
     expect(screen.getByText(/Computer is playing/i)).toBeInTheDocument();
     // The opponent row also identifies the bot.
-    expect(screen.getByText(/Computer 🤖/)).toBeInTheDocument();
+    expect(screen.getByText(textAcrossElements(/Computer 🤖/))).toBeInTheDocument();
   });
 
   it("shows 'Your turn' when it is the human's turn, not the computer message", () => {

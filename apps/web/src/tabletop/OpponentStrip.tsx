@@ -37,9 +37,16 @@ export function OpponentStrip({ opponents, activeSeat, gameStatus }: OpponentStr
             />
             <span>
               {o.displayName}
-              {o.isComputer ? " 🤖" : ""}: {o.rackCount} tiles
+              {/* Emoji aria-hidden (Phase 7 §13.2 "decorative layers ...
+                  silent") -- redundant with the "BOT"/text already
+                  elsewhere on the row; kept visible, just not
+                  double-announced. Whitespace matches the previous plain
+                  string exactly so rendered text (and existing
+                  getByText(/🤖:...tiles/) queries, which match textContent
+                  regardless of aria-hidden) is unchanged. */}
+              {o.isComputer && <span aria-hidden="true"> 🤖</span>}: {o.rackCount} tiles
               {o.status === "resigned" ? " (resigned)" : ""}
-              {isActive ? " ⏳" : ""}
+              {isActive && <span aria-hidden="true"> ⏳</span>}
             </span>
           </li>
         );

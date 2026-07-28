@@ -20,6 +20,27 @@ vi.mock("react-router-dom", async (orig) => ({
 
 vi.mock("../src/tabletop/RematchPanel.js", () => ({ RematchPanel: () => null }));
 
+// Phase 7: emoji (connection indicator, BOT marker) are now inside their
+// own aria-hidden <span> (decorative, redundant with adjacent text -- see
+// TabletopStatus.tsx/OpponentStrip.tsx), so a target string that includes
+// an emoji is split across sibling DOM nodes and plain getByText no
+// longer matches (RTL's documented behavior for text split across
+// elements, not a real accessibility regression -- the text is still
+// fully present and visible, just no longer one text node). This is
+// RTL's own recommended workaround: match on the element whose OWN full
+// text satisfies the pattern, but whose children individually don't (so
+// the innermost/most specific match wins over an ancestor).
+function textAcrossElements(pattern: RegExp | string) {
+  const re =
+    typeof pattern === "string"
+      ? new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      : pattern;
+  return (_: string, element: Element | null) => {
+    if (!element || !re.test(element.textContent ?? "")) return false;
+    return Array.from(element.children).every((child) => !re.test(child.textContent ?? ""));
+  };
+}
+
 const chatMountCount = { current: 0 };
 vi.mock("../src/chat/ChatPanel.js", () => ({
   ChatPanel: () => {
@@ -142,7 +163,7 @@ describe("TabletopPage layout -- status prominence (Phase 8)", () => {
   it("keeps the connection-state indicator visible", () => {
     useGameMock.mockReturnValue(gameHook({ connectionState: "disconnected" }));
     renderTabletop();
-    expect(screen.getByText("🔴 Disconnected")).toBeInTheDocument();
+    expect(screen.getByText(textAcrossElements("🔴 Disconnected"))).toBeInTheDocument();
   });
 
   it("exposes the status region under a stable semantic label", () => {
@@ -179,7 +200,7 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
     );
     renderTabletop();
     expect(screen.getByText(/Resigned Bob: \d+ tiles \(resigned\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Computer 🤖: \d+ tiles/)).toBeInTheDocument();
+    expect(screen.getByText(textAcrossElements(/Computer 🤖: \d+ tiles/))).toBeInTheDocument();
   });
 
   it("gives each opponent a decorative portrait without breaking list semantics or the name/status text (Phase 5)", () => {
@@ -208,7 +229,7 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
     }
     // Text identity/state is unchanged and still present alongside the portrait.
     expect(within(opponents).getByText(/Bob: 9 tiles/)).toBeInTheDocument();
-    expect(within(opponents).getByText(/Computer 🤖/)).toBeInTheDocument();
+    expect(within(opponents).getByText(textAcrossElements(/Computer 🤖/))).toBeInTheDocument();
   });
 });
 

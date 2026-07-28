@@ -88,3 +88,28 @@ test("skip-to-content link reveals on focus and moves focus to main content on a
   await page.keyboard.press("Enter");
   await expect(page.locator("#main-content")).toBeFocused();
 });
+
+// Phase 7 §13.2 "Reduced motion: no animation anywhere with the preference
+// set (global clamp verified to still apply to any new transitions)" --
+// the global.css clamp (`@media (prefers-reduced-motion: reduce)`) forces
+// every animation/transition duration to ~0; this asserts that clamp is
+// still live against the current stylesheet by sampling real rendered
+// elements, not just re-reading the CSS source.
+test("prefers-reduced-motion: reduce clamps every transition/animation duration to ~0", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await waitForReady(page);
+  const durations = await page.evaluate(() => {
+    const els = document.querySelectorAll("button, a, .arcade-panel, .skip-link, .tile");
+    return Array.from(els).map((el) => {
+      const cs = getComputedStyle(el);
+      return { transition: cs.transitionDuration, animation: cs.animationDuration };
+    });
+  });
+  expect(durations.length).toBeGreaterThan(0);
+  for (const d of durations) {
+    expect(parseFloat(d.transition)).toBeLessThanOrEqual(0.001);
+    expect(parseFloat(d.animation)).toBeLessThanOrEqual(0.001);
+  }
+});

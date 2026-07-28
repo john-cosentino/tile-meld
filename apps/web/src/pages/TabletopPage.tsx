@@ -220,7 +220,8 @@ export function TabletopPage() {
         )}
         {game.warningToast && (
           <div className="warning-banner" role="status">
-            ⏰ {game.warningToast} <button onClick={game.dismissWarningToast}>Dismiss</button>
+            <span aria-hidden="true">⏰</span> {game.warningToast}{" "}
+            <button onClick={game.dismissWarningToast}>Dismiss</button>
           </div>
         )}
 

@@ -205,6 +205,12 @@ select {
   font: inherit;
 }
 
+/* min-height/flex-centering (Phase 7 §13.2 touch-target audit): the
+   padding above alone rendered every plain button ~42px tall -- 2px short
+   of the ~44px target-size guideline. `.tile` is unaffected (own explicit
+   44x56px sizing, well over this floor, so the rule is a no-op there);
+   `.arcade-action` buttons are single-line text only, so centering
+   introduces no layout change for them. */
 button {
   cursor: pointer;
   border-radius: var(--radius-md);
@@ -212,6 +218,10 @@ button {
   background: var(--color-surface);
   color: var(--color-text);
   padding: var(--space-2) var(--space-4);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 button:disabled {
@@ -447,9 +457,14 @@ button.danger {
   gap: var(--space-1);
 }
 
+/* min-height (Phase 7 §13.2 touch-target audit): --space-1 vertical
+   padding measured ~30px tall -- real nav items, not exempt the way an
+   inline-in-sentence link is (WCAG 2.5.5's own named exception; see
+   "Claim a username" links, deliberately left alone). */
 .app-nav a {
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid transparent;
@@ -1111,9 +1126,13 @@ button.accent-warn {
   gap: var(--space-2);
 }
 
+/* min-height (Phase 7 §13.2 touch-target audit): the whole label is the
+   effective target (native <label>/<input> pairing, not just the small
+   radio dot), but it still measured ~42px tall -- 2px short. */
 .arcade-choice {
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
