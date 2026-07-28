@@ -357,3 +357,32 @@ documented rather than hidden. No deployment was performed this session.
 - **Verify the React Router migration:** `pnpm run typecheck` and
   `pnpm --filter e2e exec playwright test --project=chromium` both
   exercise every route in the app.
+
+## Addendum (2026-07-28) — CI security-gate restructuring
+
+After this document was written, `.github/workflows/ci.yml`'s
+`security` job was restructured to reflect the production/development
+split above precisely, rather than treating both classes of finding
+identically:
+
+- **`pnpm audit --prod --audit-level=high`** — remains **blocking**. A
+  high/critical advisory in a *production* dependency (the four already
+  resolved above, and any future one) fails the `security` job before
+  the Docker build or Trivy scan runs, exactly as before.
+- **`pnpm audit --dev --audit-level=high`** — a new, separate,
+  **non-blocking** (`continue-on-error: true`) step. It surfaces the
+  documented `brace-expansion@1.1.16` finding (§14) in every CI run's
+  log — visible, not hidden or globally suppressed — without gating the
+  image build/scan on a finding that has no path to a deployed artifact.
+- **Docker build and Trivy scan are unchanged** — same severity policy
+  (`CRITICAL,HIGH`, `ignore-unfixed: true`), same blocking behavior on a
+  real image finding. They now run whenever the *production* audit
+  passes, independent of the development audit's result — previously
+  they never ran at all when the single combined audit step failed on
+  the dev-only finding, which meant the actual image scan was silently
+  skipped on every CI run since this checkpoint began, a worse security
+  posture than a nonblocking, always-logged dev-audit step.
+
+No dependency version and no application code changed as part of this
+addendum — CI workflow structure only, verified via `git diff` to be
+scoped to `.github/workflows/ci.yml` plus this documentation.

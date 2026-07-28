@@ -5,12 +5,13 @@ Public product name: **Meld Masters** (renamed from Tile Meld, Phase 1 of
 the internal repository name, package scope, and deployment identifier —
 see the plan's §5.5.
 
-- **Last verified:** 2026-07-28 (dependency security remediation
-  checkpoint, on top of Phase 8)
-- **Commit at verification start:** `42abfb4c8c21a9d3757f6be038ae3e7f50a90ac7`
-  (the last Phase 8 commit). See `git log` for the current `main` tip;
-  the exact hash of this checkpoint's own commit(s) is deliberately not
-  repeated here — see `docs/meld-masters-dependency-security-summary.md`.
+- **Last verified:** 2026-07-28 (CI security-gate restructuring, on top
+  of the dependency security remediation checkpoint, on top of Phase 8)
+- **Commit at verification start:** `358ab99e428fcf31e853b20920a31076bb9d86c1`
+  (the dependency remediation checkpoint's last commit). See `git log`
+  for the current `main` tip; the exact hash of this checkpoint's own
+  commit is deliberately not repeated here — see
+  `docs/meld-masters-dependency-security-summary.md`.
 - **Working tree at verification start:** clean, branch `main`, in sync
   with `origin/main` (0 ahead / 0 behind)
 
@@ -41,6 +42,20 @@ exposure — see `docs/meld-masters-dependency-security-summary.md` §14
 for the full evidence trail. Post-fix audit: `pnpm audit
 --audit-level=moderate` shows only that one documented, dev-only
 finding.
+
+**CI now enforces this split directly.** `.github/workflows/ci.yml`'s
+`security` job runs two separate audit steps: `pnpm audit --prod
+--audit-level=high` (blocking — fails the job on any production-reachable
+high/critical finding, before the Docker build or Trivy scan) and `pnpm
+audit --dev --audit-level=high` (`continue-on-error: true` — the
+`brace-expansion` finding above stays visible in every CI log without
+blocking the image build/scan). Previously, one combined audit step
+gated the Docker build and Trivy scan on *all* findings including this
+dev-only one, which meant the actual image scan was silently skipped on
+every run since the remediation checkpoint began — a worse security
+posture than a nonblocking, always-logged dev-audit step. No dependency
+version or application code changed as part of this restructuring —
+workflow structure only.
 
 Verification performed for this checkpoint: full local gate (format/
 lint/typecheck/317 tests/build) green; local chromium/firefox/

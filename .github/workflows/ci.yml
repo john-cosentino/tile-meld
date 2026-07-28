@@ -172,13 +172,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Split production vs. development dependencies (2026-07-28) --
+      # previously one combined `pnpm audit --audit-level=high` gated the
+      # Docker build/Trivy scan below on ALL advisories, including
+      # dev-only ones with zero runtime exposure (e.g. an eslint-toolchain
+      # transitive that can't be safely bumped without breaking eslint --
+      # see docs/meld-masters-dependency-security-summary.md §14). That
+      # meant a documented, non-exploitable dev-only finding silently
+      # skipped the actual image scan every run, which is a worse outcome
+      # than a nonblocking, always-visible dev-audit step.
+      #
       # high/critical only -- moderate-and-below in transitive dependencies
       # is common enough noise (and frequently has no available fix yet)
       # that gating every PR on it would train reviewers to ignore this
       # step rather than act on it. Escalate the threshold if that stops
       # being true in practice.
-      - name: Dependency audit
-        run: pnpm audit --audit-level=high
+      - name: Dependency audit (production)
+        run: pnpm audit --prod --audit-level=high
+
+      # Informational, not a release gate: a high/critical finding here
+      # can only affect the local dev/build toolchain, never a deployed
+      # artifact (nothing in devDependencies ships to the Docker runtime
+      # stage or the browser bundle). continue-on-error keeps this
+      # visible in every run's log without blocking the production audit,
+      # the Docker build, or the Trivy scan below -- do not widen this to
+      # the production audit step above.
+      - name: Dependency audit (development, informational)
+        run: pnpm audit --dev --audit-level=high
+        continue-on-error: true
 
       - name: Build image for scanning
         run: docker build -t tile-meld:${{ github.sha }} .

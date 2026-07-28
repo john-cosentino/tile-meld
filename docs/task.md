@@ -4,16 +4,30 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: dependency security remediation — completed,
-pending human review.** A focused follow-up on top of the completed
-Phase 8 checkpoint (below). Fresh `pnpm audit` found 5 vulnerabilities
-(4 high, 1 moderate); 4 resolved (`@fastify/static` 10.1.0→10.1.2,
-`find-my-way` 9.6.0→9.7.0, `react-router-dom`→`react-router` 8.3.0 — the
-only available fix, no patched 7.x exists, verified narrow before
-applying), 1 documented and left unresolved (`brace-expansion@1.1.16`,
-dev-only eslint toolchain, no production exposure, already the latest
-release of its maintained line — not silently suppressed). Full local
-gate green; local e2e chromium/firefox/mobile-chrome 42/42 each; a live
+**Current checkpoint: CI security-gate restructuring — completed,
+pending human review.** A small, focused follow-up on top of the
+dependency remediation checkpoint (below): `.github/workflows/ci.yml`'s
+`security` job now runs `pnpm audit --prod --audit-level=high` as a
+**blocking** step and a separate `pnpm audit --dev --audit-level=high`
+as a **non-blocking, always-visible** step
+(`continue-on-error: true`), so the documented dev-only
+`brace-expansion@1.1.16` finding stays logged in every CI run without
+silently skipping the Docker build/Trivy scan the way the previous
+single combined audit step did. No dependency version or application
+code changed — workflow structure and documentation only. See
+`docs/meld-masters-dependency-security-summary.md`'s addendum for the
+full writeup.
+
+**Before that: dependency security remediation — completed, pending
+human review.** A focused follow-up on top of the completed Phase 8
+checkpoint (below). Fresh `pnpm audit` found 5 vulnerabilities (4 high,
+1 moderate); 4 resolved (`@fastify/static` 10.1.0→10.1.2, `find-my-way`
+9.6.0→9.7.0, `react-router-dom`→`react-router` 8.3.0 — the only
+available fix, no patched 7.x exists, verified narrow before applying),
+1 documented and left unresolved (`brace-expansion@1.1.16`, dev-only
+eslint toolchain, no production exposure, already the latest release of
+its maintained line — not silently suppressed). Full local gate green;
+local e2e chromium/firefox/mobile-chrome 42/42 each; a live
 path-traversal probe against the compiled server confirmed the
 `@fastify/static` fix is actually effective. See
 `docs/meld-masters-dependency-security-summary.md` for the complete
