@@ -7,3 +7,15 @@ allowBuilds:
 overrides:
   "fast-uri@>=3.0.0 <4.0.0": "3.1.4"
   "fast-uri@>=4.0.0 <5.0.0": "4.1.1"
+  # find-my-way: DDoS with HTTP2 (GHSA-c96f-x56v-gq3h). Transitive only,
+  # via fastify (which declares find-my-way: ^9.6.0, so 9.7.0 is already
+  # within its own allowed range -- this override just forces the
+  # already-permitted patched version to actually resolve). No package.json
+  # entry of our own to bump directly.
+  "find-my-way": ">=9.6.1"
+  # brace-expansion: DoS via unbounded expansion length (GHSA-mh99-v99m-4gvg).
+  # Scoped to the 5.x line only -- an unrelated 1.x line also resolves
+  # elsewhere in the tree and must not be forced onto this range. Reached
+  # transitively via both eslint's own toolchain AND, in production,
+  # @fastify/static -> glob -> minimatch -> brace-expansion.
+  "brace-expansion@>=5.0.0 <6.0.0": "5.0.8"

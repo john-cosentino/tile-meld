@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 
 // Phase 7 -- once useGame reports notFound (see useGame.test.tsx for the
 // socket-ack-level coverage of how that flag gets set), TabletopPage must
 // show a clear, terminal unavailable state -- never the "Loading table…"
 // state, never the live table/rack/chat UI -- with a route back home.
 
-vi.mock("react-router-dom", async (orig) => ({
-  ...(await orig<typeof import("react-router-dom")>()),
+vi.mock("react-router", async (orig) => ({
+  ...(await orig<typeof import("react-router")>()),
   useParams: () => ({ gameId: "purged-1" }),
 }));
 

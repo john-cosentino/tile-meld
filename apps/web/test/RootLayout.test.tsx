@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router";
 
 vi.mock("../src/auth/AuthProvider.js", () => ({
   useAuth: () => ({ state: { status: "ready", playerId: "p1", username: "Alice" } }),

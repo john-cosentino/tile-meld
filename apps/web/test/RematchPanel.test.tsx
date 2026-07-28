@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import type { GetRoomResponse } from "@tile-meld/shared";
 
 // Phase 5 -- one-click rematch. RematchPanel is the completed-game control
@@ -10,8 +10,8 @@ import type { GetRoomResponse } from "@tile-meld/shared";
 // unmount directly rather than a status flag.
 
 const navigateMock = vi.fn();
-vi.mock("react-router-dom", async (orig) => ({
-  ...(await orig<typeof import("react-router-dom")>()),
+vi.mock("react-router", async (orig) => ({
+  ...(await orig<typeof import("react-router")>()),
   useNavigate: () => navigateMock,
 }));
 

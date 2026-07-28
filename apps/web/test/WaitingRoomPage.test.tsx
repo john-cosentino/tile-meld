@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 
-vi.mock("react-router-dom", async (orig) => ({
-  ...(await orig<typeof import("react-router-dom")>()),
+vi.mock("react-router", async (orig) => ({
+  ...(await orig<typeof import("react-router")>()),
   useParams: () => ({ roomId: "r1" }),
   useNavigate: () => vi.fn(),
 }));

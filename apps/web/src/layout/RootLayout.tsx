@@ -1,4 +1,4 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router";
 import { useAuth } from "../auth/AuthProvider.js";
 import { PRODUCT_NAME } from "@tile-meld/shared";
 import { NotificationsControl } from "../push/NotificationsControl.js";

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router";
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { INITIAL_MELD_THRESHOLD, PRODUCT_NAME } from "@tile-meld/shared";
 import { useGame } from "../tabletop/useGame.js";

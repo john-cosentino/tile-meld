@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { RoomNameSchema } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { addRecentRoom } from "../state/recentRooms.js";

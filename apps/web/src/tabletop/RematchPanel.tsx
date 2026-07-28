@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import type { GetRoomResponse } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { useAuth } from "../auth/AuthProvider.js";

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { formatRoomName } from "../state/roomName.js";
 import { formatRelativeTime } from "../state/relativeTime.js";
 import { classifyRoomStatus, dashboardCardHref, type ClassifiableRoom } from "./dashboardStatus.js";

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { useEffect } from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import type { RedactedGameView } from "@tile-meld/shared";
 import type { ConnectionState } from "../src/tabletop/useGame.js";
 
@@ -13,8 +13,8 @@ import type { ConnectionState } from "../src/tabletop/useGame.js";
 // cover Game Over/Rematch rendering and the unavailable-game state -- not
 // duplicated here.
 
-vi.mock("react-router-dom", async (orig) => ({
-  ...(await orig<typeof import("react-router-dom")>()),
+vi.mock("react-router", async (orig) => ({
+  ...(await orig<typeof import("react-router")>()),
   useParams: () => ({ gameId: "g1" }),
 }));
 

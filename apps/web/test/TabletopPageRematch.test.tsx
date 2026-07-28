@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import type { RedactedGameView } from "@tile-meld/shared";
 
 // Phase 5 -- the completed-game card (and its RematchPanel) must appear only
@@ -9,8 +9,8 @@ import type { RedactedGameView } from "@tile-meld/shared";
 // by RematchPanel.test.tsx; this file only checks TabletopPage's decision
 // of *whether* to mount it.
 
-vi.mock("react-router-dom", async (orig) => ({
-  ...(await orig<typeof import("react-router-dom")>()),
+vi.mock("react-router", async (orig) => ({
+  ...(await orig<typeof import("react-router")>()),
   useParams: () => ({ gameId: "g1" }),
 }));
 
