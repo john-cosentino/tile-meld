@@ -181,6 +181,35 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
     expect(screen.getByText(/Resigned Bob: \d+ tiles \(resigned\)/)).toBeInTheDocument();
     expect(screen.getByText(/Computer 🤖: \d+ tiles/)).toBeInTheDocument();
   });
+
+  it("gives each opponent a decorative portrait without breaking list semantics or the name/status text (Phase 5)", () => {
+    useGameMock.mockReturnValue(
+      gameHook({
+        view: view({
+          opponents: [
+            opponent({ seatIndex: 1, displayName: "Bob", rackCount: 9 }),
+            opponent({ seatIndex: 2, displayName: "Computer", isComputer: true }),
+          ],
+        }),
+      }),
+    );
+    renderTabletop();
+    const opponents = screen.getByRole("list", { name: "Opponents" });
+    // Still exactly 2 list items -- the portrait is inside each <li>, not
+    // an extra sibling that would break `list.children.length`.
+    expect(within(opponents).getAllByRole("listitem")).toHaveLength(2);
+    // Queried by tag, not getByRole("img"): an <img alt=""> has an implicit
+    // ARIA role of "presentation"/"none" (correct decorative behavior),
+    // so it deliberately does not match role "img".
+    const images = opponents.querySelectorAll("img");
+    expect(images).toHaveLength(2);
+    for (const img of images) {
+      expect(img).toHaveAttribute("alt", "");
+    }
+    // Text identity/state is unchanged and still present alongside the portrait.
+    expect(within(opponents).getByText(/Bob: 9 tiles/)).toBeInTheDocument();
+    expect(within(opponents).getByText(/Computer 🤖/)).toBeInTheDocument();
+  });
 });
 
 describe("TabletopPage layout -- board and rack regions (Phase 8)", () => {
@@ -295,17 +324,30 @@ describe("TabletopPage layout -- chat disclosure (Phase 8)", () => {
   });
 });
 
-describe("TabletopPage layout -- no artwork dependency (Phase 8)", () => {
-  it("renders fully with zero <img> elements -- no artwork is required for rendering", () => {
+describe("TabletopPage layout -- artwork stays decorative-only (Phase 8, updated Phase 5)", () => {
+  // Originally "zero <img> elements at all" (Phase 8, before any tabletop
+  // artwork existed). Phase 5 deliberately adds decorative opponent
+  // portraits to OpponentStrip, so the assertion that actually matters --
+  // nothing required for correct rendering, no image can carry meaning on
+  // its own -- now means "every <img> present is decorative" instead of
+  // "no <img> is present at all". Reserved Phase 8/9 board artwork
+  // (docs/tabletop-layout-contract.md) still doesn't exist yet.
+  it('every <img> rendered is purely decorative (alt="")', () => {
     useGameMock.mockReturnValue(gameHook());
     const { container } = renderTabletop();
-    expect(container.querySelectorAll("img")).toHaveLength(0);
+    const images = container.querySelectorAll("img");
+    expect(images.length).toBeGreaterThan(0); // the opponent-strip portrait
+    for (const img of images) {
+      expect(img.getAttribute("alt")).toBe("");
+    }
   });
 
-  it("renders the completed-game state with zero <img> elements too", () => {
+  it("renders the completed-game state the same way -- decorative-only artwork, nothing required", () => {
     useGameMock.mockReturnValue(gameHook({ view: view({ status: "completed" }) }));
     const { container } = renderTabletop();
-    expect(container.querySelectorAll("img")).toHaveLength(0);
+    for (const img of container.querySelectorAll("img")) {
+      expect(img.getAttribute("alt")).toBe("");
+    }
     expect(screen.getByRole("heading", { level: 1, name: "Game over" })).toBeInTheDocument();
   });
 });

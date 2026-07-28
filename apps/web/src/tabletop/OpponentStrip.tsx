@@ -1,4 +1,5 @@
 import type { RedactedGameView } from "@tile-meld/shared";
+import { portraitForSeat } from "../branding/portraits.js";
 
 type OpponentStripProps = {
   readonly opponents: RedactedGameView["opponents"];
@@ -26,10 +27,19 @@ export function OpponentStrip({ opponents, activeSeat, gameStatus }: OpponentStr
             key={o.seatIndex}
             className={`opponent-row${isActive ? " opponent-row--active" : ""}`}
           >
-            {o.displayName}
-            {o.isComputer ? " 🤖" : ""}: {o.rackCount} tiles
-            {o.status === "resigned" ? " (resigned)" : ""}
-            {isActive ? " ⏳" : ""}
+            <img
+              className="opponent-portrait"
+              src={portraitForSeat(o.seatIndex, o.isComputer)}
+              alt=""
+              width={36}
+              height={36}
+            />
+            <span>
+              {o.displayName}
+              {o.isComputer ? " 🤖" : ""}: {o.rackCount} tiles
+              {o.status === "resigned" ? " (resigned)" : ""}
+              {isActive ? " ⏳" : ""}
+            </span>
           </li>
         );
       })}

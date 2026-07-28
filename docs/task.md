@@ -4,42 +4,44 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 6 — logo derivatives, favicon, PWA icons,
-manifest, and browser metadata — completed, pending user device
-verification and human review.** Public product name: **Meld Masters**.
+**Current checkpoint: Phase 5 — original character portrait system —
+completed, pending human review.** Public product name: **Meld Masters**.
 `tile-meld` remains the internal repository name, package scope, and
 deployment identifier.
 
-**Implementation state:** the full installed-app icon pipeline is derived
-mechanically from the approved logo master
-(`docs/design-reference/meld-masters/meld-masters-concept-logo.png`,
-confirmed unmodified) via a deterministic script
-(`scripts/derive-icons.py`) — standard (`any`) and maskable PWA icons,
-Apple touch icon, and favicon.ico/favicon.svg, all served from
-`apps/web/public/icons/` and wired into `manifest.json`, `index.html`, and
-`sw.js`. Theme/background color updated from the old Tile Meld blue to the
-Phase 2 arcade navy (`#0a0e1a`), traced to a single new shared constant
-(`THEME_COLOR`) with a consistency test. Old root icon paths kept for one
-transitional release per the plan. Full gate green (714 tests, 21 new);
-Chromium e2e 32/33 (the one failure is the already-documented local
-rate-limit artifact from Phase 4 closure, not a Phase 6 regression). See
-`docs/meld-masters-phase-6-summary.md` for the full writeup, including the
-manual Android/iOS/desktop-installed-PWA checklists that still need a
-human with real devices (§30-33) — do not treat those as passed.
+**Implementation state:** the approved portrait pack (8 rival portraits +
+1 fallback, found already placed under `docs/design-reference/
+meld-masters/` at the start of this phase) is integrated into the Waiting
+Room seat panels and the Tabletop opponent strip via a new deterministic
+registry (`apps/web/src/branding/portraits.ts`) — `portraitForSeat(seatIndex,
+isComputer)` is a pure function (roster-by-modulo for human seats, fallback
+for computer seats and any out-of-range index), so a seat's portrait never
+changes mid-game and nothing is stored or persisted. Production copies were
+mechanically resized from the ~22.5 MB delivered originals down to ~285.5
+KB total (`scripts/derive-portraits.py`); the `docs/` originals were never
+modified (checksums verified unchanged). Both portraits are `alt=""`
+(decorative; correctly gets an implicit ARIA role of `presentation`, not
+`img`) — every game-state fact (name, ready state, BOT badge, tile count,
+turn) stays in text exactly as before. Full gate green (724 tests, 10
+new); targeted Playwright (accessibility + vs-computer + full-lifecycle +
+tabletopMobile, chromium + mobile-webkit) 22/22, including both the
+Waiting Room and Tabletop axe checks passing clean on both engines with
+the new images present. See `docs/meld-masters-phase-5-summary.md` for the
+full writeup, including two documented deviations from the original asset
+contract (delivered portraits are 1024×1536/2:3, not 512×512/1:1; no
+dedicated bot portrait was supplied, so computer seats use the fallback).
 
-No Phase 5 (portraits) or Phase 7 (responsive/accessibility) work
-occurred. **Next unblocked implementation phase after Phase 6 is approved:
-Phase 7** (responsive refinement and accessibility — plan §11). Not
-started. Phase 5 (portraits) remains blocked on Blocker B3 below.
+No Phase 7 (responsive/accessibility) or Phase 8 work occurred. **Next
+unblocked phase after Phase 5 is approved: Phase 7** (responsive
+refinement and accessibility — plan §11). Not started. Phase 6's manual
+Android/iOS/desktop-installed-PWA device checklists (`docs/
+meld-masters-phase-6-summary.md` §30-33) remain open wherever the user
+has not yet performed them — unaffected by, and independent of, Phase 5.
 
 ## Open blocker
 
-- **B3 — production portrait assets.** No original character portrait
-  artwork has been supplied yet. The portraits embedded inside the concept
-  screenshots (`docs/design-reference/meld-masters/meld-masters-concept-0{3,4}.png`)
-  are reference material only and must not be cropped, traced, or
-  reconstructed for production use. This blocks **only Phase 5**
-  (character portrait system); Phases 0–4 and 6 do not depend on it.
+None. Blocker B3 (production portrait assets) is **resolved** — the
+approved pack was supplied and is now integrated (Phase 5, above).
 
 (Blockers B1 — logo master — and B2 — portrait-correction reference
 identity — were resolved 2026-07-26; see
@@ -137,6 +139,23 @@ identity — were resolved 2026-07-26; see
   interaction-geometry change) per the plan. Manual Android/iOS/desktop-
   installed-PWA verification still requires the user with real devices —
   not claimed as passed. See `docs/meld-masters-phase-6-summary.md`.
+- **Phase 5** (original character portrait system) — completed
+  2026-07-27. The approved portrait pack (8 rivals + 1 fallback) was
+  found already placed under `docs/design-reference/meld-masters/` at
+  the start of this phase, resolving Blocker B3. Integrated via a new
+  deterministic registry (`apps/web/src/branding/portraits.ts`) into the
+  Waiting Room seat panels and Tabletop opponent strip — `alt=""`
+  decorative images only, every game-state fact stays in text. Production
+  copies mechanically resized from ~22.5 MB to ~285.5 KB total
+  (`scripts/derive-portraits.py`); `docs/` originals confirmed unmodified.
+  Two documented deviations from the original asset contract: delivered
+  portraits are 1024×1536/2:3 (not 512×512/1:1), resolved with
+  `object-fit: cover` + top-anchored crop; no dedicated bot portrait was
+  supplied, so computer seats use the fallback. Full gate green (724
+  tests, 10 new); targeted Playwright (accessibility + vs-computer +
+  full-lifecycle + tabletopMobile, chromium + mobile-webkit) 22/22,
+  including clean Waiting Room and Tabletop axe scans on both engines. 24
+  review screenshots captured. See `docs/meld-masters-phase-5-summary.md`.
 
 ## Approved decisions (implemented in Phase 2)
 
@@ -157,20 +176,15 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 ## Next phase
 
 **Phase 7 — Responsive refinement and accessibility** (plan §11) is the
-next unblocked implementation phase once Phase 6 is approved. Not started.
-Real-device icon verification (Android/iOS/desktop-installed-PWA, per
-`docs/meld-masters-phase-6-summary.md` §30-33) still requires the user —
-not automatically satisfied, and not a precondition Claude can complete
-alone.
+next unblocked phase once Phase 5 is approved. Not started. No later phase
+(Phase 8) was started automatically.
 
-**Phase 5 — Original character portrait system** (plan §11) remains
-*gated on Blocker B3* (supplied portrait assets — still open, unaffected
-by Phase 6). Not started. Per the plan's own phase-ordering note, Phase 7
-may be taken instead without blocking Phase 5 while B3 is outstanding.
+Independently, Phase 6's manual Android/iOS/desktop-installed-PWA device
+checklists (`docs/meld-masters-phase-6-summary.md` §30-33) still require
+the user — not automatically satisfied, not a precondition Claude can
+complete alone, and not something Phase 5 depended on or resolved.
 
-Phase 7 is gated on this Phase 6 checkpoint (including the user's device
-verification) being reviewed and approved. No later phase was started
-automatically.
+Phase 7 is gated on this Phase 5 checkpoint being reviewed and approved.
 
 ## Structure to use when work begins on a new, unrelated task
 

@@ -10,7 +10,10 @@ import path from "node:path";
 // silently produced a wrong path the first time this ran from the repo
 // root instead of e2e/) -- same anchoring approach as the other
 // capture-phase-N-review.ts scripts.
-const OUT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../docs/design-reference/phase-6-review");
+const OUT_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../docs/design-reference/phase-6-review",
+);
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ baseURL: "http://localhost:5173" });

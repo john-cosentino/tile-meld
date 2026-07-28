@@ -80,6 +80,32 @@ describe("WaitingRoomPage -- computer opponent", () => {
     expect(await screen.findByText("✅ Ready")).toBeInTheDocument();
     expect(screen.getByText("Not ready")).toBeInTheDocument();
   });
+
+  it("gives each member a decorative portrait without displacing their name or ready state (Phase 5)", async () => {
+    getRoom.mockResolvedValue(roomWithBot());
+    render(
+      <MemoryRouter>
+        <WaitingRoomPage />
+      </MemoryRouter>,
+    );
+
+    const seats = await screen.findAllByRole("listitem");
+    expect(seats).toHaveLength(2);
+    // Queried by tag, not getByRole("img"): an <img alt=""> has an
+    // implicit ARIA role of "presentation"/"none" (correct decorative
+    // behavior -- assistive tech skips it), so it deliberately does not
+    // match role "img".
+    const images = document.querySelectorAll("img");
+    expect(images).toHaveLength(2);
+    for (const img of images) {
+      expect(img).toHaveAttribute("alt", "");
+    }
+    // Names remain the real, findable identity -- the portrait doesn't
+    // replace or obscure them ("Alice" also appears in the page's own
+    // heading, so getAllByText here, not getByText).
+    expect(screen.getAllByText("Alice").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Computer")).toBeInTheDocument();
+  });
 });
 
 describe("WaitingRoomPage -- room name display", () => {

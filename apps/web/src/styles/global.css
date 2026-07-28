@@ -752,9 +752,9 @@ a.dashboard-card:hover {
    arcade shell as every other panel. Per-seat accent border cycles through
    the same four accents Phase 3's seat-panel rows already use (purely
    decorative variety, never the only way to tell seats apart -- name text
-   is always present). No portrait slot is added here; `.opponent-row` is a
-   clean, obvious hook for a Phase 5 portrait to land in later without
-   restructuring this markup, same approach as Phase 3's `.seat-identity`. */
+   is always present). The Phase 5 portrait (.opponent-portrait) sits
+   before the name/status text, same decorative-only treatment as the
+   waiting room's .seat-portrait above. */
 .opponent-row {
   display: inline-flex;
   align-items: center;
@@ -1105,10 +1105,10 @@ button.accent-warn {
 }
 
 /* Waiting Room seat panels (§ "Screen 5 -- Waiting room"). Two-region
-   structure -- identity (name + host/you/BOT labels) and state (ready
-   indicator) -- so a Phase 5 portrait has a clean, obvious place to land
-   later (inside .seat-identity, before the name) without restructuring
-   this row. No portrait slot is reserved visibly in this phase. */
+   structure -- identity (portrait + name + host/you/BOT labels) and state
+   (ready indicator). The Phase 5 portrait (.seat-portrait) sits inside
+   .seat-identity, before the name -- decorative only (alt=""), never the
+   sole way to identify a seat; the name span remains the real identity. */
 .seat-list {
   display: flex;
   flex-direction: column;
@@ -1137,6 +1137,27 @@ button.accent-warn {
 
 .seat-name {
   font-weight: 700;
+}
+
+/* Portrait frame shared by the waiting-room seat panel and the tabletop
+   opponent strip (Phase 5). Fixed width/height (set inline via the img's
+   own width/height attributes -- this rule only handles presentation, so
+   there is no separate layout-shift risk if the CSS fails to load) with
+   `object-fit: cover` cropping the source's real 2:3 portrait aspect
+   ratio (apps/web/src/assets/portraits/README.md) down to a square frame.
+   `object-position: top` anchors the crop to the upper portion of the
+   source images, where every supplied portrait's face sits -- verified
+   visually against the actual delivered assets, not assumed -- so cover
+   cropping only ever removes lower torso, never the face. `flex-shrink: 0`
+   keeps the frame from being squeezed by long names in a narrow row. */
+.seat-portrait,
+.opponent-portrait {
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+  object-position: top center;
+  background: var(--bg-inset);
 }
 
 /* Cycles through four existing accents by seat position -- purely

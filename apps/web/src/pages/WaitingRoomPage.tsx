@@ -5,6 +5,7 @@ import { api, ApiError } from "../api/client.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { addRecentRoom, removeRecentRoom } from "../state/recentRooms.js";
 import { formatRoomName } from "../state/roomName.js";
+import { portraitForSeat } from "../branding/portraits.js";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -135,10 +136,17 @@ export function WaitingRoomPage() {
             key={m.playerId}
             className={`seat-panel arcade-panel seat-panel--accent-${index % 4}`}
           >
-            {/* Identity region: name plus host/you/BOT labels. A future
-                Phase 5 portrait would land here, before the name -- no
-                placeholder is reserved visibly in this phase. */}
+            {/* Identity region: portrait (decorative -- the name span
+                remains the actual accessible identity) plus host/you/BOT
+                labels. */}
             <span className="seat-identity">
+              <img
+                className="seat-portrait"
+                src={portraitForSeat(index, m.isComputer)}
+                alt=""
+                width={56}
+                height={56}
+              />
               <span className="seat-name">{m.displayName}</span>
               {m.isComputer && (
                 <span className="badge" aria-label="computer opponent">
