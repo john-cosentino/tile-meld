@@ -4,28 +4,25 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 7 — responsive refinement and accessibility —
-completed, pending human review.** The plan's full §13.2 acceptance
-checklist was executed: skip-link focus reveal, a keyboard tile-selection
-bug fix, a narrow-viewport username-overflow fix, 6 touch-target fixes,
-6 decorative-emoji `aria-hidden` fixes, a full contrast table, the full
-keyboard-only walkthrough, 200%/400% zoom, reduced motion, overflow at
-all 7 required viewports, and axe/semantics/live-region audits — all
-passing, all documented in `docs/meld-masters-phase-7-summary.md`. Local
-e2e verification: chromium, firefox, and mobile-chrome full projects all
-**42/42 passed**. Webkit and mobile-webkit are **explicitly deferred** —
-see "WebKit deferred" note below; this is a documented, user-approved
-scope decision, not an oversight. Real screen-reader checks (NVDA/
-VoiceOver/TalkBack) and the Phase 6 real-device checks remain open and
-require the user — see `docs/meld-masters-phase-7-summary.md` §39-42.
-Public product name: **Meld Masters**. `tile-meld` remains the internal
-repository name, package scope, and deployment identifier.
+**Current checkpoint: Phase 8 — regression testing, visual review, and
+release preparation — completed, pending human review.** This is the
+plan's final phase (§11). The visual refresh implementation itself
+(Phases 0–8) is now functionally complete. Full repository gate green;
+local e2e (chromium/firefox/mobile-chrome) 42/42 each; CI independently
+confirmed chromium/firefox/webkit/mobile-chrome all green (mobile-webkit
+CI-inconclusive — infrastructure interruptions, not a test failure, see
+below); production-build static-asset serving verified; branding/
+obsolete-artwork sweep clean; 71 final review screenshots captured and
+compared against the concept references. **Deployment/device
+verification work remains** — see "Remaining work" below. Public product
+name: **Meld Masters**. `tile-meld` remains the internal repository name,
+package scope, and deployment identifier.
 
-**Implementation state:** see `docs/meld-masters-phase-7-summary.md` for
-the complete writeup (findings, fixes, contrast table, browser-project
-results, screenshot inventory). Phase 5 (original character portrait
-system) is complete — see the Phase history entry below and
-`docs/meld-masters-phase-5-summary.md`.
+**Implementation state:** see `docs/meld-masters-phase-8-summary.md` for
+the complete writeup and `docs/current-state.md` for the current
+verified-state snapshot. Phase 7 (responsive refinement and
+accessibility) is complete — see the Phase history entry below and
+`docs/meld-masters-phase-7-summary.md`.
 
 **Machine freeze (2026-07-28, first incident):** an earlier session
 working on Phase 7 was interrupted when this machine froze (black screen,
@@ -34,37 +31,47 @@ detached full 5-project Playwright matrix run left running overnight. A
 later session re-verified and completed that in-progress diff; no code
 was lost.
 
-**WebKit deferred (2026-07-28, second incident):** during this Phase 7
-completion session, running the full 42-test webkit project in one
-continuous invocation caused a severe process leak — 29 leftover
-`WPEWebProcess` instances, ~17.7GB combined RSS, before being caught and
-stopped. Stopping the supervising task killed every leaked process
-instantly and memory recovered in full — strong evidence this is the same
-mechanism behind the first incident, just run unsupervised for hours that
-time. Separately (and unrelated to the leak), one test
-(`multi-player.spec.ts`'s 4-player-capacity case) fails reproducibly
-(3/3) on webkit specifically — the identical test passes cleanly on
-chromium and mobile-chrome, matching this project's own previously-
-documented pattern of WebKit-via-Playwright engine-level instability
-under concurrent multi-context tests (Phase 1, Phase 4). Per explicit
-user decision, webkit and mobile-webkit are deferred rather than run to
-completion locally. See `docs/meld-masters-phase-7-summary.md` §6/§35 for
-full detail, including a discovered, separately-tracked issue: CI's e2e
-matrix job has not run on any push since 2026-07-27 (blocked earlier, at
-format-check, by a pre-existing gap unrelated to Phase 7) — CI can't
-currently serve as an independent webkit cross-check either. Playwright
-runs continue to default to `--project=chromium` for ordinary iteration;
-any future full-matrix or webkit-specific run must stay in the foreground,
-watched, never detached/unattended, per both incidents above.
+**WebKit local limitation (2026-07-28, second incident, reconfirmed in
+Phase 8):** running the full webkit (or mobile-webkit) Playwright project
+in one continuous local invocation has twice caused severe resource
+problems on this machine — once the machine-freezing incident above, and
+once (during Phase 7 completion) a reproducible ~17.7GB `WPEWebProcess`
+leak caught and safely stopped mid-run. Stopping the supervising task
+both times killed every leaked process instantly and memory recovered in
+full. Chromium, Firefox, and Mobile Chrome show no equivalent issue.
+**CI (GitHub Actions) is the authoritative cross-engine verification
+environment for WebKit/Mobile WebKit going forward** — during Phase 8,
+CI confirmed chromium/firefox/webkit/mobile-chrome all pass; mobile-webkit
+CI runs remain inconclusive (3 attempts, all CI-infrastructure
+interruptions — a 30-minute job timeout once, an external runner
+shutdown signal twice — never a real test assertion failure). Playwright
+runs continue to default to `--project=chromium` for ordinary local
+iteration; any future full-matrix or webkit-specific run must stay in
+the foreground, watched, never detached/unattended. **Playwright's
+WebKit engine is not a certified stand-in for real Safari** regardless of
+any Playwright-WebKit result, local or CI (the project's own long-
+standing documented policy) — real Safari verification remains a
+separate, unperformed manual step. See
+`docs/meld-masters-phase-8-summary.md` for full detail, including a
+CI-format-check gate that was fixed this phase (had blocked the e2e
+matrix job entirely since 2026-07-27) and a pre-existing, unpatched
+dependency-audit finding (4 high/1 moderate CVEs, out of this phase's
+scope) that now surfaces now that the format gate no longer blocks it.
 
-**Next phase: Phase 8** (regression testing, visual review, and release
-preparation — plan §11), after this Phase 7 checkpoint is reviewed and
-approved. Not started. Independently and not blocking Phase 8: real
-screen-reader checks, Phase 6's manual Android/iOS/desktop-installed-PWA
-device checklists (`docs/meld-masters-phase-6-summary.md` §30-33), fixing
-the CI format-check gate, and completing local webkit/mobile-webkit
-verification in small batches if full local coverage is wanted later —
-none of these were performed or claimed as passed this phase.
+**Remaining work (not blocking phase completion, all require the user or
+a separate deliberate task):** real screen-reader checks (NVDA/
+VoiceOver/TalkBack), real Safari verification (desktop + iOS), Phase 6's
+manual Android/iOS/desktop-installed-PWA device checklists
+(`docs/meld-masters-phase-6-summary.md` §30-33), the pre-existing
+dependency-audit CVEs surfaced above, completing local webkit/
+mobile-webkit verification in small batches if full local coverage is
+wanted, and actual deployment (not performed or requested this phase).
+
+**No new phase started automatically.** The plan's Phase 8 (§11) was the
+final defined phase of this visual-refresh initiative; there is no
+Phase 9. Any further work (deployment, real-device/screen-reader checks,
+the dependency-audit fixes) is tracked as remaining work above, not a
+new phase.
 
 ## Open blocker
 
@@ -206,6 +213,42 @@ identity — were resolved 2026-07-26; see
   mechanism. 18 review screenshots captured. Real screen-reader checks
   (§39-42) not performed — requires the user. See
   `docs/meld-masters-phase-7-summary.md` for the complete writeup.
+- **Phase 8** (regression testing, visual review, and release
+  preparation) — **completed**, 2026-07-28, pending human review. The
+  plan's final phase (§11). Fixed the pre-existing CI format-check gap
+  that had silently blocked CI's entire e2e matrix job since 2026-07-27
+  (whitespace-only reflow in `e2e/scripts/capture-phase-5-review.ts`, no
+  behavior change) as a separate first commit, then pushed the rest of
+  Phase 8 as a second commit and let CI verify independently. Full gate
+  green; local e2e chromium/firefox/mobile-chrome all 42/42; CI
+  independently confirmed all four of those plus webkit all pass;
+  mobile-webkit CI runs stayed inconclusive across 3 attempts
+  (infrastructure interruptions only, never a real test failure — see
+  "WebKit local limitation" note above). Production-build static-asset
+  serving verified directly (health/manifest/icons/fonts/portraits/
+  bundles all correct). Branding sweep (`git grep "Tile Meld"` /
+  `mahjong`, case-insensitive) found only allowed historical/prohibition-
+  text/absence-asserting-test hits — no active-UI or runtime-file leak.
+  Asset inventory confirmed (8 rival portraits + fallback, registry,
+  derivation scripts, reference roster sheet docs-only with no runtime
+  import). 71 final review screenshots captured
+  (`docs/design-reference/final/`, a new directory, earlier phase-N-review
+  directories untouched) across the required states/viewports; two
+  states (a live in-progress drag gesture, and a valid-set/multiple-sets/
+  commit-enabled trio requiring a random hand with a ready-made meld)
+  were not captured after 2-3 genuine attempts each and are documented as
+  an honest gap, not fabricated. A real pre-staging catch: an early
+  capture attempt's fullPage screenshots exposed a live (if disposable,
+  test-only) recovery secret on the Recovery page — found during the
+  required per-screenshot sensitivity review, fixed by dismissing the
+  one-time reveal before capturing, and the entire screenshot set was
+  regenerated clean before staging. Compared against the 6 concept
+  reference images — no deviation beyond the already-documented
+  Phase 0-7 deliberate differences. Deployment readiness inspected
+  (Render Blueprint, Docker, VPS compose, env vars, migration-as-
+  pre-traffic-step) and a concrete pre-deploy checklist produced; no
+  deployment performed or requested. See
+  `docs/meld-masters-phase-8-summary.md` for the complete writeup.
 
 ## Approved decisions (implemented in Phase 2)
 
@@ -225,22 +268,29 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 
 ## Next phase
 
-**Phase 7 — Responsive refinement and accessibility** (plan §11) is
-**completed, pending human review** — see the Phase history entry above
-and `docs/meld-masters-phase-7-summary.md`. **Phase 8** (regression
-testing, visual review, release prep) is the next phase after Phase 7 is
-approved. Not started.
+**None.** Phase 8 — regression testing, visual review, and release
+preparation (plan §11) — is **completed, pending human review**, and was
+the final defined phase of the Meld Masters visual-refresh initiative.
+See the Phase history entry above and `docs/meld-masters-phase-8-summary.md`.
+No Phase 9 exists in the plan and none was started automatically.
 
-Independently, and not blocking Phase 8: Phase 6's manual Android/iOS/
-desktop-installed-PWA device checklists (`docs/meld-masters-phase-6-summary.md`
-§30-33), real screen-reader checks (NVDA/VoiceOver/TalkBack —
-`docs/meld-masters-phase-7-summary.md` §39-42), fixing the CI
-format-check gate so it can independently verify webkit/mobile-webkit,
-and completing local webkit/mobile-webkit verification in small batches
-if full local coverage is wanted — none of these require the user's
-approval of the Phase 7 checkpoint itself, none were performed or claimed
-as passed this phase, and none are preconditions Claude can complete
-alone.
+Remaining work, independent of and not blocking review of this
+checkpoint (none are preconditions Claude can complete alone; none were
+performed or claimed as passed):
+
+- Real screen-reader checks (NVDA/VoiceOver/TalkBack) and real Safari
+  verification (desktop + iOS) — `docs/meld-masters-phase-8-summary.md`.
+- Phase 6's manual Android/iOS/desktop-installed-PWA device checklists
+  (`docs/meld-masters-phase-6-summary.md` §30-33).
+- The pre-existing dependency-audit findings surfaced once the CI
+  format gate was fixed (4 high/1 moderate CVEs — `@fastify/static`,
+  `find-my-way`, `react-router`, `brace-expansion`) — a separate,
+  deliberate dependency-update task, not touched this phase.
+- Completing local webkit/mobile-webkit verification in small batches,
+  if full local coverage beyond CI is ever wanted.
+- Actual deployment (Render Blueprint or otherwise) — not performed or
+  requested. See `docs/meld-masters-phase-8-summary.md` for the
+  deployment-readiness recommendation and checklist.
 
 ## Structure to use when work begins on a new, unrelated task
 

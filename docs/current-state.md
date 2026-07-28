@@ -3,48 +3,116 @@
 Public product name: **Meld Masters** (renamed from Tile Meld, Phase 1 of
 `docs/meld-masters-visual-refresh-plan.md`, 2026-07-26). `tile-meld` remains
 the internal repository name, package scope, and deployment identifier —
-see the plan's §5.5. The verification below predates the rename and
-describes the state as of the date given.
+see the plan's §5.5.
 
-- **Last verified:** 2026-07-25
-- **Last verified commit:** `7d6248a`
-- **Working tree at verification:** clean, branch `main`, in sync with
-  `origin/main`
+- **Last verified:** 2026-07-28 (Phase 8 — final regression verification
+  and release preparation)
+- **Commit at verification start:** `922ca4600630b395e5ced014ef4910eef3aee063`
+  (the Phase 7 completion checkpoint). Two Phase 8 commits landed on top of
+  it this session — see `git log` for the current `main` tip; the exact
+  hashes are deliberately not repeated here (see
+  `docs/meld-masters-phase-8-summary.md` for why).
+- **Working tree at verification start:** clean, branch `main`, in sync
+  with `origin/main` (0 ahead / 0 behind)
 
-This file replaces `HANDOFF.md`, which was written for a different assistant and
-had drifted badly — it reported 366 tests when there are 663, and listed PR #2
-as the newest merge after PR #3 had landed. Its durable content was moved:
-gotchas to `CLAUDE.md`, run and deploy knobs to `docs/environment.md`, deferred
-work to `docs/task.md`. The original is recoverable with
-`git show 7d6248a:HANDOFF.md`.
+The visual refresh (`docs/meld-masters-visual-refresh-plan.md`) is now
+functionally complete through Phase 8. This file replaces the
+pre-refresh-era verification snapshot; the visual-refresh phase summaries
+(`docs/meld-masters-phase-0-summary.md` through `-phase-8-summary.md`)
+are the authoritative record of what changed and why.
 
-## Verified by running it, 2026-07-25
+## Verified by running it, 2026-07-28 (Phase 8)
 
-Full gate, executed at `7d6248a` against an isolated test database:
+Full gate, executed against the disposable `tilemeld_test` database:
 
 | Step | Command | Result |
 |---|---|---|
 | Format | `pnpm run format:check` | pass |
 | Lint | `pnpm run lint` | pass |
 | Typecheck | `pnpm run typecheck` | pass, 6 workspace projects |
-| Tests | `pnpm run test` | **663 passed**, 65 files, 0 failures |
+| Tests | `pnpm run test` | pass (exit 0); `apps/server` alone 28 files / 317 tests |
 | Build | `pnpm run build` | pass, web + server |
 
-Test totals by package:
+## Local browser (Playwright) results, 2026-07-28
 
-| Package | Files | Tests |
-|---|---|---|
-| `packages/shared` | 1 | 38 |
-| `packages/engine` | 12 | 115 |
-| `packages/bot` | 3 | 36 |
-| `apps/web` | 21 | 157 |
-| `apps/server` | 28 | 317 |
-| **Total** | **65** | **663** |
+Run one project at a time, foreground, timeout-wrapped, fresh disposable
+database per run — never the full 5-project matrix in one local
+invocation (see "Known WebKit local limitation" below).
 
-Also confirmed: PostgreSQL 16 running as container `tile-meld-db-1`, healthy;
-six workspace projects resolving; production build emits
-`dist/index.js`, `dist/migrate-cli.js`, `dist/migrations/*.js`, and a 423 kB web
-bundle (129 kB gzipped).
+| Project | Result |
+|---|---|
+| chromium | 42/42 passed |
+| firefox | 42/42 passed |
+| mobile-chrome | 42/42 passed |
+| webkit | not run locally to completion (see limitation below) |
+| mobile-webkit | not run locally (same engine) |
+
+## CI (GitHub Actions) results, 2026-07-28
+
+| Job/project | Result |
+|---|---|
+| Format/lint/typecheck/unit-integration-tests/build | pass |
+| E2E chromium | pass |
+| E2E firefox | pass |
+| E2E webkit | pass |
+| E2E mobile-chrome | pass |
+| E2E mobile-webkit | **inconclusive** — 3 attempts hit CI infrastructure interruptions (one 30-minute job-timeout, two external "runner received a shutdown signal" terminations at similar points), never a real test assertion failure. Not retried further; treat as pending, not passed or failed. |
+| Dependency audit (`pnpm audit --audit-level=high`) | **fails** — 4 high, 1 moderate pre-existing vulnerabilities (`@fastify/static` path-traversal route-guard bypass, `find-my-way` HTTP/2 DDoS, `react-router` CSRF bypass, `brace-expansion` DoS). Not patched this phase — out of Phase 8's verification/documentation scope; flagged for a separate, deliberate dependency-update task. |
+| Docker image scan (Trivy) | did not run — blocked by the failing audit step in the same job |
+
+CI's e2e matrix job did not run at all on any push between 2026-07-27 and
+2026-07-28 — blocked earlier, at the format-check step, by a pre-existing
+formatting violation in `e2e/scripts/capture-phase-5-review.ts`
+(predates Phase 7). Fixed this phase (whitespace-only reflow, no
+behavior change) — see `docs/meld-masters-phase-8-summary.md` §5-6.
+
+## Production-build verification, 2026-07-28
+
+The compiled server (`apps/server/dist/index.js`) run directly against
+the built web SPA (`apps/web/dist`, the same relative layout the Docker
+image uses) against a disposable database. Confirmed HTTP 200 with
+correct content types for: `/`, `/api/health`, `/manifest.json`,
+`/favicon.ico`, both old (transitional) and new `/icons/*` icon paths,
+the main JS/CSS bundles, a self-hosted font file, and a portrait asset.
+Manifest icon entries reference only the new `/icons/*` paths. No
+external font request. Service worker (`sw.js`) confirmed to still have
+zero caching/fetch-interception logic (push-notification handling only,
+by its own header comment).
+
+## Known WebKit local limitation
+
+Running the full WebKit (or Mobile WebKit) Playwright project in one
+continuous local invocation on this machine has twice caused severe
+resource problems: once a machine-freezing memory exhaustion (traced to
+this same mechanism, run unsupervised via a detached background process
+in an earlier session), and once a reproducible ~17.7GB `WPEWebProcess`
+leak that was caught and safely stopped mid-run. **Do not run the full
+webkit/mobile-webkit project locally in one invocation.** Chromium,
+Firefox, and Mobile Chrome show no equivalent issue. CI (GitHub Actions)
+is the authoritative cross-engine verification environment for WebKit and
+Mobile WebKit — see the CI results table above. **Playwright's WebKit
+engine is not a certified stand-in for real desktop or mobile Safari**
+(the project's own long-standing documented policy, plan §10.5/
+D-BROWSERS) — a real Safari check remains a separate, unperformed manual
+release-gate step regardless of any Playwright-WebKit result, local or CI.
+
+## Remaining manual checks (not performed by any automated tooling)
+
+- Real screen-reader verification: NVDA, VoiceOver, TalkBack.
+- Real Safari verification (desktop macOS and iOS).
+- Android PWA install, maskable-icon crop, splash screen.
+- iOS Add to Home Screen, Apple touch icon.
+- Desktop installed-PWA icon and standalone behavior.
+
+None of these have been performed or are claimed as passed by any
+session to date. See `docs/meld-masters-phase-8-summary.md` for the full
+manual checklist.
+
+## Deployment readiness
+
+Not deployed. See `docs/meld-masters-phase-8-summary.md` for the release-
+readiness recommendation and the full pre-deploy checklist. No deployment
+was performed or requested this phase.
 
 ## Shipped and merged (from Git history)
 
@@ -57,19 +125,10 @@ bundle (129 kB gzipped).
   Merged at `712d031`.
 - **CI / E2E / release stabilization** — PR #3, merged at `b3efeeb`, preceded by
   `e86e36c`, `99e351e`, `82e394f`.
-
-## Not verified
-
-- **The Playwright E2E suite was not run.** It takes roughly 30 minutes across
-  five browser projects and starts its own servers. The unit and integration
-  gate above does not cover it.
-- **No deployment was performed or checked.** Whether the Render service is
-  currently healthy, and what commit it is serving, is unknown from this
-  machine.
-- **The application was not exercised by hand.** A green gate is not a
-  play-through.
-- Production behavior of `ENABLE_COMPUTER_OPPONENT` and `BOT_TURN_DELAY_MS` was
-  not observed; only their code paths are covered by tests.
+- **Meld Masters visual refresh, Phases 0–8** — rename, retro-arcade
+  visual redesign, portrait system, PWA icon pipeline, responsive/
+  accessibility pass, final release verification. See
+  `docs/meld-masters-visual-refresh-plan.md` and the per-phase summaries.
 
 ## Known discrepancy
 
@@ -81,9 +140,9 @@ The implemented behavior is **48 hours** — commit `ac9c2a3`, "feat(server): ad
 48-hour completed-game retention". Presumably a deliberate revision during
 Phase 07, but the rationale has not been confirmed against
 `docs/phase-07-retention.md`. Either the brief or the implementation should be
-corrected so they stop disagreeing.
+corrected so they stop disagreeing. Still unresolved as of this verification.
 
 ## Work in progress
 
-None. Clean tree, no open checkpoint. This is a clean base to start the next
-task from.
+None. Clean tree at the start of this verification, no open checkpoint
+before Phase 8 began.

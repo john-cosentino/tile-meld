@@ -4,7 +4,7 @@ Public product name: **Meld Masters**. `tile-meld` remains the internal
 repository name, package scope, and deployment identifier — see
 `docs/meld-masters-visual-refresh-plan.md` §5.5.
 
-Last verified: 2026-07-25.
+Last verified: 2026-07-28 (Phase 8, plus the E2E section's WebKit safety note).
 
 ## Toolchain
 
@@ -94,9 +94,24 @@ format, lint, typecheck, and build all green. Per-package totals are in
 
 ## E2E
 
+> **Do not run the full 5-project matrix, or the webkit/mobile-webkit
+> project alone, in one continuous local invocation.** Confirmed twice
+> (2026-07-28): a full-matrix run left detached/unattended overnight froze
+> this machine outright, and a full webkit-project run — even attended,
+> in the foreground — leaked ~17.7GB of `WPEWebProcess` renderer
+> processes before being caught and stopped. Chromium, Firefox, and
+> Mobile Chrome show no equivalent issue. **CI (GitHub Actions) is the
+> authoritative cross-engine verification environment for WebKit/Mobile
+> WebKit** — see `docs/current-state.md`. For local iteration, use
+> `--project=chromium` (or firefox/mobile-chrome); if webkit coverage is
+> ever needed locally, run one spec file at a time with `--workers=1`,
+> watched, never `nohup`/detached, checking memory and process cleanup
+> between runs.
+
 ```
-cd e2e && npx playwright test                           # full matrix, ~30 min
+cd e2e && npx playwright test --project=chromium         # safe default, one project
 cd e2e && npx playwright test <spec> --project=chromium  # one spec
+cd e2e && npx playwright test                            # full matrix, ~30 min -- see caution above
 ```
 
 Five projects: Chromium, Firefox, WebKit, Pixel 7, iPhone 14. Playwright starts

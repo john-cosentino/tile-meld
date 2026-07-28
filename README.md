@@ -106,9 +106,15 @@ pnpm run test          # vitest across all workspace packages
 pnpm run build         # production build (apps/web + apps/server; packages/* have none --
                         # consumed as workspace-linked TS source, no compile step needed)
 
+cd e2e && npx playwright test --project=chromium  # one browser project (safe default)
 cd e2e && npx playwright test   # full E2E matrix -- Chromium, Firefox, WebKit,
                                  # mobile Chrome, mobile Safari; auto-starts the
-                                 # API + web dev servers if neither is running
+                                 # API + web dev servers if neither is running.
+                                 # See docs/environment.md's E2E section before
+                                 # running this locally -- the full matrix, and
+                                 # WebKit/mobile-webkit specifically, have caused
+                                 # serious local resource problems on at least
+                                 # one machine. CI is the safer place to run it.
 ```
 
 ## Deployment
