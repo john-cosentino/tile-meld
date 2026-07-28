@@ -71,3 +71,20 @@ test("Tabletop page has no serious/critical accessibility violations", async ({ 
   const { activePage } = await startTwoPlayerGame(browser);
   await assertNoSeriousViolations(activePage, "Tabletop");
 });
+
+test("skip-to-content link reveals on focus and moves focus to main content on activation", async ({
+  page,
+}) => {
+  await waitForReady(page);
+  await page.getByRole("navigation", { name: "Main navigation" }).waitFor();
+
+  await page.keyboard.press("Tab");
+  const skipLink = page.locator("a.skip-link");
+  await expect(skipLink).toBeFocused();
+  const box = await skipLink.boundingBox();
+  expect(box?.width).toBeGreaterThan(0);
+  expect(box?.height).toBeGreaterThan(0);
+
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main-content")).toBeFocused();
+});

@@ -4,44 +4,48 @@
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
 pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
 
-**Current checkpoint: Phase 5 — original character portrait system —
-completed, pending human review.** Public product name: **Meld Masters**.
-`tile-meld` remains the internal repository name, package scope, and
-deployment identifier.
+**Current checkpoint: Phase 7 — responsive refinement and accessibility —
+in progress, partial.** Three specific findings (skip-link focus reveal,
+a keyboard tile-selection bug, a narrow-viewport username-overflow bug)
+are fixed and verified (chromium-only); the plan's full §13.2 acceptance
+checklist (tablet/landscape breakpoints, a real screen-reader smoke test,
+contrast-ratio table, 200%-zoom pass, reduced-motion pass, decorative
+`aria-hidden` audit) has not been executed, and the full 5-project e2e
+matrix has been deferred to a session where it can run in the foreground
+with the user present (see "Machine freeze" note below). See
+`docs/meld-masters-phase-7-summary.md`. Public product name: **Meld
+Masters**. `tile-meld` remains the internal repository name, package
+scope, and deployment identifier.
 
-**Implementation state:** the approved portrait pack (8 rival portraits +
-1 fallback, found already placed under `docs/design-reference/
-meld-masters/` at the start of this phase) is integrated into the Waiting
-Room seat panels and the Tabletop opponent strip via a new deterministic
-registry (`apps/web/src/branding/portraits.ts`) — `portraitForSeat(seatIndex,
-isComputer)` is a pure function (roster-by-modulo for human seats, fallback
-for computer seats and any out-of-range index), so a seat's portrait never
-changes mid-game and nothing is stored or persisted. Production copies were
-mechanically resized from the ~22.5 MB delivered originals down to ~285.5
-KB total (`scripts/derive-portraits.py`); the `docs/` originals were never
-modified (checksums verified unchanged). Both portraits are `alt=""`
-(decorative; correctly gets an implicit ARIA role of `presentation`, not
-`img`) — every game-state fact (name, ready state, BOT badge, tile count,
-turn) stays in text exactly as before. Full gate green (724 tests, 10
-new); targeted Playwright (accessibility + vs-computer + full-lifecycle +
-tabletopMobile, chromium + mobile-webkit) 22/22, including both the
-Waiting Room and Tabletop axe checks passing clean on both engines with
-the new images present. See `docs/meld-masters-phase-5-summary.md` for the
-full writeup, including two documented deviations from the original asset
-contract (delivered portraits are 1024×1536/2:3, not 512×512/1:1; no
-dedicated bot portrait was supplied, so computer seats use the fallback).
+**Implementation state:** see `docs/meld-masters-phase-7-summary.md` §4
+for the three fixes (skip-link focus reveal, keyboard tile-selection bug,
+narrow-viewport username overflow) and §6 for the explicit list of
+plan-§13.2 acceptance-checklist items not yet executed. Phase 5 (original
+character portrait system) is complete — see the Phase history entry
+below and `docs/meld-masters-phase-5-summary.md`.
 
-No Phase 7 (responsive/accessibility) or Phase 8 work occurred. **Next
-unblocked phase after Phase 5 is approved: Phase 7** (responsive
-refinement and accessibility — plan §11). Not started. Phase 6's manual
-Android/iOS/desktop-installed-PWA device checklists (`docs/
-meld-masters-phase-6-summary.md` §30-33) remain open wherever the user
-has not yet performed them — unaffected by, and independent of, Phase 5.
+**Machine freeze (2026-07-28):** the prior session working on Phase 7 was
+interrupted when this machine froze (black screen, unresponsive, required
+a hard reboot) partway through an unattended, detached full 5-project
+Playwright matrix run left running overnight. No application-code bug was
+implicated — purely a local resource/infrastructure issue with that test
+run. This session re-verified and completed the in-progress diff as
+found; no code was lost. Going forward: Playwright runs default to
+`--project=chromium` only; the full 5-project matrix is run in the
+foreground, watched, with the user present — never detached/unattended.
+
+**Next unblocked phase after Phase 7's remaining §13.2 items (and the
+deferred full matrix) are completed and approved: Phase 8** (regression
+testing, visual review, and release preparation — plan §11). Not started.
+Phase 6's manual Android/iOS/desktop-installed-PWA device checklists
+(`docs/meld-masters-phase-6-summary.md` §30-33) remain open wherever the
+user has not yet performed them — unaffected by, and independent of,
+Phase 7.
 
 ## Open blocker
 
 None. Blocker B3 (production portrait assets) is **resolved** — the
-approved pack was supplied and is now integrated (Phase 5, above).
+approved pack was supplied and integrated in Phase 5.
 
 (Blockers B1 — logo master — and B2 — portrait-correction reference
 identity — were resolved 2026-07-26; see
@@ -156,6 +160,21 @@ identity — were resolved 2026-07-26; see
   full-lifecycle + tabletopMobile, chromium + mobile-webkit) 22/22,
   including clean Waiting Room and Tabletop axe scans on both engines. 24
   review screenshots captured. See `docs/meld-masters-phase-5-summary.md`.
+- **Phase 7** (responsive refinement and accessibility) — **in progress,
+  partial**, as of 2026-07-28. Three findings fixed and verified
+  (chromium-only): skip-link `:focus` reveal (the plan's directly-named
+  gap), a keyboard tile-selection bug (dnd-kit's `KeyboardSensor` was
+  swallowing the native `<button>`'s Enter/Space activation before it
+  reached `onClick` — removed, since nothing uses its arrow-key drag),
+  and a narrow-viewport horizontal-overflow bug from max-length (24-char)
+  usernames (`overflow-wrap: break-word` on `.page-title`). Full gate
+  green; targeted Playwright (accessibility + two-player-smoke +
+  vs-computer, chromium only) 15/15. 4 review screenshots captured. The
+  plan's full §13.2 acceptance checklist and the full 5-project e2e
+  matrix are explicitly **not yet done** — see
+  `docs/meld-masters-phase-7-summary.md` §6. A machine freeze mid-session
+  (see "Machine freeze" note above) interrupted the prior attempt at this
+  same work; no code was lost, only the detached background test run.
 
 ## Approved decisions (implemented in Phase 2)
 
@@ -175,16 +194,21 @@ implemented — see `docs/meld-masters-phase-2-summary.md` §4–13 for details:
 
 ## Next phase
 
-**Phase 7 — Responsive refinement and accessibility** (plan §11) is the
-next unblocked phase once Phase 5 is approved. Not started. No later phase
-(Phase 8) was started automatically.
+**Phase 7 — Responsive refinement and accessibility** (plan §11) is
+**in progress, partial** — see the Phase history entry above and
+`docs/meld-masters-phase-7-summary.md`. Remaining before Phase 7 can be
+considered done: the rest of the plan's §13.2 acceptance checklist
+(tablet/landscape breakpoints, a full keyboard-only turn, a real
+screen-reader smoke test, contrast-ratio table, 200%-zoom pass,
+reduced-motion pass, decorative `aria-hidden` audit) and the full
+5-project e2e matrix, deferred until it can run in the foreground with
+the user present. **Phase 8** (regression testing, visual review, release
+prep) is the next phase after Phase 7, not started.
 
 Independently, Phase 6's manual Android/iOS/desktop-installed-PWA device
 checklists (`docs/meld-masters-phase-6-summary.md` §30-33) still require
 the user — not automatically satisfied, not a precondition Claude can
-complete alone, and not something Phase 5 depended on or resolved.
-
-Phase 7 is gated on this Phase 5 checkpoint being reviewed and approved.
+complete alone, and not something Phase 5 or 7 depended on or resolved.
 
 ## Structure to use when work begins on a new, unrelated task
 

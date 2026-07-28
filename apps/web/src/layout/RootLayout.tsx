@@ -29,7 +29,7 @@ export function RootLayout() {
 
   return (
     <>
-      <a href="#main-content" className="visually-hidden">
+      <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
       <header className="app-header row" style={{ justifyContent: "space-between" }}>
@@ -61,7 +61,10 @@ export function RootLayout() {
           into your games from another device or if this browser forgets you.
         </div>
       )}
-      <main id="main-content" className="page">
+      {/* tabIndex={-1} so activating the skip link above actually moves
+          focus here -- an in-page fragment link only scrolls without it,
+          leaving keyboard/AT users with no indication anything happened. */}
+      <main id="main-content" className="page" tabIndex={-1}>
         <Outlet />
       </main>
     </>

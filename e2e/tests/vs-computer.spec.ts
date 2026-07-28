@@ -73,6 +73,35 @@ test("play vs computer: create, start, the bot acts, and the turn returns to the
   await expect(page.getByText(/🤖:\s*\d+\s*tiles/)).toBeVisible();
 });
 
+test("waiting room fits a narrow phone viewport even with a max-length username", async ({
+  page,
+}) => {
+  // Private rooms are named after their creator's raw username
+  // (roomNameBase), with no separator or forced break point -- a
+  // realistic max-length (24-char) username previously overflowed the
+  // page horizontally at a narrow phone width because .page-title had no
+  // wrap handling. Phase 7 finding, fixed in global.css.
+  await waitForReady(page);
+  // An 18-char base plus uniqueUsername's 6-char random suffix always
+  // lands exactly on USERNAME_MAX_LENGTH (24) while staying unique across
+  // repeated runs against a non-truncated database.
+  const username = await claimUsername(page, "PhaseSevenOverflow");
+  expect(username.length).toBe(24);
+  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Meld Masters", level: 1 })).toBeVisible();
+
+  await clickUntilSettled(
+    page,
+    page.getByRole("button", { name: /Play vs Computer/ }),
+    page.getByRole("heading", { name: username }),
+  );
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await expect(page.getByRole("heading", { name: username })).toBeVisible();
+  const hasOverflow = await page.locator("html").evaluate((el) => el.scrollWidth > el.clientWidth);
+  expect(hasOverflow).toBe(false);
+});
+
 test("the computer's turn is recovered across a page reload (durability)", async ({ page }) => {
   await startVsComputerGame(page);
   await expect(page.getByText("Your turn", { exact: true })).toBeVisible({ timeout: 20000 });

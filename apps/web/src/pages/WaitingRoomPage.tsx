@@ -146,6 +146,7 @@ export function WaitingRoomPage() {
                 alt=""
                 width={56}
                 height={56}
+                decoding="async"
               />
               <span className="seat-name">{m.displayName}</span>
               {m.isComputer && (

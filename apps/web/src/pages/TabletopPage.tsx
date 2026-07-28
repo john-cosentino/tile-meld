@@ -1,13 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
+import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { INITIAL_MELD_THRESHOLD, PRODUCT_NAME } from "@tile-meld/shared";
 import { useGame } from "../tabletop/useGame.js";
 import { useDraftState } from "../tabletop/useDraftState.js";
@@ -54,10 +47,19 @@ export function TabletopPage() {
   // and fires onDragEnd with `over` resolving to whatever droppable the
   // pointer never left, silently reordering the rack. A small distance
   // threshold lets a real click and a real drag coexist on the same tile.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor),
-  );
+  //
+  // No KeyboardSensor: Tile is already a native <button onClick>, so Enter
+  // and Space activate it (select/deselect) for free via the DOM's default
+  // button behavior -- the click/tap-and-keyboard path Tile.tsx documents
+  // as additive to drag-and-drop. dnd-kit's KeyboardSensor claims Enter and
+  // Space as its own drag-start/drop keys and calls preventDefault() on
+  // them (its default keyboardCodes), which silently swallowed the
+  // button's native activation before a keyboard user's press ever reached
+  // onClick -- confirmed live: aria-pressed never toggled on a real Enter
+  // keypress. Nothing exercises dnd-kit's arrow-key-driven keyboard drag
+  // (the click-to-select/click-to-place path is the documented keyboard
+  // alternative), so removing it only restores the button's own behavior.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const resolve = useMemo((): ((tileId: string) => TileFace) => {
     const map = new Map<string, TileFace>();

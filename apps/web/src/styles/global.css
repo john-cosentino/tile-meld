@@ -261,6 +261,49 @@ button.danger {
   border: 0;
 }
 
+/* Skip-to-content link (Phase 7 -- the master plan named this gap
+   directly: "skip-link :focus reveal"). Deliberately a separate class
+   from .visually-hidden above, not a :focus override added to it --
+   .visually-hidden is also used for content that must never become
+   visible (the chat input's <label>, the live announcer region, the
+   screen-reader-only tabletop <h1>), so changing its behavior on focus
+   would incorrectly reveal those too. Hidden the same way by default;
+   on :focus-visible it becomes a real, high-contrast, fixed-position
+   element above the header (plain document flow, no z-index of its own
+   to compete with) using the same cyan established as this site's one
+   focus-indicator color everywhere else. */
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link:focus-visible {
+  position: fixed;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 1000;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background: var(--bg-panel);
+  color: var(--neon-cyan);
+  border: 2px solid var(--neon-cyan);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  box-shadow: var(--glow-focus);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -972,6 +1015,11 @@ button.accent-warn {
   letter-spacing: 0.03em;
   font-size: 1.8rem;
   margin: 0;
+  /* Room names are raw usernames (up to 24 chars, longer still for public
+     rooms' "public_" prefix) with no guaranteed break points -- without
+     this, a long single-token name forces the heading past its container
+     and overflows the page horizontally at narrow widths. */
+  overflow-wrap: break-word;
 }
 
 /* Section/panel heading (Create a Game, Your Games, Open Rooms, Choose a

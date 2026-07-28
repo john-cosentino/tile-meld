@@ -56,6 +56,33 @@ test("click/tap tile selection and move -- the keyboard/tap-accessible alternati
   await expect(activePage.getByRole("heading", { name: "Your rack (14)" })).toBeVisible();
 });
 
+test("real keyboard (Tab + Enter) tile selection and move -- not just a synthetic .click()", async ({
+  browser,
+}) => {
+  // The test above exercises this same flow via Playwright's .click(),
+  // which dispatches a pointer event and does NOT prove a keyboard user
+  // can do the same thing. Phase 7 finding: dnd-kit's KeyboardSensor
+  // claimed Enter/Space as its own drag activator keys and preventDefault()
+  // ed them, silently blocking Tile's native <button> click activation for
+  // real keyboard input even though the mouse/tap path worked fine --
+  // fixed by removing KeyboardSensor (TabletopPage.tsx) since nothing uses
+  // its arrow-key-driven drag. This test presses real keys, not .click().
+  const { activePage } = await startTwoPlayerGame(browser);
+
+  const firstTile = activePage.locator(".tile").first();
+  await firstTile.focus();
+  await expect(firstTile).toHaveAttribute("aria-pressed", "false");
+  await activePage.keyboard.press("Enter");
+  await expect(firstTile).toHaveAttribute("aria-pressed", "true");
+
+  const newSetZone = activePage.getByRole("button", { name: /Start a new set/ });
+  await newSetZone.focus();
+  await activePage.keyboard.press("Enter");
+
+  await expect(activePage.getByRole("heading", { name: "Your rack (13)" })).toBeVisible();
+  await expect(activePage.getByText(/^Set 1 --/)).toBeVisible();
+});
+
 test("chat: a message sent from one browser appears in both (game-scoped, live)", async ({
   browser,
 }) => {

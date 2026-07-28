@@ -33,6 +33,7 @@ export function OpponentStrip({ opponents, activeSeat, gameStatus }: OpponentStr
               alt=""
               width={36}
               height={36}
+              decoding="async"
             />
             <span>
               {o.displayName}
