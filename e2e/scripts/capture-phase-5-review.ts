@@ -11,11 +11,20 @@ import { chromium, type Browser, type BrowserContext, type Page } from "@playwri
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { waitForReady, claimUsername, joinRoomByName, clickUntilSettled } from "../tests/helpers.js";
+import {
+  waitForReady,
+  claimUsername,
+  joinRoomByName,
+  clickUntilSettled,
+} from "../tests/helpers.js";
 
 const BASE_URL = process.env.BASELINE_BASE_URL ?? "http://localhost:5173";
 const OUT_DIR = path.resolve(
-  process.argv[2] ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../docs/design-reference/phase-5-review"),
+  process.argv[2] ??
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../docs/design-reference/phase-5-review",
+    ),
 );
 
 const VIEWPORTS: Record<string, { width: number; height: number }> = {
