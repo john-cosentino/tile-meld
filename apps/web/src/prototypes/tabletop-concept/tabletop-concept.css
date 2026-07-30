@@ -1,0 +1,640 @@
+/* Static concept prototype only -- entirely separate from global.css's real
+   tabletop, tile, and card rules. Everything here is scoped under
+   .concept-prototype so it can never leak onto or collide with the live
+   app. Reuses the same design tokens (neon, bg, space, radius custom
+   properties) global.css already defines at :root, but every LAYOUT rule
+   below is new and deliberately much larger/denser than the live tabletop
+   -- this is a silhouette/composition exercise, not a restyle. */
+
+.concept-prototype {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--bg-page);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 28px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 28px
+    );
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.concept-prototype * {
+  box-sizing: border-box;
+}
+
+/* Cabinet-panel look shared by every framed region: angular notched
+   corners (clip-path, echoing the concept's beveled plaques) instead of a
+   plain rounded rectangle, plus a layered double-border via an outer
+   box-shadow ring for depth without literally 3D-transforming readable
+   content (a real rotateX() would distort the tile numbers). */
+.concept-panel {
+  --notch: 14px;
+  position: relative;
+  background: var(--bg-panel);
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  clip-path: polygon(
+    var(--notch) 0,
+    100% 0,
+    100% calc(100% - var(--notch)),
+    calc(100% - var(--notch)) 100%,
+    0 100%,
+    0 var(--notch)
+  );
+  box-shadow:
+    0 0 0 1px rgba(63, 224, 255, 0.15),
+    0 0 18px rgba(63, 224, 255, 0.12),
+    inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+
+.concept-panel--accent-purple {
+  border-color: var(--neon-purple);
+  box-shadow:
+    0 0 0 1px rgba(176, 106, 255, 0.18),
+    0 0 18px rgba(176, 106, 255, 0.16),
+    inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+
+.concept-panel--accent-gold {
+  border-color: var(--neon-gold);
+  box-shadow:
+    0 0 0 1px rgba(255, 201, 77, 0.2),
+    0 0 18px rgba(255, 201, 77, 0.18),
+    inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+
+/* ============================= Masthead ============================= */
+
+.concept-masthead {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) 1fr minmax(160px, 220px);
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 8.5rem;
+  padding: var(--space-3) var(--space-4);
+}
+
+.concept-masthead-plaque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+  padding: var(--space-2);
+  text-align: center;
+}
+
+.concept-masthead-plaque-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+}
+
+.concept-masthead-plaque-value {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--neon-gold);
+}
+
+.concept-masthead-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.concept-wordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  line-height: 1;
+  text-align: center;
+  background: linear-gradient(
+    180deg,
+    var(--neon-cyan) 0%,
+    #ffffff 35%,
+    var(--neon-gold) 70%,
+    var(--neon-orange) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 22px rgba(63, 224, 255, 0.35);
+}
+
+.concept-tagline {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.25em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.concept-monogram {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* ============================== Main grid ============================= */
+
+.concept-main {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-areas: "rail center sidebar";
+  gap: var(--space-3);
+  align-items: start;
+  flex: 1;
+}
+
+/* ------------------------------ Rail ------------------------------ */
+
+.concept-rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.concept-competitor {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  text-align: center;
+  transition:
+    border-color var(--duration-fast) var(--ease-arcade),
+    box-shadow var(--duration-fast) var(--ease-arcade);
+}
+
+.concept-competitor-portrait {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid currentColor;
+}
+
+.concept-competitor-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  font-size: 1rem;
+}
+
+.concept-competitor-score-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.concept-competitor-score-value {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.concept-competitor--active {
+  box-shadow:
+    0 0 0 1px rgba(63, 224, 255, 0.4),
+    0 0 24px rgba(63, 224, 255, 0.35),
+    inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+
+/* ------------------------------ Center ------------------------------ */
+
+.concept-center {
+  grid-area: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.concept-board {
+  padding: var(--space-3) var(--space-4);
+  min-height: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background-image:
+    radial-gradient(ellipse at top, rgba(63, 224, 255, 0.08), transparent 60%),
+    repeating-linear-gradient(
+      0deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 22px
+    );
+}
+
+.concept-board-title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.15em;
+  font-size: 0.95rem;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+}
+
+.concept-board-melds {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.concept-meld {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.concept-meld-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.concept-meld-tiles {
+  display: flex;
+  gap: 4px;
+}
+
+.concept-board-stats {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.concept-board-stats strong {
+  color: var(--neon-gold);
+}
+
+/* Integrated rack: negative top margin pulls it flush against the board
+   above, sharing a visual edge (same clip-path corner + border) rather
+   than reading as a separate panel underneath. */
+.concept-rack {
+  margin-top: calc(-1 * var(--space-2));
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.concept-rack-title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.15em;
+  font-size: 0.85rem;
+  color: var(--tile-ivory-edge);
+  text-transform: uppercase;
+}
+
+.concept-rack-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Larger, more dimensional tile than the live app's 44x56 .tile -- a
+   prototype-only visual treatment (allowed explicitly), never applied to
+   the real .tile class. */
+.concept-tile {
+  width: 3.6rem;
+  height: 4.6rem;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fffaf0 0%, var(--tile-ivory) 55%, #e8dcc0 100%);
+  border: 2px solid var(--tile-ivory-edge);
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.concept-tile--rack {
+  width: 3rem;
+  height: 3.9rem;
+}
+
+.concept-tile-value {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.concept-tile--rack .concept-tile-value {
+  font-size: 1.25rem;
+}
+
+.concept-tile-symbol {
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+.concept-tile--joker {
+  background: linear-gradient(180deg, #2a2036 0%, #1a1424 100%);
+  border-color: var(--neon-purple);
+  color: var(--neon-purple);
+}
+
+/* ------------------------------ Action bar ------------------------------ */
+
+.concept-actions {
+  padding: var(--space-2) var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.concept-action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-2) var(--space-1);
+  min-height: 3.8rem;
+  background: var(--bg-panel-raised);
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: default;
+  font-family: var(--font-sans);
+}
+
+.concept-action-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.concept-action-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+}
+
+.concept-action-sublabel {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.concept-action-button--cyan {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+.concept-action-button--purple {
+  border-color: var(--neon-purple);
+  color: var(--neon-purple);
+}
+
+.concept-action-button--gold {
+  border-color: var(--neon-gold);
+  background: linear-gradient(180deg, rgba(255, 201, 77, 0.22), rgba(255, 201, 77, 0.06));
+  color: var(--neon-gold);
+  box-shadow: 0 0 16px rgba(255, 201, 77, 0.3);
+}
+
+.concept-action-button--gold .concept-action-sublabel {
+  color: rgba(255, 201, 77, 0.7);
+}
+
+/* ------------------------------ Sidebar ------------------------------ */
+
+.concept-sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.concept-sidebar-panel {
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.concept-sidebar-title {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+}
+
+.concept-turn-countdown {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  letter-spacing: 0.05em;
+  color: var(--neon-gold);
+  line-height: 1;
+}
+
+.concept-turn-badge {
+  align-self: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+}
+
+.concept-movelog-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.78rem;
+}
+
+.concept-movelog-who {
+  font-family: var(--font-display);
+  color: var(--neon-purple);
+}
+
+.concept-movelog-what {
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.concept-howtoplay-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.concept-tip {
+  margin: var(--space-1) 0 0;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--neon-cyan);
+}
+
+/* ============================ Dev overlay ============================ */
+
+.concept-overlay-image {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: top center;
+  pointer-events: none;
+  z-index: 998;
+}
+
+.concept-overlay-panel {
+  position: fixed;
+  bottom: var(--space-3);
+  left: var(--space-3);
+  z-index: 999;
+  background: rgba(10, 14, 26, 0.92);
+  border: 1px solid var(--neon-cyan);
+  border-radius: 8px;
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  min-width: 220px;
+}
+
+.concept-overlay-panel label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.concept-overlay-panel input[type="range"] {
+  flex: 1;
+}
+
+/* =============================== Mobile ================================ */
+
+@media (max-width: 860px) {
+  .concept-masthead {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 4px;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .concept-masthead-plaque {
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 2px;
+  }
+
+  .concept-main {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+  }
+
+  .concept-rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .concept-competitor {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+
+  /* Concept-04's phone composition is explicit: exactly two prominent
+     player cards (self + the current opponent), not all four wrapped --
+     a deliberate mobile simplification from concept-01's four-competitor
+     desktop rail, not a bug. The 3rd/4th mock rivals stay in the DOM
+     (same mock data feeds both breakpoints, no duplicated component
+     tree) and are simply not displayed at this width. */
+  .concept-competitor:nth-child(n + 3) {
+    display: none;
+  }
+
+  .concept-competitor-portrait {
+    width: 64px;
+    height: 64px;
+  }
+
+  .concept-board {
+    min-height: 16rem;
+  }
+
+  .concept-board-melds {
+    grid-template-columns: 1fr;
+  }
+
+  .concept-tile {
+    width: 2.6rem;
+    height: 3.4rem;
+  }
+
+  .concept-tile-value {
+    font-size: 1.1rem;
+  }
+
+  .concept-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
