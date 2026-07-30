@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tile, type TileFace } from "./Tile.js";
 import { DropZone } from "./DropZone.js";
+import { ActionIcon } from "./ActionIcon.js";
 
 type RackProps = {
   readonly tileIds: readonly string[];
@@ -47,6 +48,7 @@ export function Rack({
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>Your rack ({tileIds.length})</h2>
         <div className="row" role="group" aria-label="Sort rack">
+          <ActionIcon icon="sort" className="tabletop-rack-sort-icon" />
           <button
             className="sort-button"
             aria-pressed={sortMode === "manual"}

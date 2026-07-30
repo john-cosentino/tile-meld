@@ -11,6 +11,10 @@ import { Table } from "../tabletop/Table.js";
 import { RematchPanel } from "../tabletop/RematchPanel.js";
 import { TabletopStatus } from "../tabletop/TabletopStatus.js";
 import { OpponentStrip } from "../tabletop/OpponentStrip.js";
+import { TabletopMasthead } from "../tabletop/TabletopMasthead.js";
+import { ActionIcon } from "../tabletop/ActionIcon.js";
+import { ChromeIcon } from "../tabletop/ChromeIcon.js";
+import mascotTipIconSrc from "../assets/tabletop-production/sidebar/mascot-tip-icon.png";
 import {
   hintForSet,
   runningInitialMeldTotal,
@@ -206,12 +210,7 @@ export function TabletopPage() {
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div className="tabletop-shell stack">
-        <TabletopStatus
-          view={view}
-          connectionState={game.connectionState}
-          isMyTurn={isMyTurn}
-          computerIsPlaying={computerIsPlaying}
-        />
+        <TabletopMasthead />
 
         {game.banner && (
           <div className="error-banner" role="alert">
@@ -234,12 +233,20 @@ export function TabletopPage() {
           </div>
         )}
 
-        <div className="tabletop-main">
-          <div className="tabletop-primary stack">
-            <OpponentStrip
-              opponents={view.opponents}
-              activeSeat={view.activeSeat}
-              gameStatus={view.status}
+        <div className="tabletop-arcade">
+          <OpponentStrip
+            self={view.self}
+            opponents={view.opponents}
+            activeSeat={view.activeSeat}
+            gameStatus={view.status}
+          />
+
+          <div className="tabletop-primary">
+            <TabletopStatus
+              view={view}
+              connectionState={game.connectionState}
+              isMyTurn={isMyTurn}
+              computerIsPlaying={computerIsPlaying}
             />
 
             {/* No separate aria-label here -- Table.tsx already renders its
@@ -275,7 +282,7 @@ export function TabletopPage() {
               />
             </div>
 
-            <div className="tabletop-feedback stack">
+            <div className="tabletop-feedback">
               {actionError && (
                 <div className="error-banner" role="alert">
                   {actionError}
@@ -293,11 +300,34 @@ export function TabletopPage() {
                 </p>
               )}
               {isMyTurn && (
-                <p className="muted">
-                  Committing an arrangement the server rejects costs a 3-tile penalty and ends your
-                  turn -- check the hints above before committing.
-                </p>
+                <div className="tabletop-tip">
+                  <img
+                    src={mascotTipIconSrc}
+                    alt=""
+                    aria-hidden="true"
+                    className="tabletop-mascot-icon"
+                  />
+                  <p className="muted">
+                    Committing an arrangement the server rejects costs a 3-tile penalty and ends
+                    your turn -- check the hints above before committing.
+                  </p>
+                </div>
               )}
+            </div>
+
+            <div className="tabletop-chat" data-testid="tabletop-chat">
+              <button
+                type="button"
+                className="tabletop-chat-toggle"
+                aria-expanded={chatOpen}
+                aria-controls="tabletop-chat-panel"
+                onClick={() => setChatOpen((v) => !v)}
+              >
+                {chatOpen ? "Hide chat" : "Show chat"}
+              </button>
+              <div id="tabletop-chat-panel" hidden={!chatOpen}>
+                <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
+              </div>
             </div>
 
             <div className="tabletop-actions" role="group" aria-label="Game actions">
@@ -309,24 +339,27 @@ export function TabletopPage() {
                   Reset turn
                 </button>
                 <button
-                  className="accent-cyan"
+                  className="plate-cyan"
                   disabled={!isMyTurn || view.poolCount === 0}
                   onClick={() => void handleDraw()}
                 >
+                  <ActionIcon icon="draw" />
                   Draw tile
                 </button>
                 <button
-                  className="accent-purple"
+                  className="plate-purple"
                   disabled={!isMyTurn || view.poolCount > 0}
                   onClick={() => void handlePass()}
                 >
+                  <ActionIcon icon="pass" />
                   Pass
                 </button>
                 <button
-                  className="accent-gold"
+                  className="plate-gold"
                   disabled={!isMyTurn || draft.sets.length === 0}
                   onClick={() => void handleCommit()}
                 >
+                  <ActionIcon icon="commit" />
                   Commit turn
                 </button>
               </div>
@@ -347,21 +380,12 @@ export function TabletopPage() {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="tabletop-chat" data-testid="tabletop-chat">
-            <button
-              type="button"
-              className="tabletop-chat-toggle"
-              aria-expanded={chatOpen}
-              aria-controls="tabletop-chat-panel"
-              onClick={() => setChatOpen((v) => !v)}
-            >
-              {chatOpen ? "Hide chat" : "Show chat"}
-            </button>
-            <div id="tabletop-chat-panel" hidden={!chatOpen}>
-              <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
-            </div>
-          </div>
+        <div className="tabletop-footer" aria-hidden="true">
+          <ChromeIcon icon="lightning" />
+          <span>{PRODUCT_NAME}</span>
+          <ChromeIcon icon="stats" />
         </div>
       </div>
     </DndContext>

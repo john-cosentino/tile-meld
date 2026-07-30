@@ -488,6 +488,15 @@ button.danger {
   padding: var(--space-6) var(--space-4);
 }
 
+/* Tabletop only (RootLayout.tsx) -- the arcade cabinet composition needs
+   the full viewport; .tabletop-shell below owns its own inset/max-width.
+   Every other route keeps the plain centered .page column above,
+   untouched. */
+.page--tabletop {
+  max-width: none;
+  padding: 0;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -746,49 +755,195 @@ a.dashboard-card:hover {
   color: var(--color-text-muted);
 }
 
-/* Tabletop information hierarchy (Phase 8: docs/tabletop-layout-contract.md).
-   Named regions only -- no artwork, no fixed pixel coordinates, no absolute
-   positioning of any interactive control. Every region here is a plain
-   Grid/Flexbox box using the existing design tokens; the layout contract
-   document describes where a future decorative asset could be layered
-   BEHIND each one without this CSS needing to change. */
+/* Tabletop arcade cabinet composition (docs/meld-masters-tabletop-art-
+   integration-contract.md; supersedes the Phase 8 "named regions only, no
+   artwork" contract in docs/tabletop-layout-contract.md now that approved
+   production art exists). Real, variable-length game content (opponent
+   count, meld count/size, chat messages) -- unlike the static concept
+   prototype this design was proven against, so board/rack use min-height
+   and background-image/border-image rather than a fixed-size canvas.
+   Interactive geometry (DropZone/TableSet/Tile, drag-and-drop, keyboard
+   selection) is completely unchanged below; every asset is a background
+   layer only. */
 
 .tabletop-shell {
-  /* Safe-area padding so a future sticky/edge-to-edge treatment (none
-     exists today -- see the layout contract's "no sticky action bar"
-     decision) would already respect notches/home-indicator insets on a
-     phone; harmless no-op on a device without them. */
-  padding-inline: env(safe-area-inset-left, 0) env(safe-area-inset-right, 0);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1800px;
+  margin-inline: auto;
+  /* Safe-area-aware inset padding, combined with normal spacing in one
+     shorthand (a `padding-inline` declared before a `padding` shorthand
+     would just get overwritten by it). */
+  padding: var(--space-4) max(var(--space-4), env(safe-area-inset-right)) var(--space-8)
+    max(var(--space-4), env(safe-area-inset-left));
+}
+
+/* -------------------- Masthead -------------------- */
+
+.tabletop-masthead {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.tabletop-masthead-wordmark {
+  width: min(100%, 640px);
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 860px) {
+  .tabletop-masthead-wordmark {
+    width: min(100%, 320px);
+  }
+}
+
+/* -------------------- Main grid -------------------- */
+
+/* Desktop: competitor rail / dominant center column (status, board, rack,
+   feedback, chat, actions) / nothing in a 3rd column -- unlike the static
+   prototype, the real page keeps status/feedback/chat inline in the
+   primary column (not a separate sidebar) so DOM order, mobile order, and
+   desktop reading order all stay identical -- no CSS reordering. */
+.tabletop-arcade {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.tabletop-primary {
+  min-width: 0; /* lets long table-set rows wrap/scroll instead of forcing the grid column wider */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* -------------------- Competitor rail -------------------- */
+
+.tabletop-competitors {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tabletop-opponents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Large competitor card -- the approved neutral frame illustration
+   (grayscale/cream line art) tinted per seat via a color-blend overlay
+   rather than baking 5 separately-colored frame files (docs/meld-masters-
+   chatgpt-art-production-handoff.md). Portrait/name/tile-count/status
+   text is always live DOM content layered above the artwork. */
+.competitor-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  text-align: center;
+  background-image: url("../assets/tabletop-production/competitors/competitor-card-frame.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.competitor-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("../assets/tabletop-production/competitors/competitor-card-frame.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-color: var(--seat-accent, var(--neon-cyan));
+  mix-blend-mode: color;
+  pointer-events: none;
+}
+
+.opponent-portrait {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  z-index: 1;
+}
+
+.competitor-card > span {
+  position: relative;
+  z-index: 1;
+}
+
+/* --seat-accent is set inline per card by OpponentStrip.tsx (deterministic
+   by seat index, covers both the self card and every opponent card
+   uniformly) rather than an nth-of-type CSS cycle -- reliable regardless
+   of DOM position or how many seats are actually present. */
+
+/* Active-seat marker: the existing hourglass text (⏳, already redundant
+   text, not color-only) plus the approved glow overlay so the active
+   competitor card is scannable at a glance without reading every card.
+   Layered after the accent-cycle rules above so it wins regardless of
+   seat position; shared by both the self card and opponent cards. */
+.opponent-row--active,
+.competitor-card--active {
+  position: relative;
+}
+
+.opponent-row--active::after,
+.competitor-card--active::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  background-image: url("../assets/tabletop-production/competitors/competitor-active-overlay.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* -------------------- Status / feedback / chat panels -------------------- */
+
+/* Shared "sidebar panel" treatment -- the approved reusable frame behind
+   the turn-status heading, the feedback/hint callout, and the chat
+   toggle, so all three read as the same arcade rail even though they sit
+   in the single primary column, not a separate sidebar (see the .tabletop-
+   arcade comment above). */
+.tabletop-status,
+.tabletop-feedback,
+.tabletop-chat-toggle {
+  background-image: url("../assets/tabletop-production/sidebar/sidebar-panel-frame.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: none;
+  padding: var(--space-3) var(--space-4);
 }
 
 .tabletop-status {
-  background: var(--bg-panel);
-  border: var(--frame-width) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glow-sm);
-  padding: var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  transition: border-color var(--duration-fast) var(--ease-arcade);
 }
 
-/* "Your turn" energy: a stronger cyan frame + glow while it's actually the
+/* "Your turn" energy: a stronger cyan glow while it's actually the
    player's own turn, so the status frame itself reinforces the H1 text
    rather than staying visually identical regardless of whose turn it is.
    Text ("Your turn" / "Waiting on seat N" / "Game over") remains the
    actual source of truth either way -- this is a redundant, not sole,
    signal (§10.3). */
 .tabletop-status--active-turn {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 14px var(--neon-cyan-dim);
+  filter: drop-shadow(0 0 10px var(--neon-cyan-dim));
 }
 
 /* The page's single H1 -- turn ownership, substantially more prominent
-   than the rest of the page (Phase 8's core requirement) without being as
-   large as the Home dashboard's page-title scale (.dashboard-title),
-   which is a different kind of heading (a static brand title, not a
-   dynamic, frequently-changing status). */
+   than the rest of the page. */
 .tabletop-turn {
   font-family: var(--font-display);
   letter-spacing: 0.02em;
@@ -796,108 +951,63 @@ a.dashboard-card:hover {
   margin: 0;
 }
 
-.tabletop-opponents {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* Compact competitor plaques -- a small bordered chip per opponent rather
-   than a bare text row, so the opponent strip reads as part of the same
-   arcade shell as every other panel. Per-seat accent border cycles through
-   the same four accents Phase 3's seat-panel rows already use (purely
-   decorative variety, never the only way to tell seats apart -- name text
-   is always present). The Phase 5 portrait (.opponent-portrait) sits
-   before the name/status text, same decorative-only treatment as the
-   waiting room's .seat-portrait above. */
-.opponent-row {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  background: var(--bg-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+/* The approved LCD-style bezel behind the live countdown digits only --
+   never bakes in the actual time value. */
+.tabletop-deadline {
+  display: inline-block;
+  background-image: url("../assets/tabletop-production/sidebar/countdown-screen-bezel.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
   padding: var(--space-1) var(--space-3);
-  font-size: 0.85rem;
-  list-style: none;
 }
 
-.opponent-row:nth-of-type(4n + 1) {
-  border-color: var(--neon-cyan);
-}
+/* -------------------- Board -------------------- */
 
-.opponent-row:nth-of-type(4n + 2) {
-  border-color: var(--neon-gold);
-}
-
-.opponent-row:nth-of-type(4n + 3) {
-  border-color: var(--neon-purple);
-}
-
-.opponent-row:nth-of-type(4n + 4) {
-  border-color: var(--neon-green);
-}
-
-/* Active-seat marker: the existing hourglass text (⏳, already redundant
-   text, not color-only) plus a stronger border so the active opponent
-   plaque is scannable at a glance without reading every row. Layered after
-   the accent-cycle rules above so it wins regardless of seat position. */
-.opponent-row--active {
-  border-color: var(--state-active);
-  box-shadow: 0 0 8px var(--neon-cyan-dim);
-}
-
-/* Two columns on desktop -- primary column (opponents/board/rack/actions)
-   dominant, chat a narrower secondary column -- collapsing to one column
-   before either would get too narrow to use. Same DOM order in both
-   cases; only the column count changes, so mobile naturally stacks in the
-   required 1 status -> 2 opponents -> 3 board -> 4 rack -> 5 actions -> 6
-   chat order without a second, duplicated tree. */
-.tabletop-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-  gap: var(--space-4);
-  align-items: start;
-}
-
-.tabletop-primary {
-  min-width: 0; /* lets long table-set rows wrap/scroll instead of forcing the grid column wider */
-}
-
-/* The visual center of the screen -- enough minimum height that it never
-   reads as a narrow band between unrelated content, even with zero sets
-   on the table yet. Deep-navy arcade playfield: a restrained static grid
-   (the same repeating-linear-gradient technique as the site-wide body
-   background, at a smaller scale so it reads as a distinct "table felt"
-   texture rather than a continuation of the page background) plus a
-   brighter neon frame than an ordinary panel. Purely decorative --
-   `background-image` is never interactive/pointer-capturing, and the
-   board's own droppable geometry (TableSet/DropZone) is untouched. */
+/* The dominant element of the screen -- the approved tapered cabinet
+   frame. The image's own alpha channel already only paints inside the
+   trapezoid silhouette (verified: fully transparent top corners, opaque
+   bottom corners), so no CSS clip-path is needed to shape it. Three
+   dedicated variants (desktop/phone-portrait/phone-landscape, selected by
+   width + orientation below) rather than one asset stretched across very
+   different aspect ratios -- see docs/meld-masters-chatgpt-art-production-
+   handoff.md's board section for why. background-size:100% 100% can
+   visibly elongate the taper on an unusually tall board (many stacked
+   sets) -- an accepted, documented trade-off for a background image
+   behind genuinely unbounded-height live content; the drop target
+   geometry itself is completely unaffected either way. */
 .tabletop-board {
-  background-color: var(--bg-inset);
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      var(--grid-line) 0,
-      var(--grid-line) 1px,
-      transparent 1px,
-      transparent 24px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      var(--grid-line) 0,
-      var(--grid-line) 1px,
-      transparent 1px,
-      transparent 24px
-    );
-  border: var(--frame-width) solid var(--neon-cyan);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glow-sm);
-  padding: var(--space-4);
-  min-height: 18rem;
+  background-image: url("../assets/tabletop-production/board/board-frame-desktop.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: none;
+  padding: var(--space-6) var(--space-8);
+  min-height: 26rem;
+}
+
+@media (max-width: 860px) {
+  .tabletop-board {
+    background-image: url("../assets/tabletop-production/board/board-frame-phone-portrait.png");
+    padding: var(--space-4) var(--space-6);
+    min-height: 20rem;
+  }
+}
+
+@media (max-width: 860px) and (orientation: landscape) {
+  .tabletop-board {
+    background-image: url("../assets/tabletop-production/board/board-frame-phone-landscape.png");
+    min-height: 14rem;
+  }
+}
+
+/* Wide arcade playfield: sets wrap into roughly 2 columns at typical board
+   widths instead of stacking one per row -- purely a presentational
+   container, TableSet/DropZone geometry and drag/keyboard behavior are
+   unchanged. */
+.table-sets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
 }
 
 /* Arcade plaque per table set -- a bordered inset panel around each
@@ -920,14 +1030,19 @@ a.dashboard-card:hover {
   font-size: 0.75rem;
 }
 
-/* Distinct arcade tray: a warm ivory-family accent (echoing the tile
-   bodies it holds) rather than the board's cool cyan frame, so rack and
-   board read as two different kinds of surface at a glance. */
+/* -------------------- Rack -------------------- */
+
+/* The approved rack-tray frame, nine-slice-safe via border-image (a plain
+   rectangle, unlike the board -- see the handoff doc's rack section).
+   Directly attached to the board above (negative margin, no gap) so the
+   two read as one welded cabinet unit rather than two separate panels. */
 .tabletop-rack {
-  background: var(--bg-panel);
-  border-top: 3px solid var(--tile-ivory-edge);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  padding: var(--space-3) var(--space-4);
+  margin-top: calc(-1 * var(--space-2));
+  border-style: solid;
+  border-width: 28px 24px 14px 24px;
+  border-image: url("../assets/tabletop-production/rack/rack-frame.png") 28 24 14 24 fill / 28px
+    24px 14px 24px;
+  padding: var(--space-2) var(--space-3);
 }
 
 /* Segmented arcade control for the rack's Manual/Sort by number/Sort by
@@ -939,6 +1054,15 @@ a.dashboard-card:hover {
   border-color: var(--neon-cyan);
   color: var(--text-on-accent);
 }
+
+.tabletop-rack-sort-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--neon-cyan);
+  flex-shrink: 0;
+}
+
+/* -------------------- Action bar (arcade cabinet controls) -------------------- */
 
 .tabletop-actions {
   display: flex;
@@ -960,12 +1084,73 @@ a.dashboard-card:hover {
   gap: var(--space-3);
 }
 
-/* Action-bar hierarchy (§ "Action bar"): Commit is the strongest emphasis
-   (reuses Phase 3's filled .accent-gold), Draw/Undo an outlined cyan,
-   Pass an outlined purple, Reset an outlined warning amber -- Resign/
-   Confirm resign keep the existing, unrelated .danger class untouched.
-   Every button keeps its exact existing text/disabled/onClick logic; only
-   className changed. */
+/* Large, deliberate cabinet-button shapes. Every button keeps its exact
+   existing text/disabled/onClick logic; only sizing/className changed. */
+.tabletop-actions button {
+  min-height: 3.25rem;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.action-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+}
+
+/* The three approved button plates, nine-slice via border-image -- Undo
+   and Reset Turn have no dedicated plate asset (only Draw/Pass/Sort/
+   Commit were in scope for illustrated art) and keep their existing flat
+   accent-cyan/accent-warn treatment below, just resized to match. Commit
+   (gold) is the strongest emphasis, matching the concept. */
+.plate-cyan,
+.plate-purple,
+.plate-gold {
+  border-style: solid;
+  border-width: 32px;
+  border-image-slice: 32 fill;
+  border-image-width: 32px;
+  color: var(--text-primary);
+}
+
+.plate-cyan {
+  border-image-source: url("../assets/tabletop-production/actions/action-plate-cyan.png");
+}
+
+.plate-purple {
+  border-image-source: url("../assets/tabletop-production/actions/action-plate-purple.png");
+}
+
+.plate-gold {
+  border-image-source: url("../assets/tabletop-production/actions/action-plate-gold.png");
+  color: var(--text-on-accent);
+  font-weight: 700;
+}
+
+/* Pressed-state overlay (the approved darkening wash), composited via a
+   pseudo-element rather than swapping the whole plate image. */
+.plate-cyan:active:not(:disabled),
+.plate-purple:active:not(:disabled),
+.plate-gold:active:not(:disabled) {
+  position: relative;
+}
+
+.plate-cyan:active:not(:disabled)::after,
+.plate-purple:active:not(:disabled)::after,
+.plate-gold:active:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("../assets/tabletop-production/actions/action-plate-states.png");
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
 button.accent-purple {
   border-color: var(--neon-purple);
   color: var(--neon-purple);
@@ -976,19 +1161,30 @@ button.accent-warn {
   color: var(--state-warning);
 }
 
-/* Arcade callout box for the feedback/hints stack (turn-cost notice,
-   initial-meld progress, hint text, and the existing .error-banner/
-   .warning-banner children, all unchanged) -- a left accent bar rather
-   than a full panel border keeps it from competing visually with the
-   board/rack panels above and below it. */
+/* -------------------- Feedback / mascot tip -------------------- */
+
 .tabletop-feedback {
-  border-left: 3px solid var(--color-border);
-  padding-left: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-/* No card chrome of its own -- ChatPanel already renders its own `.card`
-   internally, and stacking two nested card borders/backgrounds here would
-   just look like a card-in-a-card. This wrapper is layout only. */
+.tabletop-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Restrained -- a small corner accent, never large enough to dominate the
+   feedback callout it sits beside. */
+.tabletop-mascot-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+/* -------------------- Chat -------------------- */
+
 .tabletop-chat {
   display: flex;
   flex-direction: column;
@@ -998,11 +1194,45 @@ button.accent-warn {
 
 .tabletop-chat-toggle {
   width: 100%;
+  color: var(--text-primary);
+}
+
+/* -------------------- Footer chrome -------------------- */
+
+.tabletop-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  padding: var(--space-2) 0;
+}
+
+.tabletop-footer-icon {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 860px) {
-  .tabletop-main {
-    grid-template-columns: 1fr;
+  .tabletop-arcade {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .competitor-card {
+    padding: var(--space-2);
+  }
+
+  .tabletop-opponents,
+  .tabletop-competitors {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .opponent-portrait {
+    width: 56px;
+    height: 56px;
   }
 
   .tabletop-chat {

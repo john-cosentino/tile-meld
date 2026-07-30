@@ -68,7 +68,9 @@ export function TabletopStatus({
       </div>
       {view.status === "active" && (
         <div className="row" style={{ justifyContent: "flex-end" }}>
-          <DeadlineCountdown deadlineAt={view.deadlineAt} />
+          <span className="tabletop-deadline">
+            <DeadlineCountdown deadlineAt={view.deadlineAt} />
+          </span>
         </div>
       )}
     </div>
