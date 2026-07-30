@@ -182,7 +182,11 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
     );
     renderTabletop();
     const opponents = screen.getByRole("list", { name: "Opponents" });
-    expect(within(opponents).getByText(/Bob: 9 tiles/)).toBeInTheDocument();
+    // Name and tile count now live in sibling <span> elements inside the
+    // competitor card (docs/meld-masters-tabletop-fidelity-summary.md), so
+    // this is the same split-across-elements case textAcrossElements above
+    // already exists for.
+    expect(within(opponents).getByText(textAcrossElements(/Bob: 9 tiles/))).toBeInTheDocument();
     // Structurally there is no tile-content field on an opponent at all
     // (RedactedGameView["opponents"] has no `rack`) -- nothing to leak.
   });
@@ -199,7 +203,9 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
       }),
     );
     renderTabletop();
-    expect(screen.getByText(/Resigned Bob: \d+ tiles \(resigned\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(textAcrossElements(/Resigned Bob: \d+ tiles \(resigned\)/)),
+    ).toBeInTheDocument();
     expect(screen.getByText(textAcrossElements(/Computer 🤖: \d+ tiles/))).toBeInTheDocument();
   });
 
@@ -228,7 +234,7 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
       expect(img).toHaveAttribute("alt", "");
     }
     // Text identity/state is unchanged and still present alongside the portrait.
-    expect(within(opponents).getByText(/Bob: 9 tiles/)).toBeInTheDocument();
+    expect(within(opponents).getByText(textAcrossElements(/Bob: 9 tiles/))).toBeInTheDocument();
     expect(within(opponents).getByText(textAcrossElements(/Computer 🤖/))).toBeInTheDocument();
   });
 });

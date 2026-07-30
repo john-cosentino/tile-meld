@@ -488,6 +488,14 @@ button.danger {
   padding: var(--space-6) var(--space-4);
 }
 
+/* Tabletop only (RootLayout.tsx) -- the arcade cabinet composition needs the
+   full viewport; .tabletop-shell below owns its own inset/max-width. Every
+   other route keeps the plain centered .page column above, untouched. */
+.page--tabletop {
+  max-width: none;
+  padding: 0;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -746,22 +754,151 @@ a.dashboard-card:hover {
   color: var(--color-text-muted);
 }
 
-/* Tabletop information hierarchy (Phase 8: docs/tabletop-layout-contract.md).
-   Named regions only -- no artwork, no fixed pixel coordinates, no absolute
-   positioning of any interactive control. Every region here is a plain
-   Grid/Flexbox box using the existing design tokens; the layout contract
-   document describes where a future decorative asset could be layered
-   BEHIND each one without this CSS needing to change. */
+/* Tabletop arcade cabinet composition (docs/meld-masters-tabletop-fidelity-
+   summary.md, rebuilding the Phase 8 named-region contract in
+   docs/tabletop-layout-contract.md against the approved concept art under
+   docs/design-reference/meld-masters/). No new token set -- every rule below
+   reuses the existing --neon, --bg, --space, --frame-width, --radius, and
+   --glow custom properties the rest of the site already uses. */
 
 .tabletop-shell {
-  /* Safe-area padding so a future sticky/edge-to-edge treatment (none
-     exists today -- see the layout contract's "no sticky action bar"
-     decision) would already respect notches/home-indicator insets on a
-     phone; harmless no-op on a device without them. */
-  padding-inline: env(safe-area-inset-left, 0) env(safe-area-inset-right, 0);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* Full viewport width (the tabletop route lifts .page's max-width via
+     .page--tabletop), but capped well above any real desktop target so the
+     3-column composition doesn't stretch absurdly thin on an ultrawide
+     monitor -- still full-bleed under this cap. */
+  max-width: 1800px;
+  margin-inline: auto;
+  /* Safe-area-aware inset padding, combined with normal spacing in one
+     shorthand (a `padding-inline` declared before a `padding` shorthand
+     would just get overwritten by it). Deliberately tight vertically (not
+     --space-8) so the action bar stays above the fold at 1280x720 with
+     chat open by default. */
+  padding: var(--space-3) max(var(--space-4), env(safe-area-inset-right)) var(--space-6)
+    max(var(--space-4), env(safe-area-inset-left));
 }
 
+/* Desktop: 3-region grid -- competitor rail / dominant center column (board,
+   rack, actions) / status+feedback+chat sidebar, via named grid-area so DOM
+   order can stay the MOBILE order (see the media query below) without a
+   second, duplicated component tree. Mobile drops the grid entirely and lets
+   plain flow stack children in that DOM order -- so DOM order only has to
+   satisfy one real ordering constraint, the mobile one. */
+.tabletop-arcade {
+  display: grid;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-areas:
+    "rail board status"
+    "rail rack feedback"
+    "rail actions chat";
+  gap: var(--space-3) var(--space-4);
+  align-items: start;
+}
+
+/* -------------------- Competitor rail -------------------- */
+
+.tabletop-competitors {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tabletop-opponents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Large competitor plaque -- shared by the self card and every opponent
+   card, so "You" reads as part of the same roster the concept art shows
+   (concept-01's left rail), not a smaller, different-looking element.
+   Portrait is decorative only (empty alt on <img>, set by OpponentStrip.tsx)
+   -- name/tile-count/status text is always the real accessibility source. */
+.competitor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--bg-panel);
+  border: var(--frame-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  text-align: center;
+  box-shadow: var(--glow-sm);
+  /* A long display name (arbitrary user input, no max enforced at
+     display-name-claim time) is one unbreakable "word" with no natural
+     wrap point -- flex items default to a min-width floor of their
+     content's min-content size, which would otherwise force this card
+     wide enough to fit the whole name on one line, breaking both the
+     desktop rail's fixed column width and the mobile side-by-side layout
+     (the same class of bug Phase 7 fixed for the waiting-room username
+     overflow). min-width: 0 here plus overflow-wrap on .competitor-name
+     lets the name wrap instead. */
+  min-width: 0;
+}
+
+.competitor-card--self {
+  border-color: var(--neon-gold);
+  box-shadow: 0 0 14px rgba(255, 201, 77, 0.25);
+}
+
+.competitor-portrait {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+}
+
+.competitor-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+/* Per-seat accent border cycles through the same four accents Phase 3's
+   seat-panel rows already use (purely decorative variety, never the only
+   way to tell seats apart -- name text is always present). */
+.opponent-row:nth-of-type(4n + 1) {
+  border-color: var(--neon-cyan);
+}
+
+.opponent-row:nth-of-type(4n + 2) {
+  border-color: var(--neon-purple);
+}
+
+.opponent-row:nth-of-type(4n + 3) {
+  border-color: var(--neon-green);
+}
+
+.opponent-row:nth-of-type(4n + 4) {
+  border-color: var(--state-warning);
+}
+
+/* Active-seat marker: the existing hourglass text (⏳, already redundant
+   text, not color-only) plus a stronger border so the active competitor
+   card is scannable at a glance without reading every card. Layered after
+   the accent-cycle rules above so it wins regardless of seat position;
+   `.competitor-card--active` is the self card's equivalent, set directly by
+   OpponentStrip.tsx rather than an nth-of-type cycle (there's only one self
+   card). */
+.opponent-row--active,
+.competitor-card--active {
+  border-color: var(--state-active);
+  box-shadow: 0 0 8px var(--neon-cyan-dim);
+}
+
+/* -------------------- Status sidebar (top card) -------------------- */
+
 .tabletop-status {
+  grid-area: status;
   background: var(--bg-panel);
   border: var(--frame-width) solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -785,10 +922,10 @@ a.dashboard-card:hover {
 }
 
 /* The page's single H1 -- turn ownership, substantially more prominent
-   than the rest of the page (Phase 8's core requirement) without being as
-   large as the Home dashboard's page-title scale (.dashboard-title),
-   which is a different kind of heading (a static brand title, not a
-   dynamic, frequently-changing status). */
+   than the rest of the page without being as large as the Home dashboard's
+   page-title scale (.dashboard-title), which is a different kind of
+   heading (a static brand title, not a dynamic, frequently-changing
+   status). */
 .tabletop-turn {
   font-family: var(--font-display);
   letter-spacing: 0.02em;
@@ -796,87 +933,19 @@ a.dashboard-card:hover {
   margin: 0;
 }
 
-.tabletop-opponents {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
+/* -------------------- Center: board -------------------- */
 
-/* Compact competitor plaques -- a small bordered chip per opponent rather
-   than a bare text row, so the opponent strip reads as part of the same
-   arcade shell as every other panel. Per-seat accent border cycles through
-   the same four accents Phase 3's seat-panel rows already use (purely
-   decorative variety, never the only way to tell seats apart -- name text
-   is always present). The Phase 5 portrait (.opponent-portrait) sits
-   before the name/status text, same decorative-only treatment as the
-   waiting room's .seat-portrait above. */
-.opponent-row {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  background: var(--bg-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-1) var(--space-3);
-  font-size: 0.85rem;
-  list-style: none;
-}
-
-.opponent-row:nth-of-type(4n + 1) {
-  border-color: var(--neon-cyan);
-}
-
-.opponent-row:nth-of-type(4n + 2) {
-  border-color: var(--neon-gold);
-}
-
-.opponent-row:nth-of-type(4n + 3) {
-  border-color: var(--neon-purple);
-}
-
-.opponent-row:nth-of-type(4n + 4) {
-  border-color: var(--neon-green);
-}
-
-/* Active-seat marker: the existing hourglass text (⏳, already redundant
-   text, not color-only) plus a stronger border so the active opponent
-   plaque is scannable at a glance without reading every row. Layered after
-   the accent-cycle rules above so it wins regardless of seat position. */
-.opponent-row--active {
-  border-color: var(--state-active);
-  box-shadow: 0 0 8px var(--neon-cyan-dim);
-}
-
-/* Two columns on desktop -- primary column (opponents/board/rack/actions)
-   dominant, chat a narrower secondary column -- collapsing to one column
-   before either would get too narrow to use. Same DOM order in both
-   cases; only the column count changes, so mobile naturally stacks in the
-   required 1 status -> 2 opponents -> 3 board -> 4 rack -> 5 actions -> 6
-   chat order without a second, duplicated tree. */
-.tabletop-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-  gap: var(--space-4);
-  align-items: start;
-}
-
-.tabletop-primary {
-  min-width: 0; /* lets long table-set rows wrap/scroll instead of forcing the grid column wider */
-}
-
-/* The visual center of the screen -- enough minimum height that it never
-   reads as a narrow band between unrelated content, even with zero sets
-   on the table yet. Deep-navy arcade playfield: a restrained static grid
-   (the same repeating-linear-gradient technique as the site-wide body
-   background, at a smaller scale so it reads as a distinct "table felt"
-   texture rather than a continuation of the page background) plus a
-   brighter neon frame than an ordinary panel. Purely decorative --
+/* The dominant element of the whole screen (concept-01's "ON THE TABLE"
+   felt) -- a tall minimum height so it reads as the visual centerpiece even
+   with zero sets on the table yet. Deep-navy arcade playfield: a restrained
+   static grid (the same repeating-linear-gradient technique as the
+   site-wide body background, at a smaller scale so it reads as a distinct
+   "table felt" texture rather than a continuation of the page background)
+   plus a brighter neon frame than an ordinary panel. Purely decorative --
    `background-image` is never interactive/pointer-capturing, and the
    board's own droppable geometry (TableSet/DropZone) is untouched. */
 .tabletop-board {
+  grid-area: board;
   background-color: var(--bg-inset);
   background-image:
     repeating-linear-gradient(
@@ -897,7 +966,23 @@ a.dashboard-card:hover {
   border-radius: var(--radius-lg);
   box-shadow: var(--glow-sm);
   padding: var(--space-4);
-  min-height: 18rem;
+  /* A real increase over the pre-rebuild 18rem (dominant via width/framing,
+     not just an empty vertical void) -- deliberately not larger: the
+     sidebar's chat card (ChatPanel's own ~12rem message log plus header/
+     input) is the actual tallest element on the page once expanded, and
+     the action bar needs to stay above the fold at 1280x720 even with
+     chat open by default (docs/meld-masters-tabletop-fidelity-summary.md). */
+  min-height: 20rem;
+}
+
+/* Wide arcade playfield: sets wrap into roughly 2 columns at typical
+   center-column widths instead of stacking one per row (concept-01) --
+   `auto-fit`/`minmax` rather than a hardcoded 2-column track so it degrades
+   gracefully at any board width instead of assuming one. */
+.table-sets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
 }
 
 /* Arcade plaque per table set -- a bordered inset panel around each
@@ -920,13 +1005,19 @@ a.dashboard-card:hover {
   font-size: 0.75rem;
 }
 
-/* Distinct arcade tray: a warm ivory-family accent (echoing the tile
-   bodies it holds) rather than the board's cool cyan frame, so rack and
-   board read as two different kinds of surface at a glance. */
+/* -------------------- Center: rack tray -------------------- */
+
+/* Distinct arcade tray, visually attached directly beneath the board (same
+   horizontal extent, matching border-radius) -- a warm ivory-family accent
+   (echoing the tile bodies it holds) rather than the board's cool cyan
+   frame, so rack and board read as two different kinds of surface at a
+   glance while still reading as one attached unit. */
 .tabletop-rack {
+  grid-area: rack;
   background: var(--bg-panel);
-  border-top: 3px solid var(--tile-ivory-edge);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--tile-ivory-edge);
+  border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-4);
 }
 
@@ -940,17 +1031,18 @@ a.dashboard-card:hover {
   color: var(--text-on-accent);
 }
 
+/* -------------------- Center: action bar (arcade cabinet controls) -------------------- */
+
 .tabletop-actions {
+  grid-area: actions;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-3);
 }
 
 .tabletop-actions-primary {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--space-3);
 }
 
@@ -958,14 +1050,32 @@ a.dashboard-card:hover {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+/* Large, deliberate cabinet-button shapes (not a normal website button row)
+   -- bigger padding/min-height and the display font, same color hierarchy
+   as before (Commit strongest via the existing filled .accent-gold). Every
+   button keeps its exact existing text/disabled/onClick logic; only sizing/
+   className changed. */
+.tabletop-actions button {
+  min-height: 3.25rem;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
+}
+
+.tabletop-actions .accent-gold {
+  font-size: 1.05rem;
+  box-shadow: 0 0 16px rgba(255, 201, 77, 0.3);
 }
 
 /* Action-bar hierarchy (§ "Action bar"): Commit is the strongest emphasis
    (reuses Phase 3's filled .accent-gold), Draw/Undo an outlined cyan,
    Pass an outlined purple, Reset an outlined warning amber -- Resign/
-   Confirm resign keep the existing, unrelated .danger class untouched.
-   Every button keeps its exact existing text/disabled/onClick logic; only
-   className changed. */
+   Confirm resign keep the existing, unrelated .danger class untouched. */
 button.accent-purple {
   border-color: var(--neon-purple);
   color: var(--neon-purple);
@@ -976,33 +1086,97 @@ button.accent-warn {
   color: var(--state-warning);
 }
 
-/* Arcade callout box for the feedback/hints stack (turn-cost notice,
+/* -------------------- Sidebar: feedback + chat -------------------- */
+
+/* Arcade callout card for the feedback/hints stack (turn-cost notice,
    initial-meld progress, hint text, and the existing .error-banner/
-   .warning-banner children, all unchanged) -- a left accent bar rather
-   than a full panel border keeps it from competing visually with the
-   board/rack panels above and below it. */
+   .warning-banner children, all unchanged) -- full card chrome now that
+   it's a standalone sidebar region rather than a left-accent strip inside
+   a single primary column. */
 .tabletop-feedback {
-  border-left: 3px solid var(--color-border);
-  padding-left: var(--space-3);
+  grid-area: feedback;
+  background: var(--bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
 }
 
-/* No card chrome of its own -- ChatPanel already renders its own `.card`
-   internally, and stacking two nested card borders/backgrounds here would
-   just look like a card-in-a-card. This wrapper is layout only. */
 .tabletop-chat {
+  grid-area: chat;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   align-self: start;
 }
 
+/* ChatPanel already renders its own `.card` internally when expanded; the
+   toggle button gets matching panel chrome so the collapsed state still
+   reads as part of the same sidebar card group, not a bare link. */
 .tabletop-chat-toggle {
   width: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
 }
 
+/* -------------------- Mobile: single-column stack -------------------- */
+
+/* Mirrors concept-03/04's stacked composition. The grid is dropped entirely
+   (rather than collapsed to a 1-column grid) so DOM order drives visual
+   order directly here -- no CSS reordering to keep in sync with the
+   required mobile order (competitors -> status -> board -> rack -> rack ->
+   feedback -> chat -> actions, i.e. exactly this DOM's order). */
 @media (max-width: 860px) {
-  .tabletop-main {
-    grid-template-columns: 1fr;
+  .tabletop-arcade {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  /* Self + opponent cards side by side (concept-04), wrapping to further
+     rows for 3-4 player games rather than the desktop's tall single
+     column. .tabletop-opponents (the <ul>) is flattened with
+     display:contents so its <li> cards become direct flex items alongside
+     the self card -- otherwise the <ul> is itself one flex item sized by
+     its own content, and the self/opponent cards end up on separate rows
+     instead of sharing one. The <ul>'s own box is what's removed, not its
+     children's list-item semantics -- role="list"/"listitem" stays on the
+     children (verified via the existing chromium/mobile-chrome axe scan,
+     tabletopMobile.spec.ts, and getByRole("list", ...) queries, all still
+     passing). */
+  .tabletop-competitors {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tabletop-opponents {
+    display: contents;
+  }
+
+  .competitor-card {
+    flex: 1 1 132px;
+  }
+
+  .competitor-portrait {
+    width: 64px;
+    height: 64px;
+  }
+
+  .tabletop-board {
+    min-height: 20rem;
+  }
+
+  /* Compact 2-column grid (brief's mobile action-bar requirement); Commit
+     spans both columns so it stays the visually strongest, full-width
+     action even in the smaller grid. */
+  .tabletop-actions-primary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tabletop-actions-primary .accent-gold {
+    grid-column: 1 / -1;
   }
 
   .tabletop-chat {

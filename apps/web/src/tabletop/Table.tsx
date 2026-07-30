@@ -31,24 +31,31 @@ export function Table({
     <div className="stack">
       <h2 style={{ margin: 0 }}>Table</h2>
       {sets.length === 0 && <p className="muted">No sets on the table yet.</p>}
-      {sets.map((set, index) => {
-        const { validity, label } = setValidity(set.id);
-        return (
-          <TableSet
-            key={set.id}
-            setId={set.id}
-            index={index}
-            tileIds={set.tileIds}
-            resolve={resolve}
-            selectedTileId={selectedTileId}
-            onSelectTile={onSelectTile}
-            onActivateZone={() => onActivateZone({ zone: "set", setId: set.id })}
-            onReorder={(tileId, direction) => onReorder(set.id, tileId, direction)}
-            validity={validity}
-            validityLabel={label}
-          />
-        );
-      })}
+      {/* Wide arcade playfield: sets wrap into a 2-column grid on desktop
+          (docs/design-reference/meld-masters/meld-masters-concept-01.png)
+          instead of stacking one per row -- purely a presentational
+          container, TableSet/DropZone geometry and drag/keyboard behavior
+          are unchanged. */}
+      <div className="table-sets-grid">
+        {sets.map((set, index) => {
+          const { validity, label } = setValidity(set.id);
+          return (
+            <TableSet
+              key={set.id}
+              setId={set.id}
+              index={index}
+              tileIds={set.tileIds}
+              resolve={resolve}
+              selectedTileId={selectedTileId}
+              onSelectTile={onSelectTile}
+              onActivateZone={() => onActivateZone({ zone: "set", setId: set.id })}
+              onReorder={(tileId, direction) => onReorder(set.id, tileId, direction)}
+              validity={validity}
+              validityLabel={label}
+            />
+          );
+        })}
+      </div>
       <DropZone
         id="new-set"
         label="Start a new set"

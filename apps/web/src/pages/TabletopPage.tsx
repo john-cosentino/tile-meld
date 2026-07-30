@@ -205,14 +205,7 @@ export function TabletopPage() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="tabletop-shell stack">
-        <TabletopStatus
-          view={view}
-          connectionState={game.connectionState}
-          isMyTurn={isMyTurn}
-          computerIsPlaying={computerIsPlaying}
-        />
-
+      <div className="tabletop-shell">
         {game.banner && (
           <div className="error-banner" role="alert">
             {game.banner} <button onClick={game.dismissBanner}>Dismiss</button>
@@ -234,118 +227,83 @@ export function TabletopPage() {
           </div>
         )}
 
-        <div className="tabletop-main">
-          <div className="tabletop-primary stack">
-            <OpponentStrip
-              opponents={view.opponents}
-              activeSeat={view.activeSeat}
-              gameStatus={view.status}
+        {/* Arcade cabinet composition (docs/meld-masters-tabletop-fidelity-
+            summary.md): desktop lays these out as competitor rail / dominant
+            center board+rack+actions / status+feedback+chat sidebar via CSS
+            grid-area on .tabletop-arcade; mobile drops the grid and lets
+            plain document flow stack them in this exact DOM order, so DOM
+            order IS mobile visual order (no duplicated component tree). */}
+        <div className="tabletop-arcade">
+          <OpponentStrip
+            self={view.self}
+            opponents={view.opponents}
+            activeSeat={view.activeSeat}
+            gameStatus={view.status}
+          />
+
+          <TabletopStatus
+            view={view}
+            connectionState={game.connectionState}
+            isMyTurn={isMyTurn}
+            computerIsPlaying={computerIsPlaying}
+          />
+
+          {/* No separate aria-label here -- Table.tsx already renders its
+              own "Table" <h2>, and duplicating that name on this wrapper
+              would just create two identically-named landmarks nested
+              inside each other. data-testid is a stable, a11y-tree-inert
+              hook for tests that need to scope queries to "inside the
+              board" specifically (Phase 8: docs/tabletop-layout-contract.md). */}
+          <div className="tabletop-board stack" data-testid="tabletop-board">
+            <span className="muted">Pool: {view.poolCount} tiles</span>
+            <Table
+              sets={draft.sets}
+              resolve={resolve}
+              selectedTileId={selectedTileId}
+              onSelectTile={onSelectTile}
+              onActivateZone={onActivateZone}
+              onReorder={(setId, tileId, direction) => reorderInSet(setId, tileId, direction)}
+              setValidity={setValidity}
             />
+          </div>
 
-            {/* No separate aria-label here -- Table.tsx already renders its
-                own "Table" <h2>, and duplicating that name on this wrapper
-                would just create two identically-named landmarks nested
-                inside each other. data-testid is a stable, a11y-tree-inert
-                hook for tests that need to scope queries to "inside the
-                board" specifically (Phase 8: docs/tabletop-layout-contract.md). */}
-            <div className="tabletop-board stack" data-testid="tabletop-board">
-              <span className="muted">Pool: {view.poolCount} tiles</span>
-              <Table
-                sets={draft.sets}
-                resolve={resolve}
-                selectedTileId={selectedTileId}
-                onSelectTile={onSelectTile}
-                onActivateZone={onActivateZone}
-                onReorder={(setId, tileId, direction) => reorderInSet(setId, tileId, direction)}
-                setValidity={setValidity}
-              />
-            </div>
+          {/* Same reasoning as tabletop-board -- Rack.tsx's own heading
+              and its DropZone's aria-label="Your rack" are already the
+              stable accessible names here; data-testid is test-only. */}
+          <div className="tabletop-rack" data-testid="tabletop-rack">
+            <Rack
+              tileIds={draft.rack}
+              resolve={resolve}
+              selectedTileId={selectedTileId}
+              onSelectTile={onSelectTile}
+              onActivateZone={() => onActivateZone({ zone: "rack" })}
+              onReorder={reorderRack}
+            />
+          </div>
 
-            {/* Same reasoning as tabletop-board -- Rack.tsx's own heading
-                and its DropZone's aria-label="Your rack" are already the
-                stable accessible names here; data-testid is test-only. */}
-            <div className="tabletop-rack" data-testid="tabletop-rack">
-              <Rack
-                tileIds={draft.rack}
-                resolve={resolve}
-                selectedTileId={selectedTileId}
-                onSelectTile={onSelectTile}
-                onActivateZone={() => onActivateZone({ zone: "rack" })}
-                onReorder={reorderRack}
-              />
-            </div>
-
-            <div className="tabletop-feedback stack">
-              {actionError && (
-                <div className="error-banner" role="alert">
-                  {actionError}
-                </div>
-              )}
-              {!view.self.hasInitialMeld && view.status === "active" && (
-                <p className="muted">
-                  Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
-                </p>
-              )}
-              {turnValidation && !turnValidation.valid && draftChanged && (
-                <p className="muted" role="status">
-                  Hint: this arrangement wouldn't be accepted yet (
-                  {turnValidation.reason.replaceAll("_", " ")}).
-                </p>
-              )}
-              {isMyTurn && (
-                <p className="muted">
-                  Committing an arrangement the server rejects costs a 3-tile penalty and ends your
-                  turn -- check the hints above before committing.
-                </p>
-              )}
-            </div>
-
-            <div className="tabletop-actions" role="group" aria-label="Game actions">
-              <div className="tabletop-actions-primary">
-                <button className="accent-cyan" disabled={!canUndo} onClick={undo}>
-                  Undo
-                </button>
-                <button className="accent-warn" disabled={!draftChanged} onClick={reset}>
-                  Reset turn
-                </button>
-                <button
-                  className="accent-cyan"
-                  disabled={!isMyTurn || view.poolCount === 0}
-                  onClick={() => void handleDraw()}
-                >
-                  Draw tile
-                </button>
-                <button
-                  className="accent-purple"
-                  disabled={!isMyTurn || view.poolCount > 0}
-                  onClick={() => void handlePass()}
-                >
-                  Pass
-                </button>
-                <button
-                  className="accent-gold"
-                  disabled={!isMyTurn || draft.sets.length === 0}
-                  onClick={() => void handleCommit()}
-                >
-                  Commit turn
-                </button>
+          <div className="tabletop-feedback stack">
+            {actionError && (
+              <div className="error-banner" role="alert">
+                {actionError}
               </div>
-              <div className="tabletop-actions-danger">
-                {!confirmingResign ? (
-                  <button className="danger" onClick={() => setConfirmingResign(true)}>
-                    Resign
-                  </button>
-                ) : (
-                  <span className="row">
-                    <span>Resign for good?</span>
-                    <button className="danger" onClick={() => void handleResign()}>
-                      Confirm resign
-                    </button>
-                    <button onClick={() => setConfirmingResign(false)}>Cancel</button>
-                  </span>
-                )}
-              </div>
-            </div>
+            )}
+            {!view.self.hasInitialMeld && view.status === "active" && (
+              <p className="muted">
+                Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
+              </p>
+            )}
+            {turnValidation && !turnValidation.valid && draftChanged && (
+              <p className="muted" role="status">
+                Hint: this arrangement wouldn't be accepted yet (
+                {turnValidation.reason.replaceAll("_", " ")}).
+              </p>
+            )}
+            {isMyTurn && (
+              <p className="muted">
+                Committing an arrangement the server rejects costs a 3-tile penalty and ends your
+                turn -- check the hints above before committing.
+              </p>
+            )}
           </div>
 
           <div className="tabletop-chat" data-testid="tabletop-chat">
@@ -360,6 +318,53 @@ export function TabletopPage() {
             </button>
             <div id="tabletop-chat-panel" hidden={!chatOpen}>
               <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
+            </div>
+          </div>
+
+          <div className="tabletop-actions" role="group" aria-label="Game actions">
+            <div className="tabletop-actions-primary">
+              <button className="accent-cyan" disabled={!canUndo} onClick={undo}>
+                Undo
+              </button>
+              <button className="accent-warn" disabled={!draftChanged} onClick={reset}>
+                Reset turn
+              </button>
+              <button
+                className="accent-cyan"
+                disabled={!isMyTurn || view.poolCount === 0}
+                onClick={() => void handleDraw()}
+              >
+                Draw tile
+              </button>
+              <button
+                className="accent-purple"
+                disabled={!isMyTurn || view.poolCount > 0}
+                onClick={() => void handlePass()}
+              >
+                Pass
+              </button>
+              <button
+                className="accent-gold"
+                disabled={!isMyTurn || draft.sets.length === 0}
+                onClick={() => void handleCommit()}
+              >
+                Commit turn
+              </button>
+            </div>
+            <div className="tabletop-actions-danger">
+              {!confirmingResign ? (
+                <button className="danger" onClick={() => setConfirmingResign(true)}>
+                  Resign
+                </button>
+              ) : (
+                <span className="row">
+                  <span>Resign for good?</span>
+                  <button className="danger" onClick={() => void handleResign()}>
+                    Confirm resign
+                  </button>
+                  <button onClick={() => setConfirmingResign(false)}>Cancel</button>
+                </span>
+              )}
             </div>
           </div>
         </div>
