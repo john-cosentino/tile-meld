@@ -1,11 +1,11 @@
-// Builds side-by-side and blurred-silhouette comparison sheets for the
-// static tabletop concept prototype checkpoint. Same technique as
-// build-tabletop-comparisons.ts (data-URI images composited into an HTML
-// page, screenshotted by Playwright) plus a second, blurred/desaturated
-// variant per the brief's "blur and silhouette test" requirement.
+// Builds side-by-side and blurred-silhouette comparison sheets for the v2
+// static tabletop concept prototype refinement pass. Same technique as
+// build-tabletop-prototype-comparisons.ts, writing into the NEW review-v2
+// directory and adding a third silhouette pair for phone landscape (the
+// v1 pass only checked desktop + phone portrait).
 //
-// Usage: pnpm exec tsx e2e/scripts/build-tabletop-prototype-comparisons.ts
-// Run capture-tabletop-static-prototype.ts first.
+// Usage: pnpm exec tsx e2e/scripts/build-tabletop-prototype-comparisons-v2.ts
+// Run capture-tabletop-static-prototype-v2.ts first.
 
 import { chromium } from "@playwright/test";
 import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REVIEW_DIR = path.resolve(
   HERE,
-  "../../docs/design-reference/tabletop-static-prototype-review",
+  "../../docs/design-reference/tabletop-static-prototype-review-v2",
 );
 const CONCEPT_DIR = path.resolve(HERE, "../../docs/design-reference/meld-masters");
 
@@ -59,8 +59,10 @@ const PAIRS: Pair[] = [
   },
 ];
 
-// Only the two viewports the brief explicitly asks a silhouette test for.
-const SILHOUETTE_PAIRS: Pair[] = [PAIRS[0]!, PAIRS[2]!];
+// v2: all three named targets get a silhouette check (v1 only did desktop
+// + phone portrait) -- the phone-landscape layout is new in v2 and is
+// exactly where a silhouette regression would be easiest to miss.
+const SILHOUETTE_PAIRS: Pair[] = [PAIRS[0]!, PAIRS[2]!, PAIRS[3]!];
 
 function toDataUri(buf: Buffer): string {
   return `data:image/png;base64,${buf.toString("base64")}`;
@@ -79,7 +81,7 @@ function comparisonHtml(pair: Pair, conceptUri: string, screenshotUri: string): 
   img { width: 100%; height: auto; max-height: 1400px; object-fit: contain; border: 1px solid #2a3550; background: #05070c; }
 </style></head>
 <body>
-  <h1>Static tabletop concept prototype -- ${pair.label}</h1>
+  <h1>Static tabletop concept prototype v2 -- ${pair.label}</h1>
   <div class="row">
     <figure><img src="${conceptUri}" alt=""><figcaption>${pair.conceptLabel}</figcaption></figure>
     <figure><img src="${screenshotUri}" alt=""><figcaption>Prototype -- ${pair.screenshotFile}</figcaption></figure>
@@ -140,7 +142,7 @@ async function run(): Promise<void> {
         html,
         pair.viewportWidth,
         path.join(REVIEW_DIR, `comparison--${pair.label}.png`),
-        `prototype-comparison-${pair.label}.html`,
+        `prototype-comparison-v2-${pair.label}.html`,
       );
     }
 
@@ -153,7 +155,7 @@ async function run(): Promise<void> {
         html,
         pair.viewportWidth,
         path.join(REVIEW_DIR, `silhouette--${pair.label}.png`),
-        `prototype-silhouette-${pair.label}.html`,
+        `prototype-silhouette-v2-${pair.label}.html`,
       );
     }
 

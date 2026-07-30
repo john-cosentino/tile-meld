@@ -2,12 +2,12 @@ import { tileColor, type MockTile } from "./mockData.js";
 
 export function ConceptTile({
   tile,
-  compact = false,
+  variant,
 }: {
   readonly tile: MockTile;
-  readonly compact?: boolean;
+  readonly variant: "board" | "rack";
 }) {
-  const className = `concept-tile${compact ? " concept-tile--rack" : ""}${
+  const className = `concept-tile concept-tile--${variant}${
     tile.kind === "joker" ? " concept-tile--joker" : ""
   }`;
   if (tile.kind === "joker") {

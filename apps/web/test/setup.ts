@@ -8,3 +8,15 @@ import { cleanup } from "@testing-library/react";
 afterEach(() => {
   cleanup();
 });
+
+// jsdom doesn't implement ResizeObserver (a real browser API the static
+// tabletop concept prototype's ScaledArtboard.tsx uses to fit its fixed-
+// size canvas to the viewport) -- a no-op stub is the standard fix for
+// jsdom-based suites; nothing under test asserts on resize behavior
+// itself, only that components mount without throwing.
+class ResizeObserverStub {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;

@@ -11,7 +11,7 @@ export function ConceptBoard() {
             <span className="concept-meld-label">{meld.label}</span>
             <div className="concept-meld-tiles">
               {meld.tiles.map((tile, j) => (
-                <ConceptTile tile={tile} key={j} />
+                <ConceptTile tile={tile} variant="board" key={j} />
               ))}
             </div>
           </div>
