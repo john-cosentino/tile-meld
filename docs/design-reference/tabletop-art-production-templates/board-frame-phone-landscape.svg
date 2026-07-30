@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1068" height="546" viewBox="0 0 1068 546">
+  <defs>
+    <pattern id="hatch" width="20" height="20" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="20" stroke="#3fe0ff" stroke-width="2" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="1068" height="546" fill="#0a0e1a"/>
+  <rect x="0" y="0" width="1068" height="546" fill="url(#hatch)"/>
+
+  <!-- Taper silhouette guide -- polygon(6% 0, 94% 0, 100% 100%, 0% 100%) -->
+  <polygon points="64.08,0 1003.92,0 1068,546 0,546" fill="none" stroke="#ff5fa8" stroke-width="4" stroke-dasharray="12,7"/>
+  <text x="534" y="26" text-anchor="middle" font-family="monospace" font-size="20" fill="#ff5fa8">TAPER GUIDE -- match exactly (6% / 94% top inset)</text>
+
+  <rect x="70" y="50" width="928" height="446" fill="none" stroke="#3fe0ff" stroke-width="4" stroke-dasharray="10,10"/>
+  <text x="534" y="275" text-anchor="middle" font-family="monospace" font-size="26" fill="#3fe0ff">LIVE CONTENT -- DO NOT PLACE DECORATION HERE</text>
+
+  <text x="534" y="530" text-anchor="middle" font-family="monospace" font-size="20" fill="#ffc94d" font-weight="bold">board-frame-phone-landscape.png -- 1068x546 -- TRANSPARENT outside silhouette -- rendered at 534x273</text>
+  <text x="14" y="24" font-family="monospace" font-size="17" fill="#58e08a">DEDICATED variant -- short/wide aspect (1.96:1); do not reuse the portrait or desktop asset</text>
+</svg>

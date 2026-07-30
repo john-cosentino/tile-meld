@@ -1,0 +1,322 @@
+/* Dev-only asset preview lab (docs/meld-masters-tabletop-art-integration-
+   contract.md). Entirely separate from tabletop-concept.css -- a normal
+   scrolling developer tool page, not a fixed-canvas composition being
+   fidelity-tested, so it deliberately does NOT use ScaledArtboard. Reuses
+   the same :root design tokens global.css already defines. */
+
+.asset-lab {
+  min-height: 100vh;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  padding: var(--space-4);
+}
+
+.asset-lab * {
+  box-sizing: border-box;
+}
+
+.asset-lab-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.asset-lab-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+
+.asset-lab-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.asset-lab-stats {
+  display: flex;
+  gap: var(--space-3);
+  font-size: 0.8rem;
+}
+
+.asset-lab-stat {
+  background: var(--bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: var(--space-1) var(--space-3);
+}
+
+.asset-lab-stat strong {
+  color: var(--neon-gold);
+}
+
+.asset-lab-bg-switcher {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.asset-lab-bg-switcher button {
+  font-size: 0.75rem;
+  padding: var(--space-1) var(--space-2);
+}
+
+.asset-lab-bg-switcher button[aria-pressed="true"] {
+  background: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+  color: var(--text-on-accent);
+}
+
+.asset-lab-group {
+  margin-bottom: var(--space-6);
+}
+
+.asset-lab-group-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 4px;
+  margin: 0 0 var(--space-3);
+}
+
+.asset-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-3);
+}
+
+.asset-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.asset-card--required {
+  border-color: var(--neon-gold);
+}
+
+.asset-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.asset-card-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.asset-card-badge {
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  flex-shrink: 0;
+}
+
+.asset-card-badge--required {
+  color: var(--neon-gold);
+}
+
+.asset-card-badge--optional {
+  color: var(--text-muted);
+}
+
+.asset-card-badge--exists {
+  color: var(--state-success);
+}
+
+.asset-card-badge--missing {
+  color: var(--state-error);
+}
+
+.asset-card-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  margin: 0;
+}
+
+.asset-card-meta dt {
+  color: var(--text-primary);
+}
+
+.asset-card-meta dd {
+  margin: 0;
+}
+
+/* Preview stage -- background is switched globally via a class on
+   .asset-lab, read by every preview box at once. */
+.asset-preview {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+}
+
+.asset-lab--bg-navy .asset-preview {
+  background: #0a0e1a;
+}
+
+.asset-lab--bg-light .asset-preview {
+  background: #e8ecf4;
+}
+
+.asset-lab--bg-grid .asset-preview {
+  background-color: #0a0e1a;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 16px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 16px
+    );
+}
+
+.asset-preview-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asset-preview-slot img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.asset-preview-slot-label {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* NOT SUPPLIED technical-guide placeholder -- a dashed hatch box, never
+   fabricated finished art. */
+.asset-missing-box {
+  border: 2px dashed var(--neon-pink);
+  border-radius: 4px;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 95, 168, 0.08) 0,
+    rgba(255, 95, 168, 0.08) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-2);
+  color: var(--neon-pink);
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+.asset-missing-box strong {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+/* Contextual preview helpers -- competitor card / board+rack / sidebar /
+   button composites, layered over a supplied frame image. */
+.preview-composite {
+  position: relative;
+  display: inline-flex;
+}
+
+.preview-composite img.frame-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 0;
+}
+
+.preview-composite-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--space-2);
+}
+
+.preview-portrait {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.preview-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 34px;
+  background: var(--tile-ivory);
+  border: 1px solid var(--tile-ivory-edge);
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  margin: 0 2px;
+}
+
+.preview-button {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: default;
+}
+
+.preview-focus-hint {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}

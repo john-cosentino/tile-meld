@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="96" viewBox="0 0 480 96">
+  <defs>
+    <pattern id="hatch" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="10" stroke="#3fe0ff" stroke-width="1" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="480" height="96" fill="#0a0e1a"/>
+  <rect x="0" y="0" width="480" height="96" fill="url(#hatch)"/>
+
+  <!-- Nine-slice guide lines: top 28, right 24, bottom 14, left 24 -->
+  <line x1="0" y1="28" x2="480" y2="28" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="0" y1="82" x2="480" y2="82" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="24" y1="0" x2="24" y2="96" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="456" y1="0" x2="456" y2="96" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- Corner fixed zones -->
+  <rect x="0" y="0" width="24" height="28" fill="#ffc94d" opacity="0.18"/>
+  <rect x="456" y="0" width="24" height="28" fill="#ffc94d" opacity="0.18"/>
+  <rect x="0" y="82" width="24" height="14" fill="#ffc94d" opacity="0.18"/>
+  <rect x="456" y="82" width="24" height="14" fill="#ffc94d" opacity="0.18"/>
+
+  <text x="240" y="14" text-anchor="middle" font-family="monospace" font-size="9" fill="#ffc94d" font-weight="bold">TOP 28px -- FIXED -- thick beveled divider bar (welds to board above)</text>
+  <text x="12" y="55" text-anchor="middle" font-family="monospace" font-size="8" fill="#ffc94d" transform="rotate(-90 12 55)">LEFT 24 FIXED</text>
+  <text x="468" y="55" text-anchor="middle" font-family="monospace" font-size="8" fill="#ffc94d" transform="rotate(90 468 55)">RIGHT 24 FIXED</text>
+  <text x="240" y="91" text-anchor="middle" font-family="monospace" font-size="8" fill="#ffc94d">BOTTOM 14px FIXED -- bevel edge</text>
+
+  <rect x="40" y="30" width="400" height="50" fill="none" stroke="#3fe0ff" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="240" y="58" text-anchor="middle" font-family="monospace" font-size="11" fill="#3fe0ff">LIVE CONTENT (title + tiles) / STRETCH CENTER -- smooth fill only</text>
+
+  <text x="240" y="12" text-anchor="middle" font-family="monospace" font-size="10" fill="#ffffff" opacity="0"> </text>
+  <text x="4" y="94" font-family="monospace" font-size="8" fill="#58e08a">rack-frame.png -- 480x96 -- nine-slice: 28/24/14/24 -- rendered 864x140 (desktop) / 374x84 (portrait) / 534x56 (landscape)</text>
+</svg>

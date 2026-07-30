@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="748" height="560" viewBox="0 0 748 560">
+  <defs>
+    <pattern id="hatch" width="20" height="20" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="20" stroke="#3fe0ff" stroke-width="2" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="748" height="560" fill="#0a0e1a"/>
+  <rect x="0" y="0" width="748" height="560" fill="url(#hatch)"/>
+
+  <!-- Taper silhouette guide -- polygon(6% 0, 94% 0, 100% 100%, 0% 100%) -->
+  <polygon points="44.88,0 703.12,0 748,560 0,560" fill="none" stroke="#ff5fa8" stroke-width="4" stroke-dasharray="12,7"/>
+  <text x="374" y="26" text-anchor="middle" font-family="monospace" font-size="18" fill="#ff5fa8">TAPER GUIDE -- match exactly (6% / 94% top inset)</text>
+
+  <rect x="50" y="50" width="648" height="460" fill="none" stroke="#3fe0ff" stroke-width="4" stroke-dasharray="9,9"/>
+  <text x="374" y="285" text-anchor="middle" font-family="monospace" font-size="24" fill="#3fe0ff">LIVE CONTENT -- DO NOT PLACE</text>
+  <text x="374" y="315" text-anchor="middle" font-family="monospace" font-size="24" fill="#3fe0ff">DECORATION HERE</text>
+
+  <text x="374" y="545" text-anchor="middle" font-family="monospace" font-size="18" fill="#ffc94d" font-weight="bold">board-frame-phone-portrait.png -- 748x560 -- TRANSPARENT outside silhouette -- rendered at 374x280</text>
+  <text x="14" y="24" font-family="monospace" font-size="16" fill="#58e08a">DEDICATED variant -- do not scale the desktop asset down (aspect ratio 1.34:1 vs desktop's 1.84:1)</text>
+</svg>

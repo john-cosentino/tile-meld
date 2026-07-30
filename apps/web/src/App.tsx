@@ -48,6 +48,21 @@ const TabletopConceptPrototype = import.meta.env.DEV
     )
   : null;
 
+// Same proven pattern as TabletopConceptPrototype above -- the literal
+// import.meta.env.DEV ternary at this exact call site, not read indirectly
+// through PROTOTYPE_ROUTE_ENABLED, is what lets Vite's dead-code
+// elimination strip this dynamic import() (and the asset lab's entire
+// chunk) out of `vite build`'s output. Reuses the SAME
+// PROTOTYPE_ROUTE_ENABLED flag as the route guard below -- one dev-only
+// concept, two routes.
+const ConceptAssetLab = import.meta.env.DEV
+  ? lazy(() =>
+      import("./prototypes/tabletop-assets/ConceptAssetLab.js").then((m) => ({
+        default: m.ConceptAssetLab,
+      })),
+    )
+  : null;
+
 export function App() {
   return (
     <BrowserRouter>
@@ -58,6 +73,16 @@ export function App() {
             element={
               <Suspense fallback={null}>
                 <TabletopConceptPrototype />
+              </Suspense>
+            }
+          />
+        )}
+        {PROTOTYPE_ROUTE_ENABLED && ConceptAssetLab && (
+          <Route
+            path="/prototype/tabletop-assets"
+            element={
+              <Suspense fallback={null}>
+                <ConceptAssetLab />
               </Suspense>
             }
           />

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="220" viewBox="0 0 480 220">
+  <defs>
+    <pattern id="hatch" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#3fe0ff" stroke-width="1.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="480" height="220" fill="#0a0e1a"/>
+  <rect x="0" y="0" width="480" height="220" fill="url(#hatch)"/>
+
+  <line x1="0" y1="32" x2="480" y2="32" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="0" y1="188" x2="480" y2="188" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="32" y1="0" x2="32" y2="220" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="448" y1="0" x2="448" y2="220" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <rect x="0" y="0" width="32" height="32" fill="#ffc94d" opacity="0.18"/>
+  <rect x="448" y="0" width="32" height="32" fill="#ffc94d" opacity="0.18"/>
+  <rect x="0" y="188" width="32" height="32" fill="#ffc94d" opacity="0.18"/>
+  <rect x="448" y="188" width="32" height="32" fill="#ffc94d" opacity="0.18"/>
+  <text x="240" y="18" text-anchor="middle" font-family="monospace" font-size="13" fill="#ffc94d" font-weight="bold">TEMPLATE for action-plate-{cyan,purple,gold}.png -- top-highlight / bottom-shadow bevel</text>
+
+  <rect x="60" y="40" width="360" height="140" fill="none" stroke="#3fe0ff" stroke-width="2" stroke-dasharray="7,7"/>
+  <text x="240" y="105" text-anchor="middle" font-family="monospace" font-size="18" fill="#3fe0ff">LIVE CONTENT -- DO NOT PLACE ICON/LABEL HERE</text>
+  <text x="240" y="132" text-anchor="middle" font-family="monospace" font-size="13" fill="#3fe0ff">icon + label + sublabel render on top; center must stretch smoothly</text>
+
+  <text x="6" y="212" font-family="monospace" font-size="10" fill="#58e08a">action-plate-*.png -- 480x220 -- nine-slice: 32/32/32/32 -- rendered 206x85 (desktop) / 175x55 (portrait) / 78x44 (landscape)</text>
+</svg>

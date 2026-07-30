@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="350" viewBox="0 0 500 350">
+  <defs>
+    <pattern id="hatch" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#3fe0ff" stroke-width="1.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="500" height="350" fill="#0a0e1a"/>
+  <rect x="0" y="0" width="500" height="350" fill="url(#hatch)"/>
+
+  <!-- Nine-slice guide lines: 30px all sides -->
+  <line x1="0" y1="30" x2="500" y2="30" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="0" y1="320" x2="500" y2="320" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="30" y1="0" x2="30" y2="350" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="470" y1="0" x2="470" y2="350" stroke="#ff5fa8" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <rect x="0" y="0" width="30" height="30" fill="#ffc94d" opacity="0.18"/>
+  <rect x="470" y="0" width="30" height="30" fill="#ffc94d" opacity="0.18"/>
+  <rect x="0" y="320" width="30" height="30" fill="#ffc94d" opacity="0.18"/>
+  <rect x="470" y="320" width="30" height="30" fill="#ffc94d" opacity="0.18"/>
+  <text x="250" y="20" text-anchor="middle" font-family="monospace" font-size="11" fill="#ffc94d" font-weight="bold">NEUTRAL FRAME -- notched corner, subtle bevel border -- NO baked-in accent color</text>
+
+  <rect x="60" y="40" width="380" height="270" fill="none" stroke="#3fe0ff" stroke-width="2" stroke-dasharray="6,6"/>
+  <text x="250" y="150" text-anchor="middle" font-family="monospace" font-size="15" fill="#3fe0ff">LIVE CONTENT</text>
+  <text x="250" y="175" text-anchor="middle" font-family="monospace" font-size="12" fill="#3fe0ff">portrait + name + score render here</text>
+  <text x="250" y="200" text-anchor="middle" font-family="monospace" font-size="12" fill="#3fe0ff">(color applied via CSS on top, not baked in)</text>
+
+  <text x="6" y="344" font-family="monospace" font-size="9" fill="#58e08a">competitor-card-frame.png -- 500x350 -- nine-slice: 30/30/30/30 -- rendered 250x175 (desktop) / 127x132 (portrait) / 79x118 (landscape)</text>
+</svg>

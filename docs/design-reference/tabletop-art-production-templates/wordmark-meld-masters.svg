@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="900" viewBox="0 0 2400 900">
+  <defs>
+    <pattern id="hatch" width="20" height="20" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="20" stroke="#3fe0ff" stroke-width="2" opacity="0.35"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="2400" height="900" fill="#0a0e1a"/>
+  <rect x="0" y="0" width="2400" height="900" fill="url(#hatch)"/>
+  <rect x="4" y="4" width="2392" height="892" fill="none" stroke="#ff5fa8" stroke-width="6"/>
+  <text x="1200" y="80" text-anchor="middle" font-family="monospace" font-size="34" fill="#ffc94d" font-weight="bold">wordmark-meld-masters.png -- 2400 x 900 -- TRANSPARENT canvas</text>
+  <text x="1200" y="450" text-anchor="middle" font-family="monospace" font-size="46" fill="#3fe0ff">FULL CANVAS IS THE ILLUSTRATION</text>
+  <text x="1200" y="510" text-anchor="middle" font-family="monospace" font-size="30" fill="#9fb0c9">Fixed-size asset -- no nine-slice, no live-content safe zone.</text>
+  <text x="1200" y="550" text-anchor="middle" font-family="monospace" font-size="30" fill="#9fb0c9">Center "MELD MASTERS" lockup with margin on all sides;</text>
+  <text x="1200" y="590" text-anchor="middle" font-family="monospace" font-size="30" fill="#9fb0c9">do not crop bevel/shadow at the canvas edge.</text>
+  <text x="1200" y="850" text-anchor="middle" font-family="monospace" font-size="26" fill="#58e08a">Rendered via CSS object-fit:contain at 980x118 (desktop) / 300x70 (phone portrait) / 260x46 (phone landscape)</text>
+</svg>

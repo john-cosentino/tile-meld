@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1728" height="940" viewBox="0 0 1728 940">
+  <defs>
+    <pattern id="hatch" width="20" height="20" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="20" stroke="#3fe0ff" stroke-width="2" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="1728" height="940" fill="#0a0e1a"/>
+  <rect x="0" y="0" width="1728" height="940" fill="url(#hatch)"/>
+
+  <!-- Taper silhouette guide -- MUST match the live CSS clip-path exactly: polygon(6% 0, 94% 0, 100% 100%, 0% 100%) -->
+  <polygon points="103.68,0 1624.32,0 1728,940 0,940" fill="none" stroke="#ff5fa8" stroke-width="5" stroke-dasharray="14,8"/>
+  <text x="864" y="30" text-anchor="middle" font-family="monospace" font-size="24" fill="#ff5fa8">TAPER GUIDE -- match this angle exactly (CSS clip-path: 6% / 94% top inset)</text>
+
+  <!-- Live content safe zone -->
+  <rect x="130" y="90" width="1468" height="780" fill="none" stroke="#3fe0ff" stroke-width="5" stroke-dasharray="10,10"/>
+  <text x="864" y="470" text-anchor="middle" font-family="monospace" font-size="34" fill="#3fe0ff">LIVE CONTENT -- DO NOT PLACE DECORATION HERE</text>
+  <text x="864" y="510" text-anchor="middle" font-family="monospace" font-size="24" fill="#3fe0ff">(real meld tiles + "ON THE TABLE" title render here, on top)</text>
+
+  <text x="864" y="920" text-anchor="middle" font-family="monospace" font-size="26" fill="#ffc94d" font-weight="bold">board-frame-desktop.png -- 1728x940 -- TRANSPARENT outside silhouette -- rendered at 864x470 (desktop only)</text>
+  <text x="20" y="30" font-family="monospace" font-size="22" fill="#58e08a">Strategy: layered flexible PNG, background-size:100% 100% on a fixed 864x470 box</text>
+</svg>
