@@ -30,6 +30,18 @@ RUN pnpm install --frozen-lockfile
 # and CI) just for this one Docker step's benefit -- not worth it for a
 # single deploy target.
 FROM deps AS build
+# Render's Docker builds pass this automatically -- the exact commit SHA
+# being built -- but Docker still requires the matching ARG declared here
+# before a RUN step can see it. .dockerignore excludes .git from the build
+# context entirely, so this build ARG (not `git rev-parse`) is the only
+# way apps/web/scripts/generate-build-info.mjs can know which commit it's
+# building, which is the whole point of build-info.json: proving which
+# commit a deployment (and, transitively, an installed PWA) is actually
+# running. Defaults to "unknown" for any build path that doesn't set it
+# (e.g. `docker build` run locally without --build-arg) rather than
+# failing the build.
+ARG RENDER_GIT_COMMIT=unknown
+ENV RENDER_GIT_COMMIT=$RENDER_GIT_COMMIT
 COPY . .
 RUN pnpm --filter @tile-meld/web run build
 RUN pnpm --filter @tile-meld/server run build

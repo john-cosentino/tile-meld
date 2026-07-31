@@ -122,7 +122,21 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
   // still works when apps/web hasn't been built.
   const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
   if (existsSync(webDistDir)) {
-    await app.register(fastifyStatic, { root: webDistDir });
+    await app.register(fastifyStatic, {
+      root: webDistDir,
+      // Everything else here keeps @fastify/static's own default headers
+      // (already `Cache-Control: public, max-age=0`, i.e. always
+      // revalidated -- verified live, not assumed). build-info.json is the
+      // one file whose entire purpose is proving freshness after a
+      // deployment, so its own "never permanently cached" guarantee is
+      // explicit in code here rather than only incidentally inherited from
+      // that shared plugin default.
+      setHeaders: (res, pathname) => {
+        if (path.basename(pathname) === "build-info.json") {
+          res.header("Cache-Control", "no-store");
+        }
+      },
+    });
     app.setNotFoundHandler((request, reply) => {
       if (request.method !== "GET" || request.url.startsWith("/api/")) {
         reply.code(404).send({ error: "not_found", message: "no such route" });
