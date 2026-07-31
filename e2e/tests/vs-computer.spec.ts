@@ -50,7 +50,7 @@ test("play vs computer: create, start, the bot acts, and the turn returns to the
 
   // The opponent is the computer, shown as a rack COUNT only -- never its
   // tiles (redaction). The 🤖 marker disambiguates this from the pool count.
-  await expect(page.getByText(/🤖:\s*\d+\s*tiles/)).toBeVisible();
+  await expect(page.getByText(/🤖\s*\d+\s*tiles/)).toBeVisible();
 
   // The bot may hold the opening seat; wait until it is the human's turn
   // (the bot will have already played and handed off if so).
@@ -70,7 +70,7 @@ test("play vs computer: create, start, the bot acts, and the turn returns to the
   await expect(page.getByRole("heading", { name: /Your rack \(15\)/ })).toBeVisible();
 
   // The bot's rack was never disclosed anywhere on the page.
-  await expect(page.getByText(/🤖:\s*\d+\s*tiles/)).toBeVisible();
+  await expect(page.getByText(/🤖\s*\d+\s*tiles/)).toBeVisible();
 });
 
 test("waiting room fits a narrow phone viewport even with a max-length username", async ({

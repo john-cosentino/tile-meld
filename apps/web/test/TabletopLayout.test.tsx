@@ -182,7 +182,12 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
     );
     renderTabletop();
     const opponents = screen.getByRole("list", { name: "Opponents" });
-    expect(within(opponents).getByText(/Bob: 9 tiles/)).toBeInTheDocument();
+    // Name and meta are two separate lines now (name-truncation hierarchy
+    // pass, so a long generated username can never push the tile count
+    // out of the frame) -- asserted independently rather than as one
+    // combined string.
+    expect(within(opponents).getByText("Bob")).toBeInTheDocument();
+    expect(within(opponents).getByText(/9 tiles/)).toBeInTheDocument();
     // Structurally there is no tile-content field on an opponent at all
     // (RedactedGameView["opponents"] has no `rack`) -- nothing to leak.
   });
@@ -199,8 +204,10 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
       }),
     );
     renderTabletop();
-    expect(screen.getByText(/Resigned Bob: \d+ tiles \(resigned\)/)).toBeInTheDocument();
-    expect(screen.getByText(textAcrossElements(/Computer 🤖: \d+ tiles/))).toBeInTheDocument();
+    expect(screen.getByText("Resigned Bob")).toBeInTheDocument();
+    expect(screen.getByText(/\d+ tiles \(resigned\)/)).toBeInTheDocument();
+    expect(screen.getByText("Computer")).toBeInTheDocument();
+    expect(screen.getByText(textAcrossElements(/🤖\s*\d+ tiles/))).toBeInTheDocument();
   });
 
   it("gives each opponent a decorative portrait without breaking list semantics or the name/status text (Phase 5)", () => {
@@ -228,8 +235,12 @@ describe("TabletopPage layout -- opponents (Phase 8)", () => {
       expect(img).toHaveAttribute("alt", "");
     }
     // Text identity/state is unchanged and still present alongside the portrait.
-    expect(within(opponents).getByText(/Bob: 9 tiles/)).toBeInTheDocument();
-    expect(within(opponents).getByText(textAcrossElements(/Computer 🤖/))).toBeInTheDocument();
+    // Both fixtures default to rackCount 9, so "9 tiles" legitimately
+    // appears twice here -- assert presence, not uniqueness.
+    expect(within(opponents).getByText("Bob")).toBeInTheDocument();
+    expect(within(opponents).getAllByText(/9 tiles/).length).toBeGreaterThan(0);
+    expect(within(opponents).getByText("Computer")).toBeInTheDocument();
+    expect(within(opponents).getByText(textAcrossElements(/🤖/))).toBeInTheDocument();
   });
 });
 
@@ -310,16 +321,20 @@ describe("TabletopPage layout -- chat disclosure (Phase 8)", () => {
     useGameMock.mockReturnValue(gameHook());
     renderTabletop();
 
+    // Collapsed by default (visual-composition pass: chat must not
+    // compete with the game for attention -- see .tabletop-info-rail in
+    // global.css) -- still fully expandable via this same toggle, and the
+    // panel is hidden, not unmounted, so no chat state is ever lost.
     const toggle = screen.getByRole("button", { name: /chat/i });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-
-    await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "Show chat" })).toBeInTheDocument();
 
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("button", { name: "Hide chat" })).toBeInTheDocument();
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Show chat" })).toBeInTheDocument();
   });
 
   it("chat state survives collapse/expand -- the panel is hidden, not unmounted", async () => {

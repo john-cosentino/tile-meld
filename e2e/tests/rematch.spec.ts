@@ -101,5 +101,5 @@ test("play vs computer: one-click rematch from Game Over reseats the human and t
   });
   // The bot seat is present again, immediately, without the human marking
   // ready or waiting on anyone.
-  await expect(page.getByText(/🤖:\s*\d+\s*tiles/)).toBeVisible();
+  await expect(page.getByText(/🤖\s*\d+\s*tiles/)).toBeVisible();
 });

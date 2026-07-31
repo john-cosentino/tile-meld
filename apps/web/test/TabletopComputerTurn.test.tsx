@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import type { RedactedGameView } from "@tile-meld/shared";
 
@@ -96,8 +96,15 @@ describe("TabletopPage -- computer opponent turn state", () => {
     useGameMock.mockReturnValue(gameHook(1));
     renderTabletop();
     expect(screen.getByText(/Computer is playing/i)).toBeInTheDocument();
-    // The opponent row also identifies the bot.
-    expect(screen.getByText(textAcrossElements(/Computer 🤖/))).toBeInTheDocument();
+    // The opponent row also identifies the bot -- name and the 🤖 marker
+    // are on separate lines (name-truncation hierarchy pass), so asserted
+    // independently rather than as one combined string. Scoped to the
+    // Opponents list specifically: the status H1 above ALSO shows a 🤖
+    // marker while the computer is playing, so an unscoped query would
+    // ambiguously match both.
+    const opponents = screen.getByRole("list", { name: "Opponents" });
+    expect(within(opponents).getByText("Computer")).toBeInTheDocument();
+    expect(within(opponents).getByText(textAcrossElements(/🤖/))).toBeInTheDocument();
   });
 
   it("shows 'Your turn' when it is the human's turn, not the computer message", () => {

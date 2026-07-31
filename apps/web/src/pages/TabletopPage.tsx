@@ -36,13 +36,12 @@ export function TabletopPage() {
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [confirmingResign, setConfirmingResign] = useState(false);
   const [actionError, setActionError] = useState<string | undefined>(undefined);
-  // Open by default on every viewport -- both an always-visible desktop
-  // side column and a mobile disclosure the user can collapse are
-  // acceptable per the layout contract; defaulting open avoids guessing a
-  // viewport breakpoint in JS while still giving mobile users a one-tap
-  // way to reclaim the screen. `hidden` (not conditional rendering) below
-  // keeps ChatPanel mounted so collapsing never loses chat state.
-  const [chatOpen, setChatOpen] = useState(true);
+  // Collapsed by default on every viewport (visual-composition pass: chat
+  // must not compete with the game for attention -- it now lives in the
+  // compact info rail, not the primary column) -- a one-tap toggle still
+  // fully expands it. `hidden` (not conditional rendering) below keeps
+  // ChatPanel mounted so collapsing never loses chat state.
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Without an activation distance, dnd-kit's default PointerSensor treats
   // *any* pointerdown+pointerup -- even a plain click with zero movement --
@@ -281,7 +280,78 @@ export function TabletopPage() {
                 onReorder={reorderRack}
               />
             </div>
+          </div>
 
+          {/* One deliberate arcade control bar spanning the full width below
+              both rails (matches the approved desktop concept's bottom bar).
+              Two visually distinct clusters, not a flat row of equally-weighted
+              buttons: a muted utility cluster (Undo/Reset/Resign -- grouped so
+              Resign never reads as stranded) and the dominant primary cluster
+              (Draw/Pass/Commit, Commit substantially larger and brighter -- see
+              .plate-gold--commit in global.css). */}
+          <div className="tabletop-actions" role="group" aria-label="Game actions">
+            <div className="tabletop-actions-secondary" role="group" aria-label="Turn utilities">
+              <button className="action-utility" disabled={!canUndo} onClick={undo}>
+                Undo
+              </button>
+              <button className="action-utility" disabled={!draftChanged} onClick={reset}>
+                Reset turn
+              </button>
+              {!confirmingResign ? (
+                <button
+                  className="action-utility action-utility--danger"
+                  onClick={() => setConfirmingResign(true)}
+                >
+                  Resign
+                </button>
+              ) : (
+                <span className="row">
+                  <span>Resign for good?</span>
+                  <button
+                    className="action-utility action-utility--danger"
+                    onClick={() => void handleResign()}
+                  >
+                    Confirm resign
+                  </button>
+                  <button className="action-utility" onClick={() => setConfirmingResign(false)}>
+                    Cancel
+                  </button>
+                </span>
+              )}
+            </div>
+            <div className="tabletop-actions-primary">
+              <button
+                className="plate-cyan"
+                disabled={!isMyTurn || view.poolCount === 0}
+                onClick={() => void handleDraw()}
+              >
+                <ActionIcon icon="draw" />
+                Draw tile
+              </button>
+              <button
+                className="plate-purple"
+                disabled={!isMyTurn || view.poolCount > 0}
+                onClick={() => void handlePass()}
+              >
+                <ActionIcon icon="pass" />
+                Pass
+              </button>
+              <button
+                className="plate-gold plate-gold--commit"
+                disabled={!isMyTurn || draft.sets.length === 0}
+                onClick={() => void handleCommit()}
+              >
+                <ActionIcon icon="commit" className="action-icon action-icon--commit" />
+                Commit turn
+              </button>
+            </div>
+          </div>
+
+          {/* Compact secondary rail (right on desktop, folded into the
+              single mobile column between actions and the footer) -- meld
+              progress/hints/mascot tip plus chat, deliberately never wider
+              or louder than the primary gameplay column it sits beside. */}
+          <div className="tabletop-info-rail">
             <div className="tabletop-feedback">
               {actionError && (
                 <div className="error-banner" role="alert">
@@ -327,56 +397,6 @@ export function TabletopPage() {
               </button>
               <div id="tabletop-chat-panel" hidden={!chatOpen}>
                 <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
-              </div>
-            </div>
-
-            <div className="tabletop-actions" role="group" aria-label="Game actions">
-              <div className="tabletop-actions-primary">
-                <button className="accent-cyan" disabled={!canUndo} onClick={undo}>
-                  Undo
-                </button>
-                <button className="accent-warn" disabled={!draftChanged} onClick={reset}>
-                  Reset turn
-                </button>
-                <button
-                  className="plate-cyan"
-                  disabled={!isMyTurn || view.poolCount === 0}
-                  onClick={() => void handleDraw()}
-                >
-                  <ActionIcon icon="draw" />
-                  Draw tile
-                </button>
-                <button
-                  className="plate-purple"
-                  disabled={!isMyTurn || view.poolCount > 0}
-                  onClick={() => void handlePass()}
-                >
-                  <ActionIcon icon="pass" />
-                  Pass
-                </button>
-                <button
-                  className="plate-gold"
-                  disabled={!isMyTurn || draft.sets.length === 0}
-                  onClick={() => void handleCommit()}
-                >
-                  <ActionIcon icon="commit" />
-                  Commit turn
-                </button>
-              </div>
-              <div className="tabletop-actions-danger">
-                {!confirmingResign ? (
-                  <button className="danger" onClick={() => setConfirmingResign(true)}>
-                    Resign
-                  </button>
-                ) : (
-                  <span className="row">
-                    <span>Resign for good?</span>
-                    <button className="danger" onClick={() => void handleResign()}>
-                      Confirm resign
-                    </button>
-                    <button onClick={() => setConfirmingResign(false)}>Cancel</button>
-                  </span>
-                )}
               </div>
             </div>
           </div>

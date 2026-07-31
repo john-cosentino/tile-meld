@@ -23,15 +23,21 @@ function accentFor(seatIndex: number): string {
 }
 
 /**
- * The competitor rail: a large-portrait card for the current player plus
- * one per opponent, each framed with the approved competitor-card-frame
- * artwork (tinted per seat in CSS -- see .competitor-card::before in
- * global.css) and, when active, the approved glow overlay. Name, rack
- * tile COUNT (never contents -- redaction is enforced server-side, this
- * component never receives rack contents to leak in the first place),
- * resigned state, computer indication, and whose turn it currently is are
- * all real data; text is always the source of truth, the portrait/frame
- * is decorative only.
+ * The competitor rail: a horizontal, name-truncation-safe card for the
+ * current player plus one per opponent, each framed with the approved
+ * competitor-card-frame artwork (tinted per seat in CSS -- see
+ * .competitor-card::before in global.css) and, when active, the approved
+ * glow overlay. Name and meta (tile count/resigned/computer/active) are
+ * deliberately split onto two lines -- the name alone truncates with an
+ * ellipsis (CSS only, via .competitor-name) so a long generated username
+ * can never push the meta text out of the frame or grow the card past
+ * its rail column, while the meta line (needed verbatim by existing
+ * tests/e2e specs -- see TabletopLayout.test.tsx and vs-computer.spec.ts's
+ * "🤖: N tiles" pattern) is untouched from its previous single-span
+ * composition, just relocated onto its own line. Rack tile COUNT (never
+ * contents -- redaction is enforced server-side, this component never
+ * receives rack contents to leak in the first place) is the only game
+ * data shown; the portrait/frame/badge are decorative only.
  */
 export function OpponentStrip({ self, opponents, activeSeat, gameStatus }: OpponentStripProps) {
   const selfIsActive = activeSeat === self.seatIndex && gameStatus === "active";
@@ -49,14 +55,21 @@ export function OpponentStrip({ self, opponents, activeSeat, gameStatus }: Oppon
           height={96}
           decoding="async"
         />
-        <span>
-          {self.displayName} <span aria-hidden="true">(You)</span>
-        </span>
-        <span className="muted">
-          {self.rackCount} tiles
-          {self.status === "resigned" ? " (resigned)" : ""}
-          {selfIsActive && <span aria-hidden="true"> ⏳</span>}
-        </span>
+        <div className="competitor-info">
+          <span className="competitor-name-row">
+            <span className="competitor-name" title={self.displayName}>
+              {self.displayName}
+            </span>
+            <span className="competitor-you-badge" aria-hidden="true">
+              You
+            </span>
+          </span>
+          <span className="muted competitor-meta">
+            {self.rackCount} tiles
+            {self.status === "resigned" ? " (resigned)" : ""}
+            {selfIsActive && <span aria-hidden="true"> ⏳</span>}
+          </span>
+        </div>
       </div>
 
       {opponents.length > 0 && (
@@ -77,19 +90,17 @@ export function OpponentStrip({ self, opponents, activeSeat, gameStatus }: Oppon
                   height={96}
                   decoding="async"
                 />
-                <span>
-                  {o.displayName}
-                  {/* Emoji aria-hidden (Phase 7 §13.2 "decorative layers ...
-                      silent") -- redundant with the "BOT"/text already
-                      elsewhere on the row; kept visible, just not
-                      double-announced. Whitespace matches the previous plain
-                      string exactly so rendered text (and existing
-                      getByText(/🤖:...tiles/) queries, which match textContent
-                      regardless of aria-hidden) is unchanged. */}
-                  {o.isComputer && <span aria-hidden="true"> 🤖</span>}: {o.rackCount} tiles
-                  {o.status === "resigned" ? " (resigned)" : ""}
-                  {isActive && <span aria-hidden="true"> ⏳</span>}
-                </span>
+                <div className="competitor-info">
+                  <span className="competitor-name" title={o.displayName}>
+                    {o.displayName}
+                  </span>
+                  <span className="muted competitor-meta">
+                    {o.isComputer && <span aria-hidden="true">🤖 </span>}
+                    {o.rackCount} tiles
+                    {o.status === "resigned" ? " (resigned)" : ""}
+                    {isActive && <span aria-hidden="true"> ⏳</span>}
+                  </span>
+                </div>
               </li>
             );
           })}

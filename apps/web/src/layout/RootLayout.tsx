@@ -9,8 +9,11 @@ export function RootLayout() {
   // The tabletop's arcade-cabinet composition needs the full viewport width
   // -- every other screen keeps the shared centered .page column untouched.
   // TabletopPage owns its own max-width/padding/grid once .page's own
-  // constraint is lifted here; the global header/nav above stays exactly
-  // as-is for every route, including this one.
+  // constraint is lifted here. Also drives a compact-header modifier class
+  // (mobile-only via CSS, see .app-header--tabletop in global.css) so the
+  // 5-link nav doesn't wrap across several lines above an active game --
+  // every other route's header is completely untouched, still the same
+  // markup and links either way.
   const isTabletop = useMatch("/games/:gameId") !== null;
 
   if (state.status === "loading") {
@@ -38,7 +41,10 @@ export function RootLayout() {
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <header className="app-header row" style={{ justifyContent: "space-between" }}>
+      <header
+        className={`app-header row${isTabletop ? " app-header--tabletop" : ""}`}
+        style={{ justifyContent: "space-between" }}
+      >
         <div className="row">
           <Link to="/" className="brand-wordmark">
             {/* Decorative only -- the link's accessible name comes from the

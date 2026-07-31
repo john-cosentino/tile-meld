@@ -44,15 +44,16 @@ test("tabletop at a 390x844 mobile viewport: no horizontal overflow, every regio
     timeout: 10000,
   });
 
-  // Chat starts open (this phase's deliberate default on every viewport --
-  // see docs/tabletop-layout-contract.md) and collapses/expands via an
-  // accessible toggle without occupying the whole screen exclusively.
+  // Chat starts collapsed (visual-composition pass: it must not compete
+  // with the game for attention or push primary actions off-screen) and
+  // expands/collapses via an accessible toggle without occupying the
+  // whole screen exclusively.
   const chatToggle = activePage.getByRole("button", { name: /chat/i });
-  await expect(chatToggle).toHaveAttribute("aria-expanded", "true");
-  await chatToggle.click();
   await expect(chatToggle).toHaveAttribute("aria-expanded", "false");
   await chatToggle.click();
   await expect(chatToggle).toHaveAttribute("aria-expanded", "true");
+  await chatToggle.click();
+  await expect(chatToggle).toHaveAttribute("aria-expanded", "false");
 
   const results = await new AxeBuilder({ page: activePage }).analyze();
   const serious = results.violations.filter(

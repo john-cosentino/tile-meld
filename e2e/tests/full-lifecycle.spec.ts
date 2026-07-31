@@ -1,5 +1,16 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { startTwoPlayerGame, clickUntilSettled } from "./helpers.js";
+
+// Chat is collapsed by default (visual-composition pass) -- guarded so it
+// works whether this is the first open of a freshly-mounted page or a
+// second call after a rematch (the component may or may not remount
+// across a gameId change, so aria-expanded is checked rather than assumed).
+async function ensureChatOpen(page: Page): Promise<void> {
+  const toggle = page.getByRole("button", { name: /chat/i });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await toggle.click();
+  }
+}
 
 // Exercises the complete room/game state machine end to end with a
 // deterministic shortened fixture -- resign (rather than actually playing
@@ -16,6 +27,9 @@ test("full lifecycle: resign ends the game, both players return to the room, rea
 
   const firstGameId = /\/games\/([^/?#]+)/.exec(hostPage.url())?.[1];
   expect(firstGameId).toBeTruthy();
+
+  await ensureChatOpen(hostPage);
+  await ensureChatOpen(guestPage);
 
   const oldMessage = `first game message ${Date.now()}`;
   await hostPage.getByPlaceholder("Say something…").fill(oldMessage);
@@ -69,6 +83,9 @@ test("full lifecycle: resign ends the game, both players return to the room, rea
   // even though it's the same room and the same two players.
   await expect(hostPage.getByText(oldMessage)).toHaveCount(0);
   await expect(guestPage.getByText(oldMessage)).toHaveCount(0);
+
+  await ensureChatOpen(hostPage);
+  await ensureChatOpen(guestPage);
 
   const newMessage = `second game message ${Date.now()}`;
   await guestPage.getByPlaceholder("Say something…").fill(newMessage);

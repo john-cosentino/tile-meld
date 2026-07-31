@@ -482,6 +482,51 @@ button.danger {
   color: var(--neon-cyan);
 }
 
+/* Compact mobile header, scoped to the active-game route only (the
+   `.app-header--tabletop` modifier class, set in RootLayout.tsx via
+   isTabletop) -- every other route's header is completely untouched.
+   The 5-link nav previously wrapped across up to 3 lines above the
+   board, eating vertical space the composition review flagged directly.
+   This collapses it to one horizontally-scrollable row instead of
+   inventing a hamburger menu/overlay -- every link stays in the DOM,
+   individually focusable, at the same 44px touch-target floor as
+   everywhere else (Phase 7 §13.2), just narrower and denser. */
+@media (max-width: 860px) {
+  .app-header--tabletop {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* A flex item's default min-width:auto floors it at its content's
+     natural size, which would otherwise force this row -- and the nav
+     inside it -- to grow the whole header (and page) wider rather than
+     ever actually engaging the nav's own overflow-x:auto scroll below.
+     min-width:0 on every link in the chain is what lets the nav shrink
+     to the header's real available width first. */
+  .app-header--tabletop .row {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .app-header--tabletop .app-nav {
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-header--tabletop .app-nav a {
+    min-height: 44px;
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.7rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .app-header--tabletop .brand-wordmark-text {
+    font-size: 1.05rem;
+  }
+}
+
 .page {
   max-width: 960px;
   margin: 0 auto;
@@ -764,7 +809,20 @@ a.dashboard-card:hover {
    and background-image/border-image rather than a fixed-size canvas.
    Interactive geometry (DropZone/TableSet/Tile, drag-and-drop, keyboard
    selection) is completely unchanged below; every asset is a background
-   layer only. */
+   layer only.
+
+   Composition pass (docs/meld-masters-tabletop-composition-review.md):
+   the first integration pass placed every region as its own independently
+   floating framed box, which read as a conventional page with decorative
+   images around it rather than one game screen. This revision uses CSS
+   Grid with NAMED AREAS (`.tabletop-arcade`) as the single source of
+   visual order at every breakpoint -- grid-area placement is completely
+   independent of DOM/source order, so the same markup can read as a
+   3-column cabinet on desktop, a single reordered column on phone
+   portrait (actions directly under the rack, above chat -- matching the
+   approved concept's mobile flow), and a true 2-column wide layout on
+   phone landscape, purely by swapping `grid-template-areas` per media
+   query below. No JS, no DOM reordering. */
 
 .tabletop-shell {
   display: flex;
@@ -794,36 +852,47 @@ a.dashboard-card:hover {
 }
 
 @media (max-width: 860px) {
+  .tabletop-masthead {
+    padding: var(--space-1) 0;
+  }
+
   .tabletop-masthead-wordmark {
-    width: min(100%, 320px);
+    width: min(55%, 220px);
   }
 }
 
 /* -------------------- Main grid -------------------- */
 
-/* Desktop: competitor rail / dominant center column (status, board, rack,
-   feedback, chat, actions) / nothing in a 3rd column -- unlike the static
-   prototype, the real page keeps status/feedback/chat inline in the
-   primary column (not a separate sidebar) so DOM order, mobile order, and
-   desktop reading order all stay identical -- no CSS reordering. */
+/* True 3-region cabinet: competitor rail / dominant gameplay column
+   (status welded to board welded to rack) / compact info rail (meld
+   progress, hints, chat) -- with one full-width action bar underneath,
+   matching the approved desktop concept's bottom control strip. Every
+   region's visual position comes from `grid-area` below, not DOM order,
+   so the breakpoints further down can each declare their own reading
+   order with zero markup/JS changes. */
 .tabletop-arcade {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-  gap: var(--space-4);
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(240px, 300px);
+  grid-template-areas:
+    "competitors board info"
+    "actions actions actions";
+  gap: var(--space-3) var(--space-4);
   align-items: start;
 }
 
 .tabletop-primary {
+  grid-area: board;
   min-width: 0; /* lets long table-set rows wrap/scroll instead of forcing the grid column wider */
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 /* -------------------- Competitor rail -------------------- */
 
 .tabletop-competitors {
-  grid-area: 1 / 1;
+  grid-area: competitors;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -838,19 +907,22 @@ a.dashboard-card:hover {
   padding: 0;
 }
 
-/* Large competitor card -- the approved neutral frame illustration
-   (grayscale/cream line art) tinted per seat via a color-blend overlay
+/* Horizontal competitor card -- portrait beside name/meta, not stacked
+   above -- so the rail's width is used for legible text instead of
+   centering it under a portrait. The approved neutral frame illustration
+   (grayscale/cream line art) is tinted per seat via a color-blend overlay
    rather than baking 5 separately-colored frame files (docs/meld-masters-
    chatgpt-art-production-handoff.md). Portrait/name/tile-count/status
    text is always live DOM content layered above the artwork. */
 .competitor-card {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  min-width: 0;
   background-image: url("../assets/tabletop-production/competitors/competitor-card-frame.png");
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -868,18 +940,75 @@ a.dashboard-card:hover {
   pointer-events: none;
 }
 
+/* Significantly larger than the previous 72px -- portrait scale was one
+   of the review's named problems; this is the rail's dominant visual
+   element after the name, not an afterthought above it. */
 .opponent-portrait {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
   object-fit: cover;
   border-radius: var(--radius-md);
   z-index: 1;
 }
 
-.competitor-card > span {
+.competitor-card > * {
   position: relative;
   z-index: 1;
+}
+
+/* Name/meta hierarchy: the name is the prominent line and the only part
+   that ever truncates (min-width:0 on both this and the card above is
+   required for a flex child's ellipsis to actually engage -- otherwise
+   its content-based min-width floor prevents the card from ever
+   shrinking small enough to clip). The meta line (tile count/resigned/
+   computer/active) is smaller and never truncates -- it's short, fixed-
+   vocabulary text, never a user-controlled name. */
+.competitor-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.competitor-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.competitor-name {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+/* A visible "YOU" marker, deliberately outside the truncated name span so
+   it can never itself be clipped away by a long generated username --
+   the accessible identification of "your own seat" still comes from the
+   card always being first, this is a redundant visual aid only. */
+.competitor-you-badge {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  color: var(--text-on-accent);
+  background: var(--neon-gold);
+  border-radius: var(--radius-md);
+  padding: 1px 5px;
+}
+
+.competitor-meta {
+  font-size: 0.75rem;
 }
 
 /* --seat-accent is set inline per card by OpponentStrip.tsx (deterministic
@@ -912,9 +1041,11 @@ a.dashboard-card:hover {
 
 /* Shared "sidebar panel" treatment -- the approved reusable frame behind
    the turn-status heading, the feedback/hint callout, and the chat
-   toggle, so all three read as the same arcade rail even though they sit
-   in the single primary column, not a separate sidebar (see the .tabletop-
-   arcade comment above). */
+   toggle, so all three read as the same arcade rail even though the
+   status panel sits welded to the board while feedback/chat sit in the
+   separate compact info rail beside it (see .tabletop-info-rail below).
+   Tight, content-hugging padding -- an oversized mostly-empty frame
+   around 1-2 lines of text was one of the review's named problems. */
 .tabletop-status,
 .tabletop-feedback,
 .tabletop-chat-toggle {
@@ -923,13 +1054,26 @@ a.dashboard-card:hover {
   background-repeat: no-repeat;
   background-color: transparent;
   border: none;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
 }
 
 .tabletop-status {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
+}
+
+/* The compact secondary rail: meld progress/hints/mascot tip, then chat,
+   never wider or louder than the primary gameplay column beside it.
+   Chat starts collapsed (TabletopPage.tsx) and this rail is where it
+   lives instead of stretched across the full primary column -- both
+   changes directly address "chat visually competes with the game". */
+.tabletop-info-rail {
+  grid-area: info;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 /* "Your turn" energy: a stronger cyan glow while it's actually the
@@ -1064,57 +1208,105 @@ a.dashboard-card:hover {
 
 /* -------------------- Action bar (arcade cabinet controls) -------------------- */
 
+/* One full-width bar, two clearly unequal clusters -- a muted utility
+   group (Undo/Reset Turn/Resign, grouped together so Resign never reads
+   as stranded at the far edge) and the dominant primary group (Draw/
+   Pass/Commit Turn). Utility first in source order, primary second --
+   `justify-content: space-between` plus the primary cluster's own
+   right-alignment keeps Commit Turn at the strong, thumb-reachable far
+   edge on both very wide and narrow rows. */
 .tabletop-actions {
+  grid-area: actions;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
+  padding-top: var(--space-1);
+}
+
+/* Small, muted, visually grouped in one bordered cluster -- deliberately
+   NOT the same illustrated-plate treatment as Draw/Pass/Commit, so the
+   hierarchy between "turn utilities" and "the turn's primary actions" is
+   immediately legible rather than 5 buttons of competing weight. */
+.tabletop-actions-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Visually muted (smaller font, no plate art), but min-height still holds
+   the same 44px real-touch-target floor as every other interactive
+   control in this app (Phase 7 §13.2) -- "smaller/quieter" only ever
+   means visual weight, never a shrunk hit target. */
+.action-utility {
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+}
+
+.action-utility:hover:not(:disabled) {
+  color: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+}
+
+.action-utility--danger {
+  color: var(--state-error);
+  border-color: var(--state-error);
 }
 
 .tabletop-actions-primary {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.tabletop-actions-danger {
-  display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-3);
+  flex: 1;
 }
 
 /* Large, deliberate cabinet-button shapes. Every button keeps its exact
    existing text/disabled/onClick logic; only sizing/className changed. */
-.tabletop-actions button {
-  min-height: 3.25rem;
-  padding: var(--space-3) var(--space-4);
+.tabletop-actions-primary button {
+  min-height: 3.5rem;
+  padding: var(--space-2) var(--space-4);
   font-family: var(--font-display);
   letter-spacing: 0.02em;
-  font-size: 0.95rem;
+  font-size: 1rem;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
 }
 
 .action-icon {
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.7rem;
+  height: 1.7rem;
   flex-shrink: 0;
 }
 
 /* The three approved button plates, nine-slice via border-image -- Undo
-   and Reset Turn have no dedicated plate asset (only Draw/Pass/Sort/
-   Commit were in scope for illustrated art) and keep their existing flat
-   accent-cyan/accent-warn treatment below, just resized to match. Commit
-   (gold) is the strongest emphasis, matching the concept. */
+   and Reset Turn have no dedicated plate asset and use the muted
+   .action-utility treatment above instead. Commit (gold) is the
+   strongest emphasis, matching the concept: a visibly larger button plus
+   a gold glow (.plate-gold--commit below) so it unmistakably reads as
+   the primary action, not merely "a 3rd button the same size as Draw". */
 .plate-cyan,
 .plate-purple,
 .plate-gold {
   border-style: solid;
-  border-width: 32px;
-  border-image-slice: 32 fill;
-  border-image-width: 32px;
+  border-width: 26px;
+  border-image-slice: 26 fill;
+  border-image-width: 26px;
   color: var(--text-primary);
 }
 
@@ -1130,6 +1322,24 @@ a.dashboard-card:hover {
   border-image-source: url("../assets/tabletop-production/actions/action-plate-gold.png");
   color: var(--text-on-accent);
   font-weight: 700;
+}
+
+/* Commit Turn: the single most important action on the whole screen --
+   visibly bigger than its siblings (not just gold-colored) plus a warm
+   glow, so it reads as unmistakably dominant even against the plate's
+   own comparatively dark gold-brown gradient. */
+.tabletop-actions-primary .plate-gold--commit {
+  min-height: 4.25rem;
+  padding: var(--space-3) var(--space-6);
+  font-size: 1.2rem;
+  box-shadow:
+    0 0 18px rgba(255, 201, 77, 0.55),
+    0 0 40px rgba(255, 201, 77, 0.25);
+}
+
+.action-icon--commit {
+  width: 2.1rem;
+  height: 2.1rem;
 }
 
 /* Pressed-state overlay (the approved darkening wash), composited via a
@@ -1151,22 +1361,12 @@ a.dashboard-card:hover {
   pointer-events: none;
 }
 
-button.accent-purple {
-  border-color: var(--neon-purple);
-  color: var(--neon-purple);
-}
-
-button.accent-warn {
-  border-color: var(--state-warning);
-  color: var(--state-warning);
-}
-
 /* -------------------- Feedback / mascot tip -------------------- */
 
 .tabletop-feedback {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .tabletop-tip {
@@ -1178,8 +1378,8 @@ button.accent-warn {
 /* Restrained -- a small corner accent, never large enough to dominate the
    feedback callout it sits beside. */
 .tabletop-mascot-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
 }
 
@@ -1195,6 +1395,14 @@ button.accent-warn {
 .tabletop-chat-toggle {
   width: 100%;
   color: var(--text-primary);
+}
+
+/* Chat starts collapsed (TabletopPage.tsx); when open, cap its height so
+   a long scrollback still can't grow taller than the gameplay column
+   beside it -- ChatPanel owns its own internal scrolling. */
+#tabletop-chat-panel {
+  max-height: 22rem;
+  overflow-y: auto;
 }
 
 /* -------------------- Footer chrome -------------------- */
@@ -1213,30 +1421,135 @@ button.accent-warn {
   height: 20px;
 }
 
+/* -------------------- Phone portrait -------------------- */
+
+/* Single reordered column: competitors -> board (status+board+rack
+   welded together) -> actions -> info rail (feedback/hints then chat).
+   Actions sit directly under the rack, well above chat, so reaching
+   Draw/Pass/Commit never requires scrolling past chat first -- one of
+   the review's explicit requirements. Only `grid-template-areas`/
+   `grid-template-columns` change here; every component keeps the exact
+   same markup as desktop. */
 @media (max-width: 860px) {
   .tabletop-arcade {
-    display: flex;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "competitors"
+      "board"
+      "actions"
+      "info";
+    gap: var(--space-2);
   }
 
-  .competitor-card {
-    padding: var(--space-2);
-  }
-
-  .tabletop-opponents,
+  /* Compact competitor strip -- smaller portraits/text and cards that
+     wrap into a row instead of the desktop's tall vertical rail, so the
+     whole strip is one short band, not a second scroll-length section. */
   .tabletop-competitors {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .tabletop-opponents {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .competitor-card {
+    flex: 1 1 150px;
+    padding: var(--space-1) var(--space-2);
+    gap: var(--space-2);
   }
 
   .opponent-portrait {
-    width: 56px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .competitor-name {
+    font-size: 0.8rem;
+  }
+
+  .competitor-meta {
+    font-size: 0.7rem;
+  }
+
+  /* Compact control cluster directly below the rack -- Draw/Pass stacked
+     with Commit Turn spanning full width beneath them, the largest
+     touch target on the screen, still unmistakably the primary action. */
+  .tabletop-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .tabletop-actions-secondary {
+    justify-content: center;
+  }
+
+  .tabletop-actions-primary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content: stretch;
+  }
+
+  .tabletop-actions-primary .plate-gold--commit {
+    grid-column: 1 / -1;
+  }
+
+  .tabletop-info-rail {
+    align-self: stretch;
   }
 
   .tabletop-chat {
     align-self: stretch;
+  }
+}
+
+/* -------------------- Phone landscape -------------------- */
+
+/* A true 2-column composition using the full viewport width -- NOT the
+   portrait column shrunk/centered. Left: board+rack+actions (the actual
+   game). Right: competitors + info rail (chat/hints), stacked. Uses the
+   dedicated phone-landscape board asset (already selected by the board
+   media query above at this same breakpoint). */
+@media (max-width: 860px) and (orientation: landscape) {
+  .tabletop-arcade {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+    grid-template-areas:
+      "board competitors"
+      "actions info";
+    column-gap: var(--space-3);
+  }
+
+  .tabletop-competitors,
+  .tabletop-opponents {
+    flex-direction: column;
+  }
+
+  .competitor-card {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .opponent-portrait {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tabletop-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabletop-actions-primary {
+    justify-content: stretch;
+  }
+
+  .tabletop-actions-primary button {
+    flex: 1;
   }
 }
 

@@ -88,6 +88,12 @@ test("chat: a message sent from one browser appears in both (game-scoped, live)"
 }) => {
   const { activePage, waitingPage } = await startTwoPlayerGame(browser);
 
+  // Chat is collapsed by default (visual-composition pass: it must not
+  // compete with the game for attention) -- open it on both sides before
+  // exercising the live broadcast.
+  await activePage.getByRole("button", { name: "Show chat" }).click();
+  await waitingPage.getByRole("button", { name: "Show chat" }).click();
+
   await activePage.getByPlaceholder("Say something…").fill("hello from the active player");
   await activePage.getByRole("button", { name: "Send" }).click();
 
