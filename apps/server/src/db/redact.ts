@@ -30,6 +30,10 @@ export type PersistedGameView = {
    * turn-mutating socket event (except resign) requires this alongside
    * `version` for optimistic concurrency (§7.5). */
   readonly turnId: string | null;
+  /** The winning seat, or null while still active -- read from the games
+   * row's own winner_seat column (set in persistTransition alongside
+   * completed_at), not reconstructed from the transient game:over event. */
+  readonly winnerSeatIndex: number | null;
 };
 
 export type RedactedSeatView = {
@@ -54,6 +58,7 @@ export type RedactedGameView = {
   readonly status: GameStatus;
   readonly deadlineAt: Date | null;
   readonly turnId: string | null;
+  readonly winnerSeatIndex: number | null;
   readonly self: RedactedSelfView;
   readonly opponents: readonly RedactedSeatView[];
 };
@@ -96,6 +101,7 @@ export function redactGameFor(game: PersistedGameView, viewerSeatIndex: number):
     status: game.status,
     deadlineAt: game.deadlineAt,
     turnId: game.turnId,
+    winnerSeatIndex: game.winnerSeatIndex,
     self: { ...toPublicView(viewerSeat), rack: viewerSeat.rack },
     opponents,
   };

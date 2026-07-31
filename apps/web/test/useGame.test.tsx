@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 // Phase 7 -- a purged (retention-deleted, or otherwise no-longer-
@@ -11,10 +11,22 @@ import type { ReactNode } from "react";
 // which is exactly what lets a purged game read the same as "you were
 // never seated here" without revealing why it's gone.
 
-const { getSocket, mockSocket } = vi.hoisted(() => {
+const { getSocket, mockSocket, fireSocket, fireManager } = vi.hoisted(() => {
   const listeners = new Map<string, Set<(payload: unknown) => void>>();
+  const managerListeners = new Map<string, Set<(payload: unknown) => void>>();
+  const manager = {
+    on: (event: string, handler: (payload: unknown) => void) => {
+      if (!managerListeners.has(event)) managerListeners.set(event, new Set());
+      managerListeners.get(event)!.add(handler);
+    },
+    off: (event: string, handler: (payload: unknown) => void) => {
+      managerListeners.get(event)?.delete(handler);
+    },
+  };
   const socket = {
     connected: true,
+    io: manager,
+    connect: vi.fn(),
     on: (event: string, handler: (payload: unknown) => void) => {
       if (!listeners.has(event)) listeners.set(event, new Set());
       listeners.get(event)!.add(handler);
@@ -24,7 +36,19 @@ const { getSocket, mockSocket } = vi.hoisted(() => {
     },
     emit: vi.fn(),
   };
-  return { getSocket: vi.fn(() => socket), mockSocket: socket };
+  return {
+    getSocket: vi.fn(() => socket),
+    mockSocket: socket,
+    mockManager: manager,
+    // Test helpers -- fire a Socket-level ("connect"/"disconnect"/...) or
+    // Manager-level (socket.io namespace, e.g. "reconnect_failed") event.
+    fireSocket: (event: string, payload?: unknown) => {
+      for (const handler of listeners.get(event) ?? []) handler(payload);
+    },
+    fireManager: (event: string, payload?: unknown) => {
+      for (const handler of managerListeners.get(event) ?? []) handler(payload);
+    },
+  };
 });
 vi.mock("../src/api/socket.js", () => ({
   getSocket,
@@ -125,5 +149,72 @@ describe("useGame -- purged/missing game handling (Phase 7)", () => {
     const { result } = renderHook(() => useGame("g1"), { wrapper });
     await waitFor(() => expect(result.current.view).toBeDefined());
     expect(result.current.notFound).toBe(false);
+  });
+});
+
+// Stabilization pass: "disconnected" alone couldn't distinguish "Socket.IO
+// is actively retrying in the background" from "genuinely gave up" -- see
+// the ConnectionState doc comment in useGame.ts. These exercise the real
+// Socket.IO event names (not fabricated ones), firing them through the
+// same mock Socket/Manager the rest of this file already uses.
+describe("useGame -- reconnection lifecycle (stabilization pass)", () => {
+  beforeEach(() => {
+    mockSocket.emit.mockReset();
+    mockSocket.connect.mockReset();
+    getGame.mockReset();
+    mockJoinAck({ ok: true, gameId: "g1" } as unknown as JoinAck);
+  });
+
+  it("an ordinary disconnect enters 'reconnecting', not the terminal 'disconnected'", async () => {
+    const { result } = renderHook(() => useGame("g1"), { wrapper });
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+
+    fireSocket("disconnect", "transport close");
+    await waitFor(() => expect(result.current.connectionState).toBe("reconnecting"));
+    expect(screen.getByRole("status").textContent).toContain("Connection lost. Reconnecting");
+  });
+
+  it("a server-forced disconnect ('io server disconnect') goes straight to 'disconnected' -- Socket.IO won't auto-retry that one", async () => {
+    const { result } = renderHook(() => useGame("g1"), { wrapper });
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+
+    fireSocket("disconnect", "io server disconnect");
+    await waitFor(() => expect(result.current.connectionState).toBe("disconnected"));
+  });
+
+  it("recovering from 'reconnecting' back to 'connected' announces 'Reconnected.'", async () => {
+    const { result } = renderHook(() => useGame("g1"), { wrapper });
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+
+    fireSocket("disconnect", "transport close");
+    await waitFor(() => expect(result.current.connectionState).toBe("reconnecting"));
+
+    fireSocket("connect");
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+    expect(screen.getByRole("status").textContent).toContain("Reconnected.");
+  });
+
+  it("the Manager giving up ('reconnect_failed') enters the terminal 'disconnected' state", async () => {
+    const { result } = renderHook(() => useGame("g1"), { wrapper });
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+
+    fireSocket("disconnect", "transport close");
+    await waitFor(() => expect(result.current.connectionState).toBe("reconnecting"));
+
+    fireManager("reconnect_failed");
+    await waitFor(() => expect(result.current.connectionState).toBe("disconnected"));
+    expect(screen.getByRole("status").textContent).toContain("Could not reconnect");
+  });
+
+  it("reconnect() re-invokes the socket's own connect() -- the same path used on first load, nothing new server-side", async () => {
+    const { result } = renderHook(() => useGame("g1"), { wrapper });
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+
+    fireSocket("disconnect", "io server disconnect");
+    await waitFor(() => expect(result.current.connectionState).toBe("disconnected"));
+
+    result.current.reconnect();
+    expect(mockSocket.connect).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(result.current.connectionState).toBe("connecting"));
   });
 });

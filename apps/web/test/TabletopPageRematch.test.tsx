@@ -38,7 +38,10 @@ function baseSeat() {
   };
 }
 
-function view(status: "active" | "completed"): RedactedGameView {
+function view(
+  status: "active" | "completed",
+  winnerSeatIndex: number | null = null,
+): RedactedGameView {
   return {
     gameId: "g1",
     roomId: "r1",
@@ -50,15 +53,17 @@ function view(status: "active" | "completed"): RedactedGameView {
     status,
     deadlineAt: null,
     turnId: status === "active" ? "t1" : null,
+    winnerSeatIndex,
     self: { ...baseSeat(), rack: [] },
     opponents: [{ ...baseSeat(), seatIndex: 1, displayName: "Bob" }],
   };
 }
 
-function gameHook(status: "active" | "completed") {
+function gameHook(status: "active" | "completed", winnerSeatIndex: number | null = null) {
   return {
-    view: view(status),
+    view: view(status, winnerSeatIndex),
     connectionState: "connected" as const,
+    reconnect: vi.fn(),
     banner: undefined,
     dismissBanner: vi.fn(),
     warningToast: undefined,
@@ -97,5 +102,20 @@ describe("TabletopPage -- completed-game rematch card", () => {
 
     expect(screen.queryByRole("heading", { name: "Game over" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("rematch-panel")).not.toBeInTheDocument();
+  });
+
+  // Phase 5 stabilization: winnerSeatIndex is durable (read from the games
+  // row), so "who won" is knowable here purely from the redacted view --
+  // no dependency on having been live for the transient game:over event.
+  it("identifies the viewer as the winner when their own seat won", () => {
+    useGameMock.mockReturnValue(gameHook("completed", 0));
+    renderTabletop();
+    expect(screen.getByText("You won!")).toBeInTheDocument();
+  });
+
+  it("identifies the opponent by display name when they won", () => {
+    useGameMock.mockReturnValue(gameHook("completed", 1));
+    renderTabletop();
+    expect(screen.getByText("Bob won.")).toBeInTheDocument();
   });
 });

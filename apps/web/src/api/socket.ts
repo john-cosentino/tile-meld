@@ -10,7 +10,14 @@ import { io, type Socket } from "socket.io-client";
 let socket: Socket | undefined;
 
 export function getSocket(): Socket {
-  socket ??= io({ withCredentials: true, autoConnect: true });
+  // reconnectionAttempts bounded (default is Infinity) -- a turn deadline
+  // is measured in hours, not seconds, so there is no value in the
+  // Manager silently retrying in a backgrounded tab forever; ~10 attempts
+  // at the default backoff (up to 5s each) covers a genuine short network
+  // blip within under a minute. Past that, useGame.ts surfaces a
+  // "Disconnected" state with a manual Reconnect action (Socket.connect())
+  // rather than leaving the user with no way back short of a full reload.
+  socket ??= io({ withCredentials: true, autoConnect: true, reconnectionAttempts: 10 });
   return socket;
 }
 

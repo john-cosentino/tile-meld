@@ -44,6 +44,7 @@ function view(activeSeat: number): RedactedGameView {
     status: "active",
     deadlineAt: null,
     turnId: "t1",
+    winnerSeatIndex: null,
     self: {
       seatIndex: 0,
       displayName: "Alice",

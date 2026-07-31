@@ -583,6 +583,17 @@ button.danger {
   box-shadow: 0 0 14px rgba(255, 201, 77, 0.25);
 }
 
+/* Winner identification (Phase 5 stabilization) -- the durable
+   view.winnerSeatIndex means this is knowable on reload/a later visit,
+   not only for a client connected at the exact moment the game ended.
+   Live text, never baked into art. */
+.tabletop-winner {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--neon-gold);
+  margin: 0;
+}
+
 .muted {
   color: var(--color-text-muted);
 }
@@ -1101,6 +1112,34 @@ a.dashboard-card:hover {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+/* Progressive rule help (Phase 6 stabilization) -- collapsed by default
+   (native <details>, no JS, no dismissal state to persist), deliberately
+   plain/quiet compared to the illustrated panels beside it so it reads as
+   optional reference material, not another primary information source. */
+.tabletop-how-to-play {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.tabletop-how-to-play summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--neon-cyan);
+}
+
+.tabletop-how-to-play ul {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 /* "Your turn" energy: a stronger cyan glow while it's actually the

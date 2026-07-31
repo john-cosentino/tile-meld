@@ -5,6 +5,7 @@ import type { ConnectionState } from "./useGame.js";
 type TabletopStatusProps = {
   readonly view: RedactedGameView;
   readonly connectionState: ConnectionState;
+  readonly onReconnect: () => void;
   readonly isMyTurn: boolean;
   readonly computerIsPlaying: boolean;
 };
@@ -15,12 +16,21 @@ type TabletopStatusProps = {
 // already carries the full meaning, so the glyph itself is aria-hidden
 // rather than removed, per that review's explicit instruction not to drop
 // a useful visual symbol just to correct a duplicate AT announcement.
+//
+// "reconnecting" and "disconnected" are deliberately distinct (stabilization
+// pass): the former means Socket.IO is actively retrying in the background
+// right now, the latter means it has genuinely given up (or the server
+// forced the disconnect) and nothing will happen without the Reconnect
+// button below. Collapsing them into one label left a returning player
+// unable to tell "still trying" from "stuck".
 function connectionLabel(state: ConnectionState): { emoji: string; text: string } {
   switch (state) {
     case "connected":
       return { emoji: "🟢", text: "Connected" };
     case "connecting":
       return { emoji: "🟡", text: "Connecting…" };
+    case "reconnecting":
+      return { emoji: "🟡", text: "Reconnecting…" };
     case "disconnected":
       return { emoji: "🔴", text: "Disconnected" };
   }
@@ -38,6 +48,7 @@ function connectionLabel(state: ConnectionState): { emoji: string; text: string 
 export function TabletopStatus({
   view,
   connectionState,
+  onReconnect,
   isMyTurn,
   computerIsPlaying,
 }: TabletopStatusProps) {
@@ -62,8 +73,15 @@ export function TabletopStatus({
           {computerIsPlaying && <span aria-hidden="true">🤖 </span>}
           {turnText}
         </h1>
-        <span className="muted">
-          <span aria-hidden="true">{conn.emoji}</span> {conn.text}
+        <span className="row" style={{ gap: "var(--space-2)" }}>
+          <span className="muted">
+            <span aria-hidden="true">{conn.emoji}</span> {conn.text}
+          </span>
+          {connectionState === "disconnected" && (
+            <button type="button" className="action-utility" onClick={onReconnect}>
+              Reconnect
+            </button>
+          )}
         </span>
       </div>
       {view.status === "active" && (

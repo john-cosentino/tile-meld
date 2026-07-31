@@ -55,6 +55,13 @@ export const RedactedGameViewSchema = z.object({
   deadlineAt: z.string().nullable(),
   /** The active turn's id, or null once the game has completed. */
   turnId: z.string().nullable(),
+  /** The winning seat, or null while the game is still active. Durable --
+   * unlike the one-time `game:over` socket event (whose winnerSeatIndex/
+   * scores payload is never persisted), this is read from the games row
+   * itself, so "who won" stays answerable on reload or a later visit, not
+   * only for a client that happened to be connected at the exact moment
+   * the game ended. */
+  winnerSeatIndex: z.number().int().nullable(),
   self: RedactedSelfViewSchema,
   opponents: z.array(RedactedSeatViewSchema),
 });

@@ -14,6 +14,7 @@ import { OpponentStrip } from "../tabletop/OpponentStrip.js";
 import { TabletopMasthead } from "../tabletop/TabletopMasthead.js";
 import { ActionIcon } from "../tabletop/ActionIcon.js";
 import { ChromeIcon } from "../tabletop/ChromeIcon.js";
+import { HowToPlay } from "../tabletop/HowToPlay.js";
 import mascotTipIconSrc from "../assets/tabletop-production/sidebar/mascot-tip-icon.png";
 import {
   hintForSet,
@@ -130,9 +131,34 @@ export function TabletopPage() {
   const activeOpponent = view.opponents.find((o) => o.seatIndex === view.activeSeat);
   const computerIsPlaying =
     view.status === "active" && !isMyTurn && activeOpponent?.isComputer === true;
+  // Durable (view.winnerSeatIndex, read from the games row itself), not the
+  // transient game:over socket event -- stays answerable on reload or a
+  // later visit, not only for a client connected at the exact moment the
+  // game ended (Phase 5 stabilization: "the player should never be left
+  // uncertain ... whether the game ended" -- extends to *who* won it).
+  const winnerName =
+    view.status === "completed" && view.winnerSeatIndex !== null
+      ? view.winnerSeatIndex === view.self.seatIndex
+        ? "You"
+        : (view.opponents.find((o) => o.seatIndex === view.winnerSeatIndex)?.displayName ??
+          `Seat ${view.winnerSeatIndex + 1}`)
+      : undefined;
+  const meldProgressVisible = !view.self.hasInitialMeld && view.status === "active";
   const draftChanged =
     draft.rack.join(",") !== canonicalRackIds.join(",") ||
     draft.sets.length !== canonicalTableIds.length;
+  const invalidArrangementHintVisible =
+    turnValidation !== undefined && !turnValidation.valid && draftChanged;
+  // A completed game leaves nothing here (no error, no meld progress, no
+  // turn to hint about, no "your turn" tip) -- an empty panel still
+  // rendered the sidebar-panel-frame background, which is only a coherent
+  // shape at real panel height; collapsed to just its own padding, it
+  // showed only fragments of the frame's corner art (found during the
+  // stabilization pass's own visual regression check). Rendering nothing
+  // at all when there's genuinely nothing to say is simpler and more
+  // honest than forcing the frame to look right at zero content height.
+  const hasFeedbackContent =
+    Boolean(actionError) || meldProgressVisible || invalidArrangementHintVisible || isMyTurn;
 
   function onDragEnd(event: DragEndEvent): void {
     const overId = event.over?.id;
@@ -225,6 +251,13 @@ export function TabletopPage() {
 
         {view.status === "completed" && (
           <div className="card card--accent-gold stack" role="status">
+            <p className="tabletop-winner">
+              {winnerName
+                ? winnerName === "You"
+                  ? "You won!"
+                  : `${winnerName} won.`
+                : "Game over."}
+            </p>
             <RematchPanel roomId={view.roomId} gameId={gameId!} />
             <Link to="/">
               <button>Back to your rooms</button>
@@ -237,6 +270,7 @@ export function TabletopPage() {
             <TabletopStatus
               view={view}
               connectionState={game.connectionState}
+              onReconnect={game.reconnect}
               isMyTurn={isMyTurn}
               computerIsPlaying={computerIsPlaying}
             />
@@ -367,38 +401,42 @@ export function TabletopPage() {
             />
 
             <div className="tabletop-info-rail">
-              <div className="tabletop-feedback">
-                {actionError && (
-                  <div className="error-banner" role="alert">
-                    {actionError}
-                  </div>
-                )}
-                {!view.self.hasInitialMeld && view.status === "active" && (
-                  <p className="muted">
-                    Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
-                  </p>
-                )}
-                {turnValidation && !turnValidation.valid && draftChanged && (
-                  <p className="muted" role="status">
-                    Hint: this arrangement wouldn't be accepted yet (
-                    {turnValidation.reason.replaceAll("_", " ")}).
-                  </p>
-                )}
-                {isMyTurn && (
-                  <div className="tabletop-tip">
-                    <img
-                      src={mascotTipIconSrc}
-                      alt=""
-                      aria-hidden="true"
-                      className="tabletop-mascot-icon"
-                    />
+              <HowToPlay />
+
+              {hasFeedbackContent && (
+                <div className="tabletop-feedback">
+                  {actionError && (
+                    <div className="error-banner" role="alert">
+                      {actionError}
+                    </div>
+                  )}
+                  {meldProgressVisible && (
                     <p className="muted">
-                      Committing an arrangement the server rejects costs a 3-tile penalty and ends
-                      your turn -- check the hints above before committing.
+                      Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
                     </p>
-                  </div>
-                )}
-              </div>
+                  )}
+                  {invalidArrangementHintVisible && (
+                    <p className="muted" role="status">
+                      Hint: this arrangement wouldn't be accepted yet (
+                      {turnValidation!.reason.replaceAll("_", " ")}).
+                    </p>
+                  )}
+                  {isMyTurn && (
+                    <div className="tabletop-tip">
+                      <img
+                        src={mascotTipIconSrc}
+                        alt=""
+                        aria-hidden="true"
+                        className="tabletop-mascot-icon"
+                      />
+                      <p className="muted">
+                        Committing an arrangement the server rejects costs a 3-tile penalty and ends
+                        your turn -- check the hints above before committing.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="tabletop-chat" data-testid="tabletop-chat">
                 <button

@@ -41,6 +41,7 @@ function game(
     status: "active",
     deadlineAt: null,
     turnId: null,
+    winnerSeatIndex: null,
     ...overrides,
   };
 }

@@ -103,6 +103,7 @@ function view(overrides: Partial<RedactedGameView> = {}): RedactedGameView {
     status: "active",
     deadlineAt: null,
     turnId: "t1",
+    winnerSeatIndex: null,
     self: seat(),
     opponents: [opponent()],
     ...overrides,
@@ -117,6 +118,7 @@ function baseHook() {
   return {
     view: view(),
     connectionState: "connected" as ConnectionState,
+    reconnect: vi.fn(),
     banner: undefined as string | undefined,
     dismissBanner: vi.fn(),
     warningToast: undefined as string | undefined,
@@ -164,6 +166,31 @@ describe("TabletopPage layout -- status prominence (Phase 8)", () => {
     useGameMock.mockReturnValue(gameHook({ connectionState: "disconnected" }));
     renderTabletop();
     expect(screen.getByText(textAcrossElements("🔴 Disconnected"))).toBeInTheDocument();
+  });
+
+  it("distinguishes actively reconnecting from a terminal disconnect (Phase 3 stabilization)", () => {
+    useGameMock.mockReturnValue(gameHook({ connectionState: "reconnecting" }));
+    renderTabletop();
+    expect(screen.getByText(textAcrossElements("🟡 Reconnecting…"))).toBeInTheDocument();
+    // No manual action offered while a retry is already in flight.
+    expect(screen.queryByRole("button", { name: "Reconnect" })).not.toBeInTheDocument();
+  });
+
+  it("offers a manual Reconnect action only once the connection is terminally disconnected", async () => {
+    const user = userEvent.setup();
+    const reconnect = vi.fn();
+    useGameMock.mockReturnValue(gameHook({ connectionState: "disconnected", reconnect }));
+    renderTabletop();
+
+    const button = screen.getByRole("button", { name: "Reconnect" });
+    await user.click(button);
+    expect(reconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not offer a Reconnect action while connected", () => {
+    useGameMock.mockReturnValue(gameHook({ connectionState: "connected" }));
+    renderTabletop();
+    expect(screen.queryByRole("button", { name: "Reconnect" })).not.toBeInTheDocument();
   });
 
   it("exposes the status region under a stable semantic label", () => {
@@ -357,6 +384,22 @@ describe("TabletopPage layout -- chat disclosure (Phase 8)", () => {
     useGameMock.mockReturnValue(gameHook());
     renderTabletop();
     expect(screen.getByTestId("tabletop-chat")).toBeInTheDocument();
+  });
+});
+
+describe("TabletopPage layout -- progressive rule help (Phase 6 stabilization)", () => {
+  it("offers a collapsed-by-default How to play disclosure, never a mandatory tutorial", () => {
+    useGameMock.mockReturnValue(gameHook());
+    renderTabletop();
+    const summary = screen.getByText("How to play");
+    const details = summary.closest("details");
+    expect(details).not.toBeNull();
+    // Native <details> defaults to closed -- no `open` attribute.
+    expect(details).not.toHaveAttribute("open");
+    // The rule text itself is still real DOM content once opened, not an
+    // image -- get it via the accessible list inside, scoped to this
+    // element so it doesn't collide with unrelated page text.
+    expect(within(details!).getByText(/Be the first to empty your rack/)).toBeInTheDocument();
   });
 });
 

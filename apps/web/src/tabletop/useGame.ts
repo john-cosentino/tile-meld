@@ -5,7 +5,16 @@ import { api } from "../api/client.js";
 import { getSocket, emitAck, SocketActionError } from "../api/socket.js";
 import { useAnnouncer } from "../announcer/AnnouncerProvider.js";
 
-export type ConnectionState = "connecting" | "connected" | "disconnected";
+// "disconnected" means truly no active retry: either the Manager's
+// bounded reconnection attempts (see socket.ts) were exhausted, or the
+// server itself forced the disconnect ("io server disconnect", the one
+// disconnect reason Socket.IO's own client does NOT auto-retry after --
+// see the socket.io docs on Manager#reconnection). "reconnecting" means
+// the Manager is actively retrying in the background right now. Collapsing
+// these into one "disconnected" state (the previous 3-value type) left a
+// user with no way to tell "still trying" from "gave up, do something" --
+// Phase 3 stabilization requirement.
+export type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected";
 
 type TurnActionAck = {
   readonly ok: true;
@@ -47,6 +56,8 @@ export function useGame(gameId: string) {
   const [notFound, setNotFound] = useState(false);
   const viewRef = useRef(view);
   viewRef.current = view;
+  const connectionStateRef = useRef(connectionState);
+  connectionStateRef.current = connectionState;
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const refetch = useCallback(async () => {
@@ -63,7 +74,9 @@ export function useGame(gameId: string) {
     const socket = getSocket();
 
     function onConnect(): void {
+      const wasReconnecting = connectionStateRef.current === "reconnecting";
       setConnectionState("connected");
+      if (wasReconnecting) announce("Reconnected.");
       socket.emit(
         "game:join",
         { gameId },
@@ -78,8 +91,25 @@ export function useGame(gameId: string) {
         },
       );
     }
-    function onDisconnect(): void {
+    // Socket.IO auto-retries after every disconnect reason EXCEPT
+    // "io server disconnect" (the server explicitly kicked the client) --
+    // that one specific reason is the only case with no retry in flight,
+    // so it goes straight to the terminal "disconnected" state instead of
+    // the transient "reconnecting" one. See socket.io's own Manager docs.
+    function onDisconnect(reason: string): void {
+      if (reason === "io server disconnect") {
+        setConnectionState("disconnected");
+        announce("Disconnected.");
+      } else {
+        setConnectionState("reconnecting");
+        announce("Connection lost. Reconnecting…");
+      }
+    }
+    // Manager-level events (reconnection lifecycle) live on socket.io, not
+    // the Socket itself -- distinct namespace from 'connect'/'disconnect'.
+    function onReconnectFailed(): void {
       setConnectionState("disconnected");
+      announce("Could not reconnect. Use the Reconnect button to try again.");
     }
     function onGameState(payload: RedactedGameView): void {
       setView(payload);
@@ -139,6 +169,11 @@ export function useGame(gameId: string) {
     socket.on("turn:warning", onTurnWarning);
     socket.on("game:over", onGameOver);
     socket.on("error", onSocketError);
+    // Manager-level (reconnection lifecycle), not Socket-level -- deliberately
+    // NOT subscribing to 'reconnect_attempt' or 'reconnect_error', which fire
+    // on every single retry and would spam the live region; 'reconnect_failed'
+    // (the terminal "gave up" transition) is the only one worth announcing.
+    socket.io.on("reconnect_failed", onReconnectFailed);
 
     if (socket.connected) onConnect();
 
@@ -151,9 +186,19 @@ export function useGame(gameId: string) {
       socket.off("turn:warning", onTurnWarning);
       socket.off("game:over", onGameOver);
       socket.off("error", onSocketError);
+      socket.io.off("reconnect_failed", onReconnectFailed);
       if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     };
   }, [gameId, refetch, announce]);
+
+  // Manual recovery once the Manager has given up retrying on its own
+  // (bounded reconnectionAttempts, see socket.ts) -- re-invokes the exact
+  // same connection path used on first load, nothing server-side to
+  // support beyond accepting a normal new connection.
+  const reconnect = useCallback(() => {
+    setConnectionState("connecting");
+    getSocket().connect();
+  }, []);
 
   const withVersionAndTurn = useCallback(
     <T>(build: (version: number, turnId: string) => Promise<T>): Promise<T> | undefined => {
@@ -215,6 +260,7 @@ export function useGame(gameId: string) {
   return {
     view,
     connectionState,
+    reconnect,
     banner,
     dismissBanner,
     warningToast,

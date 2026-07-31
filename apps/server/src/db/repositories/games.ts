@@ -193,6 +193,7 @@ export async function loadGameState(
     status: gameRow.status,
     deadlineAt,
     turnId: gameRow.current_turn_id,
+    winnerSeatIndex: gameRow.winner_seat,
     version: gameRow.version,
   };
 }
