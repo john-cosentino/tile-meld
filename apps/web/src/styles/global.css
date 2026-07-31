@@ -487,39 +487,45 @@ button.danger {
    isTabletop) -- every other route's header is completely untouched.
    The 5-link nav previously wrapped across up to 3 lines above the
    board, eating vertical space the composition review flagged directly.
-   This collapses it to one horizontally-scrollable row instead of
-   inventing a hamburger menu/overlay -- every link stays in the DOM,
-   individually focusable, at the same 44px touch-target floor as
-   everywhere else (Phase 7 §13.2), just narrower and denser. */
+   An earlier revision tried a single horizontally-scrolling row, but a
+   scroll container with no visible affordance just reads as a broken,
+   clipped label ("Join Room by Name" showing only "JO") -- a real
+   regression, not a polish nit. This uses a deterministic 3-column grid
+   (2 rows for 5 links) instead: every label is always fully visible,
+   wrapping to a second line within its own cell if it's ever too long
+   for the column rather than ever being cut off. Every link stays in
+   the DOM, individually focusable, at the same 44px touch-target floor
+   as everywhere else (Phase 7 §13.2), just smaller/denser text. */
 @media (max-width: 860px) {
   .app-header--tabletop {
     padding: var(--space-2) var(--space-3);
   }
 
-  /* A flex item's default min-width:auto floors it at its content's
-     natural size, which would otherwise force this row -- and the nav
-     inside it -- to grow the whole header (and page) wider rather than
-     ever actually engaging the nav's own overflow-x:auto scroll below.
-     min-width:0 on every link in the chain is what lets the nav shrink
-     to the header's real available width first. */
   .app-header--tabletop .row {
     min-width: 0;
     flex: 1;
+    flex-wrap: wrap;
+  }
+
+  .app-header--tabletop .brand-wordmark {
+    flex: 0 0 100%;
   }
 
   .app-header--tabletop .app-nav {
-    min-width: 0;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    flex: 0 0 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-1);
   }
 
   .app-header--tabletop .app-nav a {
     min-height: 44px;
     padding: var(--space-1) var(--space-2);
-    font-size: 0.7rem;
-    white-space: nowrap;
-    flex-shrink: 0;
+    font-size: 0.65rem;
+    line-height: 1.2;
+    white-space: normal;
+    text-align: center;
+    justify-content: center;
   }
 
   .app-header--tabletop .brand-wordmark-text {
@@ -888,6 +894,19 @@ a.dashboard-card:hover {
   gap: var(--space-2);
 }
 
+/* Wraps OpponentStrip + the info rail in TabletopPage.tsx. `contents`
+   removes this element from layout entirely -- its children
+   (.tabletop-competitors, .tabletop-info-rail) become direct grid items
+   of .tabletop-arcade exactly as if there were no wrapper, so desktop's
+   3-column placement and portrait's reordered single column are both
+   completely unaffected. Only the phone-landscape breakpoint (below)
+   turns this into a real flex column, spanning both grid rows as one
+   tight-fitting rail instead of two items independently stretched to
+   match the board's row height. */
+.tabletop-rail {
+  display: contents;
+}
+
 /* -------------------- Competitor rail -------------------- */
 
 .tabletop-competitors {
@@ -1040,15 +1059,23 @@ a.dashboard-card:hover {
 /* -------------------- Status / feedback / chat panels -------------------- */
 
 /* Shared "sidebar panel" treatment -- the approved reusable frame behind
-   the turn-status heading, the feedback/hint callout, and the chat
-   toggle, so all three read as the same arcade rail even though the
-   status panel sits welded to the board while feedback/chat sit in the
-   separate compact info rail beside it (see .tabletop-info-rail below).
-   Tight, content-hugging padding -- an oversized mostly-empty frame
-   around 1-2 lines of text was one of the review's named problems. */
+   the turn-status heading and the feedback/hint callout, so both read
+   as the same arcade rail even though the status panel sits welded to
+   the board while feedback sits in the separate compact info rail
+   beside it (see .tabletop-info-rail below). Tight, content-hugging
+   padding -- an oversized mostly-empty frame around 1-2 lines of text
+   was one of the review's named problems.
+
+   The chat toggle is deliberately NOT part of this shared rule: the
+   sidebar-panel-frame art was designed for a taller rectangular panel,
+   and stretched onto one short single-line button it rendered as a
+   barely-visible sliver -- indistinguishable from a plain default
+   button, which the review correctly flagged. It gets its own small,
+   CSS-only arcade treatment below instead (dark fill, cyan edge/glow),
+   deliberately lighter-weight than the illustrated plates so it still
+   reads as secondary. */
 .tabletop-status,
-.tabletop-feedback,
-.tabletop-chat-toggle {
+.tabletop-feedback {
   background-image: url("../assets/tabletop-production/sidebar/sidebar-panel-frame.png");
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1129,6 +1156,23 @@ a.dashboard-card:hover {
   min-height: 26rem;
 }
 
+/* A self-contained chip rather than raw floating text -- previously sat
+   right at the board's inner content edge, close enough to the frame's
+   own decorative top border/chevron detailing to read as touching it.
+   Its own background/border now gives it a clear visual boundary
+   regardless of exact padding, and the margin below separates it
+   cleanly from the "Table" heading Table.tsx renders next. Live DOM
+   text throughout -- the pool count itself is never baked into art. */
+.tabletop-pool-count {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  padding: 2px var(--space-2);
+  background: var(--bg-inset);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+}
+
 @media (max-width: 860px) {
   .tabletop-board {
     background-image: url("../assets/tabletop-production/board/board-frame-phone-portrait.png");
@@ -1141,6 +1185,39 @@ a.dashboard-card:hover {
   .tabletop-board {
     background-image: url("../assets/tabletop-production/board/board-frame-phone-landscape.png");
     min-height: 14rem;
+  }
+
+  /* A short (390px-tall-class) viewport can't afford the portrait
+     masthead's already-reduced size on top of the header -- shrink it
+     further and cut the shell's top inset so the board (the actual game)
+     appears meaningfully sooner, while still keeping the wordmark
+     visible so the screen still reads as Meld Masters at a glance.
+     Desktop's large wordmark is untouched -- only this one breakpoint. */
+  .tabletop-shell {
+    padding-top: var(--space-1);
+    gap: var(--space-2);
+  }
+
+  .tabletop-masthead {
+    padding: 0;
+  }
+
+  .tabletop-masthead-wordmark {
+    width: min(28%, 130px);
+  }
+
+  /* The global header counts too -- "too much vertical space on the
+     global header, large wordmark, and status before reaching the
+     board" was the explicit complaint. Landscape is comfortably wide
+     (typically 800px+) even though it's short, so all 5 nav links fit
+     on one row here instead of the narrower portrait's 3-column/2-row
+     grid -- same no-clipping guarantee, just less height. */
+  .app-header--tabletop {
+    padding: var(--space-1) var(--space-3);
+  }
+
+  .app-header--tabletop .app-nav {
+    grid-template-columns: repeat(5, 1fr);
   }
 }
 
@@ -1211,17 +1288,21 @@ a.dashboard-card:hover {
 /* One full-width bar, two clearly unequal clusters -- a muted utility
    group (Undo/Reset Turn/Resign, grouped together so Resign never reads
    as stranded at the far edge) and the dominant primary group (Draw/
-   Pass/Commit Turn). Utility first in source order, primary second --
-   `justify-content: space-between` plus the primary cluster's own
-   right-alignment keeps Commit Turn at the strong, thumb-reachable far
-   edge on both very wide and narrow rows. */
+   Pass/Commit Turn). `justify-content: space-between` originally split
+   them to opposite ends of the bar, which on wide desktop viewports
+   left a large gap that read as "two unrelated groups" rather than one
+   control region -- `flex-end` keeps them adjacent as a single region
+   (utility cluster first, primary cluster second, Commit Turn still
+   landing at the strong far edge), while the cluster gap below and the
+   utility cluster's own bordered box still keep Resign visually and
+   spatially separated from Commit, not immediately adjacent to it. */
 .tabletop-actions {
   grid-area: actions;
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding-top: var(--space-1);
 }
 
@@ -1270,9 +1351,7 @@ a.dashboard-card:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-3);
-  flex: 1;
 }
 
 /* Large, deliberate cabinet-button shapes. Every button keeps its exact
@@ -1394,7 +1473,18 @@ a.dashboard-card:hover {
 
 .tabletop-chat-toggle {
   width: 100%;
-  color: var(--text-primary);
+  background: var(--bg-inset);
+  border: 1px solid var(--neon-cyan-dim);
+  color: var(--neon-cyan);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  padding: var(--space-2) var(--space-3);
+}
+
+.tabletop-chat-toggle:hover:not(:disabled) {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan-dim);
 }
 
 /* Chat starts collapsed (TabletopPage.tsx); when open, cap its height so
@@ -1441,25 +1531,29 @@ a.dashboard-card:hover {
     gap: var(--space-2);
   }
 
-  /* Compact competitor strip -- smaller portraits/text and cards that
-     wrap into a row instead of the desktop's tall vertical rail, so the
-     whole strip is one short band, not a second scroll-length section. */
+  /* Compact competitor strip -- smaller portraits/text than the desktop
+     rail, so the whole strip is one short band, not a second
+     scroll-length section. Column (not row-wrap): the self card is a
+     direct flex child of .tabletop-competitors while each opponent card
+     is nested one level deeper inside .tabletop-opponents (a <ul>) --
+     under row-wrap, only the self card's own flex-grow applied, while
+     the <ul> itself (having no grow rule) sized to its single child's
+     natural width instead, so the two cards ended up visibly different
+     widths. width:100% on every card, in a single column, sidesteps
+     that mismatch entirely rather than trying to keep two different
+     nesting depths growing in lockstep. */
   .tabletop-competitors {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
     gap: var(--space-2);
   }
 
   .tabletop-opponents {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
     gap: var(--space-2);
   }
 
   .competitor-card {
-    flex: 1 1 150px;
+    width: 100%;
     padding: var(--space-1) var(--space-2);
     gap: var(--space-2);
   }
@@ -1513,23 +1607,38 @@ a.dashboard-card:hover {
 
 /* A true 2-column composition using the full viewport width -- NOT the
    portrait column shrunk/centered. Left: board+rack+actions (the actual
-   game). Right: competitors + info rail (chat/hints), stacked. Uses the
-   dedicated phone-landscape board asset (already selected by the board
-   media query above at this same breakpoint). */
+   game). Right: competitors + info rail (chat/hints), tightly stacked
+   as ONE column via .tabletop-rail below. Uses the dedicated
+   phone-landscape board asset (already selected by the board media
+   query above at this same breakpoint). */
 @media (max-width: 860px) and (orientation: landscape) {
   .tabletop-arcade {
     grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
     grid-template-areas:
-      "board competitors"
-      "actions info";
+      "board rail"
+      "actions rail";
     column-gap: var(--space-3);
   }
 
-  .tabletop-competitors,
-  .tabletop-opponents {
+  /* .tabletop-rail is `display:contents` everywhere else (see its base
+     rule above OpponentStrip/info-rail), which makes competitors and
+     the info rail behave as if this wrapper didn't exist -- letting
+     desktop and portrait each place them independently via their own
+     grid-area. Here it becomes a REAL flex column spanning both grid
+     rows, so competitors and info stack tight to their own content
+     height instead of being stretched to match the board's much taller
+     row -- that mismatch was the large dead space this review flagged. */
+  .tabletop-rail {
+    display: flex;
     flex-direction: column;
+    gap: var(--space-2);
+    grid-area: rail;
+    min-height: 0;
   }
 
+  /* flex-direction:column is already inherited from the base ≤860px
+     rule above (this breakpoint is a subset of it) -- only the padding
+     needs a landscape-specific reduction. */
   .competitor-card {
     padding: var(--space-1) var(--space-2);
   }

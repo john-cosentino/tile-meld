@@ -233,13 +233,6 @@ export function TabletopPage() {
         )}
 
         <div className="tabletop-arcade">
-          <OpponentStrip
-            self={view.self}
-            opponents={view.opponents}
-            activeSeat={view.activeSeat}
-            gameStatus={view.status}
-          />
-
           <div className="tabletop-primary">
             <TabletopStatus
               view={view}
@@ -255,7 +248,7 @@ export function TabletopPage() {
                 hook for tests that need to scope queries to "inside the
                 board" specifically (Phase 8: docs/tabletop-layout-contract.md). */}
             <div className="tabletop-board stack" data-testid="tabletop-board">
-              <span className="muted">Pool: {view.poolCount} tiles</span>
+              <span className="muted tabletop-pool-count">Pool: {view.poolCount} tiles</span>
               <Table
                 sets={draft.sets}
                 resolve={resolve}
@@ -284,10 +277,13 @@ export function TabletopPage() {
 
           {/* One deliberate arcade control bar spanning the full width below
               both rails (matches the approved desktop concept's bottom bar).
-              Two visually distinct clusters, not a flat row of equally-weighted
-              buttons: a muted utility cluster (Undo/Reset/Resign -- grouped so
-              Resign never reads as stranded) and the dominant primary cluster
-              (Draw/Pass/Commit, Commit substantially larger and brighter -- see
+              Two visually distinct clusters, positioned together as one
+              region (not `space-between`, which read as "detached" -- see
+              .tabletop-actions in global.css): a muted utility cluster
+              (Undo/Reset/Resign -- grouped so Resign never reads as
+              stranded, but still spaced from Commit to avoid accidental
+              activation) and the dominant primary cluster (Draw/Pass/
+              Commit, Commit substantially larger and brighter -- see
               .plate-gold--commit in global.css). */}
           <div className="tabletop-actions" role="group" aria-label="Game actions">
             <div className="tabletop-actions-secondary" role="group" aria-label="Turn utilities">
@@ -347,56 +343,76 @@ export function TabletopPage() {
             </div>
           </div>
 
-          {/* Compact secondary rail (right on desktop, folded into the
-              single mobile column between actions and the footer) -- meld
-              progress/hints/mascot tip plus chat, deliberately never wider
-              or louder than the primary gameplay column it sits beside. */}
-          <div className="tabletop-info-rail">
-            <div className="tabletop-feedback">
-              {actionError && (
-                <div className="error-banner" role="alert">
-                  {actionError}
-                </div>
-              )}
-              {!view.self.hasInitialMeld && view.status === "active" && (
-                <p className="muted">
-                  Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
-                </p>
-              )}
-              {turnValidation && !turnValidation.valid && draftChanged && (
-                <p className="muted" role="status">
-                  Hint: this arrangement wouldn't be accepted yet (
-                  {turnValidation.reason.replaceAll("_", " ")}).
-                </p>
-              )}
-              {isMyTurn && (
-                <div className="tabletop-tip">
-                  <img
-                    src={mascotTipIconSrc}
-                    alt=""
-                    aria-hidden="true"
-                    className="tabletop-mascot-icon"
-                  />
-                  <p className="muted">
-                    Committing an arrangement the server rejects costs a 3-tile penalty and ends
-                    your turn -- check the hints above before committing.
-                  </p>
-                </div>
-              )}
-            </div>
+          {/* .tabletop-rail wraps the competitor rail + compact info rail
+              (meld progress/hints/chat) as one unit. It's `display:contents`
+              on every breakpoint except phone-landscape (global.css), so
+              desktop/portrait each place OpponentStrip and the info rail
+              independently via their own grid-area exactly as before --
+              this wrapper only exists so landscape can turn them into one
+              tight-fitting column instead of two items stretched to match
+              the board's much taller row (the dead-space problem this
+              review flagged). Placed after actions in the DOM (not
+              alongside OpponentStrip's old position before the board) so
+              the chat toggle -- the only focusable control in this
+              wrapper, since competitor cards are decorative text/images
+              only -- keeps its place at the END of tab order, after the
+              actual game controls; this has zero effect on visual/grid
+              position at any breakpoint. */}
+          <div className="tabletop-rail">
+            <OpponentStrip
+              self={view.self}
+              opponents={view.opponents}
+              activeSeat={view.activeSeat}
+              gameStatus={view.status}
+            />
 
-            <div className="tabletop-chat" data-testid="tabletop-chat">
-              <button
-                type="button"
-                className="tabletop-chat-toggle"
-                aria-expanded={chatOpen}
-                aria-controls="tabletop-chat-panel"
-                onClick={() => setChatOpen((v) => !v)}
-              >
-                {chatOpen ? "Hide chat" : "Show chat"}
-              </button>
-              <div id="tabletop-chat-panel" hidden={!chatOpen}>
-                <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
+            <div className="tabletop-info-rail">
+              <div className="tabletop-feedback">
+                {actionError && (
+                  <div className="error-banner" role="alert">
+                    {actionError}
+                  </div>
+                )}
+                {!view.self.hasInitialMeld && view.status === "active" && (
+                  <p className="muted">
+                    Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
+                  </p>
+                )}
+                {turnValidation && !turnValidation.valid && draftChanged && (
+                  <p className="muted" role="status">
+                    Hint: this arrangement wouldn't be accepted yet (
+                    {turnValidation.reason.replaceAll("_", " ")}).
+                  </p>
+                )}
+                {isMyTurn && (
+                  <div className="tabletop-tip">
+                    <img
+                      src={mascotTipIconSrc}
+                      alt=""
+                      aria-hidden="true"
+                      className="tabletop-mascot-icon"
+                    />
+                    <p className="muted">
+                      Committing an arrangement the server rejects costs a 3-tile penalty and ends
+                      your turn -- check the hints above before committing.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="tabletop-chat" data-testid="tabletop-chat">
+                <button
+                  type="button"
+                  className="tabletop-chat-toggle"
+                  aria-expanded={chatOpen}
+                  aria-controls="tabletop-chat-panel"
+                  onClick={() => setChatOpen((v) => !v)}
+                >
+                  {chatOpen ? "Hide chat" : "Show chat"}
+                </button>
+                <div id="tabletop-chat-panel" hidden={!chatOpen}>
+                  <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
+                </div>
               </div>
             </div>
           </div>
