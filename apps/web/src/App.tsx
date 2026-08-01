@@ -38,9 +38,24 @@ const ArcadeKitGallery = import.meta.env.DEV
     )
   : null;
 
+// Concept-art overlay for overlay-first building (?concept-overlay=<name>);
+// same literal-DEV gating so it never reaches production builds.
+const ArcadeOverlay = import.meta.env.DEV
+  ? lazy(() =>
+      import("./prototypes/arcade-overlay/ArcadeOverlay.js").then((m) => ({
+        default: m.ArcadeOverlay,
+      })),
+    )
+  : null;
+
 export function App() {
   return (
     <BrowserRouter>
+      {ArcadeOverlay && (
+        <Suspense fallback={null}>
+          <ArcadeOverlay />
+        </Suspense>
+      )}
       <Routes>
         {ArcadeKitGallery && (
           <Route

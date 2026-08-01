@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"e2e: Playwright suites are introduced starting Phase 6/8 (see docs/opus-implementation-plan.md Sec 13)\"",
     "test:e2e": "playwright test",
+    "test:arcade": "playwright test arcade-regions --project=chromium",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

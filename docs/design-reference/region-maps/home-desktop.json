@@ -1,0 +1,23 @@
+{
+  "$comment": "Composition contract for the Home screen at desktop, measured from the concept spec in source pixels. Regions become percent rects (rect / sourceSize) consumed by BOTH the CSS grid that lays the screen out and e2e/tests/arcade-regions.spec.ts, which asserts each [data-region] element's bounding box matches within tolerance. Fictional concept panels are re-purposed for real content but keep the concept's geometry.",
+  "screen": "home",
+  "path": "/",
+  "viewport": { "width": 1440, "height": 900 },
+  "source": "docs/design-reference/v2/new_layout1.png",
+  "sourceSize": [1536, 1024],
+  "tolerance": 0.03,
+  "regions": {
+    "info-badge": [14, 8, 292, 100],
+    "menu-rail": [14, 140, 348, 622],
+    "notice": [12, 790, 480, 154],
+    "masthead": [400, 8, 680, 210],
+    "browser": [374, 226, 762, 552],
+    "bottom-strip": [510, 785, 626, 160],
+    "signed-in": [1134, 8, 380, 100],
+    "profile": [1154, 126, 362, 266],
+    "recovery-access": [1154, 400, 362, 136],
+    "activity": [1148, 546, 368, 200],
+    "rail-extra": [1148, 756, 368, 160],
+    "tip-strip": [10, 952, 1046, 62]
+  }
+}

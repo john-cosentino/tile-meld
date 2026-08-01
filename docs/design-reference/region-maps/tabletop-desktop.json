@@ -1,0 +1,21 @@
+{
+  "$comment": "Composition contract for the Tabletop screen at desktop, measured from concept-01 in source pixels. See home-desktop.json for how region maps are consumed.",
+  "screen": "tabletop",
+  "path": "/games/:gameId",
+  "viewport": { "width": 1440, "height": 900 },
+  "source": "docs/design-reference/meld-masters/meld-masters-concept-01.png",
+  "sourceSize": [1448, 1086],
+  "tolerance": 0.03,
+  "regions": {
+    "tab-league": [8, 18, 256, 102],
+    "competitors": [8, 148, 256, 730],
+    "masthead": [370, 8, 672, 224],
+    "board": [228, 246, 936, 490],
+    "rack": [234, 734, 928, 184],
+    "actions": [148, 926, 1140, 122],
+    "panel-round": [1186, 18, 254, 118],
+    "panel-turn": [1184, 162, 258, 216],
+    "panel-log": [1180, 390, 260, 222],
+    "panel-howto": [1184, 618, 258, 296]
+  }
+}
