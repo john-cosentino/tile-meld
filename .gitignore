@@ -35,3 +35,6 @@ apps/web/dist/
 
 # Claude Code local notes (machine-specific)
 CLAUDE.local.md
+
+# Python bytecode from scripts/
+__pycache__/

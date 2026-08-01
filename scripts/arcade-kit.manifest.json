@@ -1,0 +1,1409 @@
+{
+  "$comment": "Asset-extraction manifest for the arcade pixel kit. Each entry crops a rect from a concept image in docs/design-reference/ and writes a PNG under apps/web/src/assets/arcade/. Processed by scripts/extract-arcade-kit.py; regenerate with `python3 scripts/extract-arcade-kit.py`. rect is [x, y, w, h] in source pixels. slice is 9-slice border insets for CSS border-image (omit for whole-image assets). center: 'keep' leaves pixels as extracted, 'flatten' fills the area inside the slice insets with the median color of flattenSample (removes baked text/content so live HTML text can sit there), 'transparent' punches the interior to alpha 0 (frames over live content). displayScale is the intended CSS upscale factor (integer, rendered with image-rendering: pixelated).",
+  "sources": {
+    "concept01": "docs/design-reference/meld-masters/meld-masters-concept-01.png",
+    "concept02": "docs/design-reference/meld-masters/meld-masters-concept-02.png",
+    "concept03": "docs/design-reference/meld-masters/meld-masters-concept-03.png",
+    "homeSpec": "docs/design-reference/v2/new_layout1.png"
+  },
+  "assets": {
+    "wordmark": {
+      "source": "concept01",
+      "rect": [
+        370,
+        8,
+        672,
+        224
+      ],
+      "center": "keep",
+      "out": "masthead/wordmark.png",
+      "note": "Full painted MELD MASTERS lockup incl. TM and tagline rail; used as <img alt='Meld Masters'>."
+    },
+    "plate-menu-cyan": {
+      "source": "homeSpec",
+      "rect": [
+        14,
+        140,
+        344,
+        112
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        200,
+        190,
+        60,
+        30
+      ],
+      "out": "plate/menu-cyan.png",
+      "note": "PLAY VS COMPUTER plate; interior flattened, icon+text live."
+    },
+    "plate-menu-gold": {
+      "source": "homeSpec",
+      "rect": [
+        14,
+        262,
+        348,
+        126
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        220,
+        320,
+        60,
+        30
+      ],
+      "out": "plate/menu-gold.png"
+    },
+    "plate-menu-purple": {
+      "source": "homeSpec",
+      "rect": [
+        14,
+        396,
+        348,
+        106
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        230,
+        445,
+        60,
+        30
+      ],
+      "out": "plate/menu-purple.png"
+    },
+    "plate-menu-green": {
+      "source": "homeSpec",
+      "rect": [
+        14,
+        514,
+        348,
+        118
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        230,
+        565,
+        60,
+        30
+      ],
+      "out": "plate/menu-green.png"
+    },
+    "plate-menu-red": {
+      "source": "homeSpec",
+      "rect": [
+        14,
+        644,
+        348,
+        118
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        230,
+        700,
+        60,
+        30
+      ],
+      "out": "plate/menu-red.png"
+    },
+    "panel-info-cyan": {
+      "source": "homeSpec",
+      "rect": [
+        14,
+        8,
+        292,
+        100
+      ],
+      "slice": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        150,
+        55,
+        60,
+        30
+      ],
+      "out": "frame/panel-info-cyan.png",
+      "note": "MULTIPLAYER ASYNCHRONOUS PLAY double-outline info panel."
+    },
+    "panel-notice": {
+      "source": "homeSpec",
+      "rect": [
+        12,
+        790,
+        480,
+        154
+      ],
+      "slice": {
+        "top": 16,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        250,
+        880,
+        80,
+        40
+      ],
+      "out": "frame/panel-notice.png",
+      "note": "NOTICE BOARD panel with header hump."
+    },
+    "panel-browser": {
+      "source": "homeSpec",
+      "rect": [
+        374,
+        226,
+        762,
+        552
+      ],
+      "slice": {
+        "top": 18,
+        "right": 18,
+        "bottom": 18,
+        "left": 18
+      },
+      "center": "flatten",
+      "flattenSample": [
+        700,
+        450,
+        80,
+        60
+      ],
+      "out": "frame/panel-browser.png",
+      "note": "ROOM BROWSER main panel frame.",
+      "erase": [
+        {
+          "rect": [
+            200,
+            6,
+            270,
+            40
+          ],
+          "sample": [
+            700,
+            450,
+            80,
+            60
+          ]
+        }
+      ]
+    },
+    "row-selected": {
+      "source": "homeSpec",
+      "rect": [
+        398,
+        306,
+        686,
+        44
+      ],
+      "slice": {
+        "top": 12,
+        "right": 16,
+        "bottom": 12,
+        "left": 16
+      },
+      "center": "transparent",
+      "out": "frame/row-selected.png",
+      "note": "Gold selected-row outline from FAST & FURIOUS row.",
+      "transparentInset": {
+        "top": 10,
+        "right": 10,
+        "bottom": 10,
+        "left": 10
+      },
+      "erase": [
+        {
+          "rect": [
+            660,
+            4,
+            24,
+            36
+          ],
+          "sample": [
+            1000,
+            330,
+            20,
+            8
+          ]
+        }
+      ]
+    },
+    "badge-signed-in": {
+      "source": "homeSpec",
+      "rect": [
+        1134,
+        8,
+        380,
+        100
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1300,
+        60,
+        80,
+        30
+      ],
+      "out": "frame/badge-signed-in.png",
+      "note": "Gold SIGNED IN banner."
+    },
+    "panel-profile": {
+      "source": "homeSpec",
+      "rect": [
+        1154,
+        126,
+        362,
+        266
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1350,
+        300,
+        80,
+        40
+      ],
+      "out": "frame/panel-profile.png",
+      "note": "YOUR PROFILE gold panel.",
+      "erase": [
+        {
+          "rect": [
+            80,
+            8,
+            200,
+            34
+          ],
+          "sample": [
+            1350,
+            300,
+            80,
+            40
+          ]
+        },
+        {
+          "rect": [
+            312,
+            88,
+            44,
+            46
+          ],
+          "sample": [
+            1350,
+            300,
+            80,
+            40
+          ]
+        }
+      ]
+    },
+    "panel-recovery": {
+      "source": "homeSpec",
+      "rect": [
+        1154,
+        400,
+        362,
+        136
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1350,
+        470,
+        80,
+        40
+      ],
+      "out": "frame/panel-recovery.png",
+      "note": "RECOVERY ACCESS magenta panel."
+    },
+    "panel-activity": {
+      "source": "homeSpec",
+      "rect": [
+        1148,
+        546,
+        368,
+        200
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1350,
+        650,
+        80,
+        40
+      ],
+      "out": "frame/panel-activity.png",
+      "note": "RECENT ACTIVITY cyan panel."
+    },
+    "strip-tip": {
+      "source": "homeSpec",
+      "rect": [
+        10,
+        952,
+        1046,
+        62
+      ],
+      "slice": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        500,
+        982,
+        100,
+        24
+      ],
+      "out": "frame/strip-tip.png",
+      "note": "Bottom TIP strip."
+    },
+    "meter-xp": {
+      "source": "homeSpec",
+      "rect": [
+        1332,
+        240,
+        172,
+        18
+      ],
+      "slice": {
+        "top": 5,
+        "right": 6,
+        "bottom": 5,
+        "left": 6
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1460,
+        248,
+        30,
+        8
+      ],
+      "out": "meter/meter-xp.png",
+      "note": "XP bar frame; fill drawn live as a scaled inner div."
+    },
+    "inset-stat": {
+      "source": "homeSpec",
+      "rect": [
+        1170,
+        316,
+        168,
+        72
+      ],
+      "slice": {
+        "top": 10,
+        "right": 10,
+        "bottom": 10,
+        "left": 10
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1480,
+        340,
+        16,
+        20
+      ],
+      "out": "frame/inset-stat.png",
+      "note": "Dark RANK/RATING inset box.",
+      "erase": [
+        {
+          "rect": [
+            30,
+            24,
+            120,
+            44
+          ],
+          "sample": [
+            1480,
+            340,
+            16,
+            20
+          ]
+        }
+      ]
+    },
+    "icon-bolt": {
+      "source": "homeSpec",
+      "rect": [
+        58,
+        158,
+        66,
+        80
+      ],
+      "center": "keep",
+      "out": "icon/bolt.png"
+    },
+    "icon-plus-gold": {
+      "source": "homeSpec",
+      "rect": [
+        50,
+        288,
+        84,
+        80
+      ],
+      "center": "keep",
+      "out": "icon/plus-gold.png"
+    },
+    "icon-grid-purple": {
+      "source": "homeSpec",
+      "rect": [
+        58,
+        420,
+        74,
+        62
+      ],
+      "center": "keep",
+      "out": "icon/grid-purple.png",
+      "note": "JOIN ROOM BY NAME keypad icon."
+    },
+    "icon-grid-green": {
+      "source": "homeSpec",
+      "rect": [
+        58,
+        540,
+        72,
+        66
+      ],
+      "center": "keep",
+      "out": "icon/grid-green.png",
+      "note": "BROWSE PUBLIC LOBBY icon."
+    },
+    "icon-recycle-red": {
+      "source": "homeSpec",
+      "rect": [
+        52,
+        662,
+        82,
+        82
+      ],
+      "center": "keep",
+      "out": "icon/recycle-red.png",
+      "note": "RECOVERY arrows icon."
+    },
+    "icon-lock-circle": {
+      "source": "homeSpec",
+      "rect": [
+        1172,
+        424,
+        84,
+        84
+      ],
+      "center": "keep",
+      "out": "icon/lock-circle.png",
+      "note": "Recovery-access circled padlock."
+    },
+    "icon-star": {
+      "source": "homeSpec",
+      "rect": [
+        406,
+        314,
+        28,
+        28
+      ],
+      "center": "keep",
+      "out": "icon/star.png",
+      "note": "Favorite star outline from browser rows."
+    },
+    "icon-chevron-left": {
+      "source": "homeSpec",
+      "rect": [
+        634,
+        744,
+        46,
+        32
+      ],
+      "center": "keep",
+      "out": "icon/chevron-left.png"
+    },
+    "icon-chevron-right": {
+      "source": "homeSpec",
+      "rect": [
+        826,
+        744,
+        46,
+        32
+      ],
+      "center": "keep",
+      "out": "icon/chevron-right.png"
+    },
+    "icon-chat": {
+      "source": "homeSpec",
+      "rect": [
+        1462,
+        956,
+        62,
+        58
+      ],
+      "center": "keep",
+      "out": "icon/chat.png",
+      "note": "Chat bubble corner button, frame included."
+    },
+    "tab-arcade-league": {
+      "source": "concept01",
+      "rect": [
+        8,
+        18,
+        256,
+        102
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        130,
+        70,
+        60,
+        24
+      ],
+      "out": "frame/tab-arcade-league.png",
+      "note": "Top-left notched tab panel."
+    },
+    "card-competitor-gold": {
+      "source": "concept01",
+      "rect": [
+        8,
+        148,
+        254,
+        212
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        185,
+        235,
+        50,
+        36
+      ],
+      "out": "card/competitor-gold.png",
+      "note": "YOU card frame; portrait + name + score live. Header band inside top slice.",
+      "erase": [
+        {
+          "rect": [
+            8,
+            176,
+            175,
+            30
+          ],
+          "sample": [
+            185,
+            235,
+            50,
+            36
+          ]
+        },
+        {
+          "rect": [
+            222,
+            50,
+            26,
+            110
+          ],
+          "sample": [
+            185,
+            235,
+            50,
+            36
+          ]
+        }
+      ]
+    },
+    "card-competitor-purple": {
+      "source": "concept01",
+      "rect": [
+        8,
+        368,
+        248,
+        168
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        190,
+        480,
+        40,
+        30
+      ],
+      "out": "card/competitor-purple.png",
+      "erase": [
+        {
+          "rect": [
+            212,
+            56,
+            30,
+            84
+          ],
+          "sample": [
+            190,
+            480,
+            40,
+            30
+          ]
+        },
+        {
+          "rect": [
+            30,
+            140,
+            180,
+            24
+          ],
+          "sample": [
+            190,
+            480,
+            40,
+            30
+          ]
+        }
+      ]
+    },
+    "card-competitor-pink": {
+      "source": "concept01",
+      "rect": [
+        8,
+        542,
+        236,
+        160
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        180,
+        650,
+        40,
+        30
+      ],
+      "out": "card/competitor-pink.png",
+      "erase": [
+        {
+          "rect": [
+            24,
+            130,
+            180,
+            26
+          ],
+          "sample": [
+            180,
+            650,
+            40,
+            30
+          ]
+        }
+      ]
+    },
+    "card-competitor-green": {
+      "source": "concept01",
+      "rect": [
+        8,
+        706,
+        236,
+        170
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        180,
+        810,
+        40,
+        30
+      ],
+      "out": "card/competitor-green.png",
+      "erase": [
+        {
+          "rect": [
+            24,
+            138,
+            180,
+            28
+          ],
+          "sample": [
+            180,
+            810,
+            40,
+            30
+          ]
+        },
+        {
+          "rect": [
+            206,
+            0,
+            30,
+            62
+          ],
+          "sample": [
+            180,
+            810,
+            40,
+            30
+          ]
+        }
+      ]
+    },
+    "panel-round": {
+      "source": "concept01",
+      "rect": [
+        1186,
+        18,
+        254,
+        118
+      ],
+      "slice": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1300,
+        75,
+        60,
+        30
+      ],
+      "out": "frame/panel-round.png",
+      "note": "ROUND / TARGET SCORE list panel (top right)."
+    },
+    "panel-turn-lcd": {
+      "source": "concept01",
+      "rect": [
+        1184,
+        162,
+        258,
+        216
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1300,
+        230,
+        60,
+        20
+      ],
+      "out": "frame/panel-turn-lcd.png",
+      "note": "YOUR TURN gold panel; LCD + meter live inside."
+    },
+    "lcd-screen": {
+      "source": "concept01",
+      "rect": [
+        1204,
+        252,
+        218,
+        74
+      ],
+      "slice": {
+        "top": 10,
+        "right": 10,
+        "bottom": 10,
+        "left": 10
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1208,
+        258,
+        10,
+        12
+      ],
+      "out": "lcd/lcd-screen.png",
+      "note": "Dark LCD screen inset; digits rendered live in pixel font."
+    },
+    "meter-segment": {
+      "source": "concept01",
+      "rect": [
+        1213,
+        333,
+        200,
+        24
+      ],
+      "slice": {
+        "top": 6,
+        "right": 8,
+        "bottom": 6,
+        "left": 8
+      },
+      "center": "keep",
+      "out": "meter/meter-segment.png",
+      "note": "Segmented progress meter under the LCD; keep segments, overlay live fill mask."
+    },
+    "panel-log": {
+      "source": "concept01",
+      "rect": [
+        1180,
+        390,
+        260,
+        222
+      ],
+      "slice": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1300,
+        500,
+        60,
+        40
+      ],
+      "out": "frame/panel-log.png",
+      "note": "MOVE LOG cyan panel.",
+      "erase": [
+        {
+          "rect": [
+            50,
+            0,
+            160,
+            30
+          ],
+          "sample": [
+            1300,
+            500,
+            60,
+            40
+          ]
+        },
+        {
+          "rect": [
+            218,
+            76,
+            36,
+            140
+          ],
+          "sample": [
+            1300,
+            500,
+            60,
+            40
+          ]
+        }
+      ]
+    },
+    "panel-howto": {
+      "source": "concept01",
+      "rect": [
+        1184,
+        618,
+        258,
+        296
+      ],
+      "slice": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1300,
+        720,
+        60,
+        40
+      ],
+      "out": "frame/panel-howto.png",
+      "erase": [
+        {
+          "rect": [
+            6,
+            40,
+            28,
+            206
+          ],
+          "sample": [
+            1300,
+            720,
+            60,
+            40
+          ]
+        }
+      ]
+    },
+    "sprite-mascot": {
+      "source": "concept01",
+      "rect": [
+        1186,
+        812,
+        68,
+        98
+      ],
+      "center": "keep",
+      "out": "sprite/mascot.png",
+      "note": "Robot mascot; sits on panel fill."
+    },
+    "bubble-speech": {
+      "source": "concept01",
+      "rect": [
+        1256,
+        820,
+        176,
+        78
+      ],
+      "slice": {
+        "top": 12,
+        "right": 14,
+        "bottom": 12,
+        "left": 20
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1340,
+        855,
+        40,
+        20
+      ],
+      "out": "frame/bubble-speech.png"
+    },
+    "board-frame": {
+      "source": "concept01",
+      "rect": [
+        228,
+        246,
+        936,
+        490
+      ],
+      "center": "transparent",
+      "transparentInset": {
+        "top": 40,
+        "right": 90,
+        "bottom": 16,
+        "left": 90
+      },
+      "out": "board/board-frame.png",
+      "note": "Trapezoid ON THE TABLE frame; perspective, not 9-sliceable \u2014 stretched whole with punched interior; sets/tiles render live on top.",
+      "erase": [
+        {
+          "rect": [
+            340,
+            4,
+            290,
+            56
+          ],
+          "sample": [
+            290,
+            400,
+            50,
+            40
+          ]
+        }
+      ]
+    },
+    "rack-band": {
+      "source": "concept01",
+      "rect": [
+        234,
+        734,
+        928,
+        184
+      ],
+      "slice": {
+        "top": 36,
+        "right": 22,
+        "bottom": 8,
+        "left": 22
+      },
+      "center": "flatten",
+      "flattenSample": [
+        246,
+        886,
+        20,
+        12
+      ],
+      "out": "board/rack-band.png",
+      "note": "YOUR RACK band incl. header tab and stats footer zone; tiles + text live.",
+      "erase": [
+        {
+          "rect": [
+            346,
+            0,
+            280,
+            34
+          ],
+          "sample": [
+            592,
+            752,
+            8,
+            8
+          ]
+        },
+        {
+          "rect": [
+            30,
+            26,
+            866,
+            14
+          ],
+          "sample": [
+            300,
+            752,
+            40,
+            10
+          ]
+        },
+        {
+          "rect": [
+            120,
+            148,
+            700,
+            30
+          ],
+          "sample": [
+            246,
+            886,
+            20,
+            12
+          ]
+        }
+      ]
+    },
+    "tile-face": {
+      "source": "concept01",
+      "rect": [
+        270,
+        764,
+        78,
+        112
+      ],
+      "slice": {
+        "top": 14,
+        "right": 16,
+        "bottom": 22,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        277,
+        775,
+        12,
+        12
+      ],
+      "out": "tile/tile-face.png",
+      "note": "Rack tile incl. bevel + drop shadow; numeral + pip rendered live."
+    },
+    "pip-diamond": {
+      "source": "concept01",
+      "rect": [
+        295,
+        833,
+        26,
+        24
+      ],
+      "center": "keep",
+      "out": "tile/pip-diamond.png"
+    },
+    "pip-circle": {
+      "source": "concept01",
+      "rect": [
+        546,
+        833,
+        26,
+        24
+      ],
+      "center": "keep",
+      "out": "tile/pip-circle.png"
+    },
+    "pip-triangle": {
+      "source": "concept01",
+      "rect": [
+        808,
+        833,
+        28,
+        26
+      ],
+      "center": "keep",
+      "out": "tile/pip-triangle.png"
+    },
+    "pip-square": {
+      "source": "concept01",
+      "rect": [
+        420,
+        640,
+        24,
+        22
+      ],
+      "center": "keep",
+      "out": "tile/pip-square.png",
+      "note": "From the SET OF 4 nines (purple squares) on the table."
+    },
+    "plate-action-cyan": {
+      "source": "concept01",
+      "rect": [
+        148,
+        926,
+        258,
+        118
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        280,
+        985,
+        60,
+        30
+      ],
+      "out": "plate/action-cyan.png",
+      "note": "DRAW plate."
+    },
+    "plate-action-purple": {
+      "source": "concept01",
+      "rect": [
+        414,
+        926,
+        246,
+        118
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        540,
+        985,
+        60,
+        30
+      ],
+      "out": "plate/action-purple.png",
+      "note": "PASS plate."
+    },
+    "plate-action-dim": {
+      "source": "concept01",
+      "rect": [
+        678,
+        926,
+        244,
+        118
+      ],
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "center": "flatten",
+      "flattenSample": [
+        800,
+        985,
+        60,
+        30
+      ],
+      "out": "plate/action-dim.png",
+      "note": "SORT plate (quieter tone, secondary actions)."
+    },
+    "plate-action-orange": {
+      "source": "concept01",
+      "rect": [
+        928,
+        926,
+        360,
+        122
+      ],
+      "slice": {
+        "top": 16,
+        "right": 20,
+        "bottom": 16,
+        "left": 20
+      },
+      "center": "flatten",
+      "flattenSample": [
+        1100,
+        985,
+        80,
+        30
+      ],
+      "out": "plate/action-orange.png",
+      "note": "COMMIT TURN dominant plate."
+    },
+    "icon-draw-stack": {
+      "source": "concept01",
+      "rect": [
+        186,
+        952,
+        62,
+        56
+      ],
+      "center": "keep",
+      "out": "icon/draw-stack.png"
+    },
+    "icon-pass-hand": {
+      "source": "concept01",
+      "rect": [
+        446,
+        950,
+        52,
+        58
+      ],
+      "center": "keep",
+      "out": "icon/pass-hand.png"
+    },
+    "icon-sort-tiles": {
+      "source": "concept01",
+      "rect": [
+        700,
+        954,
+        74,
+        44
+      ],
+      "center": "keep",
+      "out": "icon/sort-tiles.png",
+      "note": "1-2-3 mini-tiles sort glyph."
+    },
+    "icon-commit-arrow": {
+      "source": "concept01",
+      "rect": [
+        1216,
+        962,
+        58,
+        44
+      ],
+      "center": "keep",
+      "out": "icon/commit-arrow.png"
+    },
+    "button-gear": {
+      "source": "concept01",
+      "rect": [
+        8,
+        1002,
+        70,
+        68
+      ],
+      "center": "keep",
+      "out": "icon/button-gear.png",
+      "note": "Framed corner gear button."
+    },
+    "button-speaker": {
+      "source": "concept01",
+      "rect": [
+        1370,
+        1002,
+        72,
+        68
+      ],
+      "center": "keep",
+      "out": "icon/button-speaker.png"
+    },
+    "footer-strip-phone": {
+      "source": "concept03",
+      "rect": [
+        116,
+        1608,
+        706,
+        56
+      ],
+      "slice": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      },
+      "center": "flatten",
+      "flattenSample": [
+        400,
+        1635,
+        80,
+        24
+      ],
+      "out": "frame/footer-strip-phone.png",
+      "note": "ARCADE LEAGUE / SEASON footer strip from phone concept."
+    },
+    "button-square-menu": {
+      "source": "concept03",
+      "rect": [
+        10,
+        12,
+        82,
+        82
+      ],
+      "center": "keep",
+      "out": "icon/button-square-menu.png",
+      "note": "Phone hamburger corner button."
+    }
+  }
+}
