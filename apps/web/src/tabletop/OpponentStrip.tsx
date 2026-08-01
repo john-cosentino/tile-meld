@@ -10,16 +10,22 @@ type OpponentStripProps = {
 
 // Deterministic by seat index (not DOM position) so the self card and
 // every opponent card get a stable accent regardless of how many seats
-// are actually present -- matches the approved concept's per-competitor
-// color coding.
-const ACCENT_BY_SEAT: readonly string[] = [
-  "var(--neon-cyan)",
-  "var(--neon-gold)",
-  "var(--neon-purple)",
-  "var(--neon-green)",
-];
+// are actually present -- matches the concept's per-competitor color
+// coding (concept-01's YOU/RICO/PIXIE/T-BONE card frames: gold, purple,
+// pink, green). The tone selects a concept-sliced frame in
+// arcade-kit.css; the accent colors the text.
+const TONES = ["gold", "purple", "pink", "green"] as const;
+const ACCENT_BY_TONE: Record<(typeof TONES)[number], string> = {
+  gold: "var(--neon-gold)",
+  purple: "var(--neon-purple)",
+  pink: "var(--neon-pink)",
+  green: "var(--neon-green)",
+};
+function toneFor(seatIndex: number): (typeof TONES)[number] {
+  return TONES[seatIndex % TONES.length]!;
+}
 function accentFor(seatIndex: number): string {
-  return ACCENT_BY_SEAT[seatIndex % ACCENT_BY_SEAT.length]!;
+  return ACCENT_BY_TONE[toneFor(seatIndex)];
 }
 
 /**
@@ -42,16 +48,16 @@ function accentFor(seatIndex: number): string {
 export function OpponentStrip({ self, opponents, activeSeat, gameStatus }: OpponentStripProps) {
   const selfIsActive = activeSeat === self.seatIndex && gameStatus === "active";
   return (
-    <div className="tabletop-competitors">
+    <div className="tabletop-competitors" tabIndex={0}>
       <div
-        className={`competitor-card competitor-card--self${selfIsActive ? " competitor-card--active" : ""}`}
+        className={`competitor-card competitor-card--tone-${toneFor(self.seatIndex)} competitor-card--self${selfIsActive ? " competitor-card--active" : ""}`}
         style={{ ["--seat-accent" as string]: accentFor(self.seatIndex) }}
       >
         <img
           className="opponent-portrait"
           src={portraitForSeat(self.seatIndex, false)}
           alt=""
-          width={96}
+          width={64}
           height={96}
           decoding="async"
         />
@@ -79,14 +85,14 @@ export function OpponentStrip({ self, opponents, activeSeat, gameStatus }: Oppon
             return (
               <li
                 key={o.seatIndex}
-                className={`competitor-card opponent-row${isActive ? " opponent-row--active" : ""}`}
+                className={`competitor-card competitor-card--tone-${toneFor(o.seatIndex)} opponent-row${isActive ? " opponent-row--active" : ""}`}
                 style={{ ["--seat-accent" as string]: accentFor(o.seatIndex) }}
               >
                 <img
                   className="opponent-portrait"
                   src={portraitForSeat(o.seatIndex, o.isComputer)}
                   alt=""
-                  width={96}
+                  width={64}
                   height={96}
                   decoding="async"
                 />

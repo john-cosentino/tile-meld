@@ -56,6 +56,7 @@ test("Recovery page has no serious/critical accessibility violations", async ({ 
 test("Waiting Room page has no serious/critical accessibility violations", async ({ page }) => {
   await waitForReady(page);
   const username = await claimUsername(page, "A11y");
+  await waitForReady(page);
   await page.getByRole("link", { name: "New Game" }).click();
   await page.getByRole("radio", { name: "2 players" }).check();
   await page.getByRole("radio", { name: "Private (invite by code)" }).check();

@@ -1109,6 +1109,20 @@
             50,
             40
           ]
+        },
+        {
+          "rect": [
+            0,
+            240,
+            30,
+            250
+          ],
+          "sample": [
+            480,
+            690,
+            40,
+            20
+          ]
         }
       ]
     },
@@ -1448,6 +1462,18 @@
       "center": "keep",
       "out": "icon/button-square-menu.png",
       "note": "Phone hamburger corner button."
+    },
+    "wordmark-tabletop": {
+      "source": "concept01",
+      "rect": [
+        370,
+        8,
+        672,
+        224
+      ],
+      "center": "keep",
+      "out": "masthead/wordmark-tabletop.png",
+      "note": "Tabletop masthead crop from concept-01 at exactly the masthead region rect (region-maps/tabletop-desktop.json)."
     }
   }
 }

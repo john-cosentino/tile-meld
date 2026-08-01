@@ -12,10 +12,10 @@ import { RematchPanel } from "../tabletop/RematchPanel.js";
 import { TabletopStatus } from "../tabletop/TabletopStatus.js";
 import { OpponentStrip } from "../tabletop/OpponentStrip.js";
 import { TabletopMasthead } from "../tabletop/TabletopMasthead.js";
-import { ActionIcon } from "../tabletop/ActionIcon.js";
-import { ChromeIcon } from "../tabletop/ChromeIcon.js";
 import { HowToPlay } from "../tabletop/HowToPlay.js";
-import mascotTipIconSrc from "../assets/tabletop-production/sidebar/mascot-tip-icon.png";
+import { ArcadePlate } from "../arcade/ArcadePlate.js";
+import { frameStyle } from "../arcade/frameStyle.js";
+import { arcadeAssets } from "../assets/arcade/manifest.js";
 import {
   hintForSet,
   runningInitialMeldTotal,
@@ -234,39 +234,85 @@ export function TabletopPage() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="tabletop-shell stack">
-        <TabletopMasthead />
+      <div className="tabletop-shell arcade-scanlines" data-region-root>
+        {/* Regions below are composed to concept-01's geometry
+            (docs/design-reference/region-maps/tabletop-desktop.json,
+            checked by `pnpm run test:arcade`); phone portrait recomposes
+            to concept-03's flow via the media query in arcade-kit.css. */}
+        <div className="tt-region tt-region--masthead" data-region="masthead">
+          <TabletopMasthead />
+        </div>
 
-        {game.banner && (
-          <div className="error-banner" role="alert">
-            {game.banner} <button onClick={game.dismissBanner}>Dismiss</button>
-          </div>
-        )}
-        {game.warningToast && (
-          <div className="warning-banner" role="status">
-            <span aria-hidden="true">⏰</span> {game.warningToast}{" "}
-            <button onClick={game.dismissWarningToast}>Dismiss</button>
-          </div>
-        )}
-
-        {view.status === "completed" && (
-          <div className="card card--accent-gold stack" role="status">
-            <p className="tabletop-winner">
-              {winnerName
-                ? winnerName === "You"
-                  ? "You won!"
-                  : `${winnerName} won.`
-                : "Game over."}
-            </p>
-            <RematchPanel roomId={view.roomId} gameId={gameId!} />
-            <Link to="/">
-              <button>Back to your rooms</button>
-            </Link>
+        {/* Transient banners overlay the composition rather than
+            reflowing it -- the layout contract requires the board to stay
+            visible and stable through connection churn. */}
+        {(game.banner || game.warningToast || view.status === "completed") && (
+          <div className="tt-overlays">
+            {game.banner && (
+              <div className="error-banner" role="alert">
+                {game.banner} <button onClick={game.dismissBanner}>Dismiss</button>
+              </div>
+            )}
+            {game.warningToast && (
+              <div className="warning-banner" role="status">
+                <span aria-hidden="true">⏰</span> {game.warningToast}{" "}
+                <button onClick={game.dismissWarningToast}>Dismiss</button>
+              </div>
+            )}
+            {view.status === "completed" && (
+              <div className="card card--accent-gold stack tt-completed" role="status">
+                <p className="tabletop-winner">
+                  {winnerName
+                    ? winnerName === "You"
+                      ? "You won!"
+                      : `${winnerName} won.`
+                    : "Game over."}
+                </p>
+                <RematchPanel roomId={view.roomId} gameId={gameId!} />
+                <Link to="/">
+                  <button>Back to your rooms</button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
         <div className="tabletop-arcade">
-          <div className="tabletop-primary">
+          {/* Concept tab slot (top-left): real pool data. */}
+          <div className="tt-region tt-region--tab tt-tab" data-region="tab-league">
+            <span className="visually-hidden">Pool: {view.poolCount} tiles</span>
+            <span className="tt-tab-line" aria-hidden="true">
+              Pool
+            </span>
+            <span className="tt-tab-value" aria-hidden="true">
+              {view.poolCount} tiles
+            </span>
+          </div>
+
+          {/* Concept ROUND panel slot (top-right): real game meta. */}
+          <div
+            className="tt-region tt-region--round tt-meta"
+            data-region="panel-round"
+            style={frameStyle("panel-round")}
+          >
+            <span className="tt-meta-row">
+              Seats: <strong>{view.opponents.length + 1}</strong>
+            </span>
+            <span className="tt-meta-row">
+              Initial meld:{" "}
+              <strong>
+                {view.self.hasInitialMeld ? "done" : `${meldTotal} / ${INITIAL_MELD_THRESHOLD}`}
+              </strong>
+            </span>
+          </div>
+
+          {/* Concept YOUR TURN panel: the existing status component (H1
+              turn text, connection, deadline) inside the gold LCD frame. */}
+          <div
+            className="tt-region tt-region--turn tt-turn"
+            data-region="panel-turn"
+            style={frameStyle("panel-turn-lcd")}
+          >
             <TabletopStatus
               view={view}
               connectionState={game.connectionState}
@@ -274,52 +320,54 @@ export function TabletopPage() {
               isMyTurn={isMyTurn}
               computerIsPlaying={computerIsPlaying}
             />
-
-            {/* No separate aria-label here -- Table.tsx already renders its
-                own "Table" <h2>, and duplicating that name on this wrapper
-                would just create two identically-named landmarks nested
-                inside each other. data-testid is a stable, a11y-tree-inert
-                hook for tests that need to scope queries to "inside the
-                board" specifically (Phase 8: docs/tabletop-layout-contract.md). */}
-            <div className="tabletop-board stack" data-testid="tabletop-board">
-              <span className="muted tabletop-pool-count">Pool: {view.poolCount} tiles</span>
-              <Table
-                sets={draft.sets}
-                resolve={resolve}
-                selectedTileId={selectedTileId}
-                onSelectTile={onSelectTile}
-                onActivateZone={onActivateZone}
-                onReorder={(setId, tileId, direction) => reorderInSet(setId, tileId, direction)}
-                setValidity={setValidity}
-              />
-            </div>
-
-            {/* Same reasoning as tabletop-board -- Rack.tsx's own heading
-                and its DropZone's aria-label="Your rack" are already the
-                stable accessible names here; data-testid is test-only. */}
-            <div className="tabletop-rack" data-testid="tabletop-rack">
-              <Rack
-                tileIds={draft.rack}
-                resolve={resolve}
-                selectedTileId={selectedTileId}
-                onSelectTile={onSelectTile}
-                onActivateZone={() => onActivateZone({ zone: "rack" })}
-                onReorder={reorderRack}
-              />
-            </div>
           </div>
 
-          {/* One deliberate arcade control bar spanning the full width below
-              both rails (matches the approved desktop concept's bottom bar).
-              Two visually distinct clusters, positioned together as one
-              region (not `space-between`, which read as "detached" -- see
-              .tabletop-actions in global.css): a muted utility cluster
-              (Undo/Reset/Resign -- grouped so Resign never reads as
-              stranded, but still spaced from Commit to avoid accidental
-              activation) and the dominant primary cluster (Draw/Pass/
-              Commit, Commit substantially larger and brighter -- see
-              .plate-gold--commit in global.css). */}
-          <div className="tabletop-actions" role="group" aria-label="Game actions">
+          {/* No separate aria-label here -- Table.tsx already renders its
+              own "Table" <h2>; data-testid is a stable, a11y-tree-inert
+              hook (Phase 8: docs/tabletop-layout-contract.md). */}
+          <div
+            className="tt-region tt-region--board tabletop-board"
+            data-region="board"
+            data-testid="tabletop-board"
+          >
+            <Table
+              sets={draft.sets}
+              resolve={resolve}
+              selectedTileId={selectedTileId}
+              onSelectTile={onSelectTile}
+              onActivateZone={onActivateZone}
+              onReorder={(setId, tileId, direction) => reorderInSet(setId, tileId, direction)}
+              setValidity={setValidity}
+            />
+          </div>
+
+          {/* Rack.tsx's own heading and DropZone aria-label are the stable
+              accessible names here; data-testid is test-only. */}
+          <div
+            className="tt-region tt-region--rack tabletop-rack"
+            data-region="rack"
+            data-testid="tabletop-rack"
+          >
+            <Rack
+              tileIds={draft.rack}
+              resolve={resolve}
+              selectedTileId={selectedTileId}
+              onSelectTile={onSelectTile}
+              onActivateZone={() => onActivateZone({ zone: "rack" })}
+              onReorder={reorderRack}
+            />
+          </div>
+
+          {/* The concept's cabinet control bar: muted utility cluster
+              (Undo/Reset/Resign) plus the dominant Draw/Pass/Commit plates
+              from the concept-sliced kit. Button names are unchanged --
+              they're load-bearing for tests and e2e. */}
+          <div
+            className="tt-region tt-region--actions tabletop-actions"
+            data-region="actions"
+            role="group"
+            aria-label="Game actions"
+          >
             <div className="tabletop-actions-secondary" role="group" aria-label="Turn utilities">
               <button className="action-utility" disabled={!canUndo} onClick={undo}>
                 Undo
@@ -350,116 +398,119 @@ export function TabletopPage() {
               )}
             </div>
             <div className="tabletop-actions-primary">
-              <button
-                className="plate-cyan"
+              <ArcadePlate
+                plate="plate-action-cyan"
+                icon="icon-draw-stack"
+                iconScale={0.6}
+                label="Draw tile"
+                className="tt-plate"
                 disabled={!isMyTurn || view.poolCount === 0}
                 onClick={() => void handleDraw()}
-              >
-                <ActionIcon icon="draw" />
-                Draw tile
-              </button>
-              <button
-                className="plate-purple"
+              />
+              <ArcadePlate
+                plate="plate-action-purple"
+                icon="icon-pass-hand"
+                iconScale={0.6}
+                label="Pass"
+                className="tt-plate"
                 disabled={!isMyTurn || view.poolCount > 0}
                 onClick={() => void handlePass()}
-              >
-                <ActionIcon icon="pass" />
-                Pass
-              </button>
-              <button
-                className="plate-gold plate-gold--commit"
+              />
+              <ArcadePlate
+                plate="plate-action-orange"
+                icon="icon-commit-arrow"
+                iconScale={0.6}
+                label="Commit turn"
+                className="tt-plate tt-plate--commit"
                 disabled={!isMyTurn || draft.sets.length === 0}
                 onClick={() => void handleCommit()}
-              >
-                <ActionIcon icon="commit" className="action-icon action-icon--commit" />
-                Commit turn
-              </button>
+              />
             </div>
           </div>
 
-          {/* .tabletop-rail wraps the competitor rail + compact info rail
-              (meld progress/hints/chat) as one unit. It's `display:contents`
-              on every breakpoint except phone-landscape (global.css), so
-              desktop/portrait each place OpponentStrip and the info rail
-              independently via their own grid-area exactly as before --
-              this wrapper only exists so landscape can turn them into one
-              tight-fitting column instead of two items stretched to match
-              the board's much taller row (the dead-space problem this
-              review flagged). Placed after actions in the DOM (not
-              alongside OpponentStrip's old position before the board) so
-              the chat toggle -- the only focusable control in this
-              wrapper, since competitor cards are decorative text/images
-              only -- keeps its place at the END of tab order, after the
-              actual game controls; this has zero effect on visual/grid
-              position at any breakpoint. */}
-          <div className="tabletop-rail">
+          {/* Concept competitor rail: one framed card per seat. Placed
+              after actions in the DOM so the chat toggle keeps its place
+              near the end of tab order; grid position is independent of
+              source order. */}
+          <div className="tt-region tt-region--competitors" data-region="competitors">
             <OpponentStrip
               self={view.self}
               opponents={view.opponents}
               activeSeat={view.activeSeat}
               gameStatus={view.status}
             />
+          </div>
 
-            <div className="tabletop-info-rail">
-              <HowToPlay />
-
-              {hasFeedbackContent && (
-                <div className="tabletop-feedback">
-                  {actionError && (
-                    <div className="error-banner" role="alert">
-                      {actionError}
-                    </div>
-                  )}
-                  {meldProgressVisible && (
-                    <p className="muted">
-                      Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
-                    </p>
-                  )}
-                  {invalidArrangementHintVisible && (
-                    <p className="muted" role="status">
-                      Hint: this arrangement wouldn't be accepted yet (
-                      {turnValidation!.reason.replaceAll("_", " ")}).
-                    </p>
-                  )}
-                  {isMyTurn && (
-                    <div className="tabletop-tip">
-                      <img
-                        src={mascotTipIconSrc}
-                        alt=""
-                        aria-hidden="true"
-                        className="tabletop-mascot-icon"
-                      />
-                      <p className="muted">
-                        Committing an arrangement the server rejects costs a 3-tile penalty and ends
-                        your turn -- check the hints above before committing.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="tabletop-chat" data-testid="tabletop-chat">
-                <button
-                  type="button"
-                  className="tabletop-chat-toggle"
-                  aria-expanded={chatOpen}
-                  aria-controls="tabletop-chat-panel"
-                  onClick={() => setChatOpen((v) => !v)}
-                >
-                  {chatOpen ? "Hide chat" : "Show chat"}
-                </button>
-                <div id="tabletop-chat-panel" hidden={!chatOpen}>
-                  <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
-                </div>
-              </div>
+          {/* Concept MOVE LOG panel slot: the chat lives here. */}
+          <div
+            className="tt-region tt-region--log tt-chat tabletop-chat"
+            data-region="panel-log"
+            data-testid="tabletop-chat"
+            style={frameStyle("panel-log")}
+          >
+            <button
+              type="button"
+              className="tabletop-chat-toggle"
+              aria-expanded={chatOpen}
+              aria-controls="tabletop-chat-panel"
+              onClick={() => setChatOpen((v) => !v)}
+            >
+              {chatOpen ? "Hide chat" : "Show chat"}
+            </button>
+            <div id="tabletop-chat-panel" hidden={!chatOpen} className="tt-chat-body">
+              <ChatPanel gameId={gameId!} readOnly={view.status === "completed"} />
             </div>
+          </div>
+
+          {/* Concept HOW TO PLAY panel slot: rules plus the live feedback
+              (errors, meld progress, hints, mascot tip). */}
+          <div
+            className="tt-region tt-region--howto tt-howto"
+            data-region="panel-howto"
+            tabIndex={0}
+            style={frameStyle("panel-howto")}
+          >
+            <HowToPlay />
+
+            {hasFeedbackContent && (
+              <div className="tabletop-feedback">
+                {actionError && (
+                  <div className="error-banner" role="alert">
+                    {actionError}
+                  </div>
+                )}
+                {meldProgressVisible && (
+                  <p className="muted">
+                    Initial meld progress: {meldTotal} / {INITIAL_MELD_THRESHOLD}
+                  </p>
+                )}
+                {invalidArrangementHintVisible && (
+                  <p className="muted" role="status">
+                    Hint: this arrangement wouldn't be accepted yet (
+                    {turnValidation!.reason.replaceAll("_", " ")}).
+                  </p>
+                )}
+                {isMyTurn && (
+                  <div className="tabletop-tip">
+                    <img
+                      src={arcadeAssets["sprite-mascot"].url}
+                      alt=""
+                      aria-hidden="true"
+                      className="tabletop-mascot-icon"
+                    />
+                    <p className="muted">
+                      Committing an arrangement the server rejects costs a 3-tile penalty and ends
+                      your turn -- check the hints above before committing.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="tabletop-footer" aria-hidden="true">
-          <ChromeIcon icon="lightning" />
           <span>{PRODUCT_NAME}</span>
-          <ChromeIcon icon="stats" />
         </div>
       </div>
     </DndContext>

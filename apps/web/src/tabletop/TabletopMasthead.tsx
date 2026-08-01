@@ -1,23 +1,23 @@
 import { PRODUCT_NAME } from "@tile-meld/shared";
-import wordmarkSrc from "../assets/tabletop-production/masthead/wordmark-meld-masters.png";
+import { arcadeAssets } from "../assets/arcade/manifest.js";
 
 /**
- * The tabletop's own arcade masthead -- the approved illustrated wordmark,
- * scoped to this page only. The site-wide header/nav in RootLayout.tsx is
- * untouched and still renders above this on every route, including this
- * one; this is an additional, tabletop-specific region, not a replacement
- * for the global header.
+ * The tabletop masthead: the concept art's own pixels at exactly the
+ * masthead region rect (docs/design-reference/region-maps/
+ * tabletop-desktop.json), so the region matches the spec by construction.
+ * Decorative -- the page's H1 is the turn heading in TabletopStatus.
  */
 export function TabletopMasthead() {
   return (
     <div className="tabletop-masthead">
       <img
-        src={wordmarkSrc}
+        src={arcadeAssets["wordmark-tabletop"].url}
         alt=""
         aria-hidden="true"
         className="tabletop-masthead-wordmark"
-        width={2400}
-        height={900}
+        width={arcadeAssets["wordmark-tabletop"].width}
+        height={arcadeAssets["wordmark-tabletop"].height}
+        draggable={false}
       />
       <span className="visually-hidden">{PRODUCT_NAME}</span>
     </div>

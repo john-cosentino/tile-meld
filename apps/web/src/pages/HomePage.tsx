@@ -187,6 +187,7 @@ export function HomePage() {
 
       <ArcadePanel
         frame="panel-browser"
+        scrollable
         title="Your Games"
         className="home-region home-region--browser home-browser"
         data-region="browser"
@@ -239,6 +240,7 @@ export function HomePage() {
 
       <ArcadePanel
         frame="panel-profile"
+        scrollable
         title="Your Profile"
         titleColor="var(--neon-gold)"
         className="home-region home-region--profile home-profile"
@@ -265,6 +267,7 @@ export function HomePage() {
 
       <ArcadePanel
         frame="panel-recovery"
+        scrollable
         title="Recovery Access"
         titleColor="var(--neon-purple)"
         className="home-region home-region--recovery home-recovery"
@@ -285,6 +288,7 @@ export function HomePage() {
 
       <ArcadePanel
         frame="panel-activity"
+        scrollable
         title="Recent Activity"
         className="home-region home-region--activity home-activity"
         data-region="activity"
@@ -307,6 +311,7 @@ export function HomePage() {
 
       <ArcadePanel
         frame="panel-howto"
+        scrollable
         title="How to Play"
         className="home-region home-region--rail-extra home-howto"
         data-region="rail-extra"

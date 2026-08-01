@@ -46,6 +46,7 @@ test.describe("390px mobile viewport: no horizontal overflow", () => {
   test("Waiting Room with a portrait", async ({ page }) => {
     await waitForReady(page);
     const username = await claimUsername(page, "MobileOverflowWait");
+    await waitForReady(page);
     await page.getByRole("link", { name: "New Game" }).click();
     await page.getByRole("radio", { name: "2 players" }).check();
     await page.getByRole("radio", { name: "Private (invite by code)" }).check();

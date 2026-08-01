@@ -60,6 +60,7 @@ import img_button_gear from "./icon/button-gear.png";
 import img_button_speaker from "./icon/button-speaker.png";
 import img_footer_strip_phone from "./frame/footer-strip-phone.png";
 import img_button_square_menu from "./icon/button-square-menu.png";
+import img_wordmark_tabletop from "./masthead/wordmark-tabletop.png";
 
 export interface ArcadeAsset {
   url: string;
@@ -129,6 +130,7 @@ export const arcadeAssets = {
   "button-speaker": { url: img_button_speaker, width: 72, height: 68 },
   "footer-strip-phone": { url: img_footer_strip_phone, width: 706, height: 56, slice: { top: 14, right: 14, bottom: 14, left: 14 } },
   "button-square-menu": { url: img_button_square_menu, width: 82, height: 82 },
+  "wordmark-tabletop": { url: img_wordmark_tabletop, width: 672, height: 224 },
 } as const satisfies Record<string, ArcadeAsset>;
 
 export type ArcadeAssetName = keyof typeof arcadeAssets;

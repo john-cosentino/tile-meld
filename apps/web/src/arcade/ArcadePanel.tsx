@@ -16,6 +16,9 @@ interface ArcadePanelProps extends Omit<HTMLAttributes<HTMLElement>, "title"> {
   className?: string | undefined;
   style?: CSSProperties | undefined;
   children?: ReactNode | undefined;
+  /** Set when the body can scroll (overflow-y auto in CSS): makes the
+   * scroll container keyboard-focusable (axe scrollable-region-focusable). */
+  scrollable?: boolean | undefined;
 }
 
 /**
@@ -31,6 +34,7 @@ export function ArcadePanel({
   className,
   style,
   children,
+  scrollable,
   ...rest
 }: ArcadePanelProps) {
   return (
@@ -47,7 +51,9 @@ export function ArcadePanel({
           {title}
         </Heading>
       )}
-      <div className="arcade-kit-panel-body">{children}</div>
+      <div className="arcade-kit-panel-body" tabIndex={scrollable ? 0 : undefined}>
+        {children}
+      </div>
     </section>
   );
 }

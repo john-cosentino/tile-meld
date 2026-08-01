@@ -1,18 +1,21 @@
 {
-  "$comment": "Composition contract for the Tabletop screen at phone portrait, measured from concept-03 in source pixels. Rougher first pass than the desktop maps; refine against the coordinate grid during Phase 5 before wiring the CSS.",
+  "$comment": "Composition contract for the Tabletop at phone portrait. Unlike the desktop maps, this is a FLOW contract: concept-03's single-column arrangement with content-driven heights, so the check asserts the top-to-bottom ORDER of regions (and their presence), not percent rects. 'order' lists data-region names top to bottom as they appear in concept-03's arrangement mapped onto the app's real regions.",
   "screen": "tabletop",
   "path": "/games/:gameId",
   "viewport": { "width": 390, "height": 844 },
   "source": "docs/design-reference/meld-masters/meld-masters-concept-03.png",
   "sourceSize": [941, 1672],
-  "tolerance": 0.035,
-  "regions": {
-    "masthead": [150, 8, 640, 210],
-    "score-strip": [8, 228, 925, 200],
-    "board": [8, 440, 925, 470],
-    "rack": [8, 915, 925, 180],
-    "log-feedback": [8, 1100, 925, 240],
-    "actions": [8, 1350, 925, 260],
-    "footer": [8, 1615, 925, 50]
-  }
+  "flow": true,
+  "order": [
+    "masthead",
+    "panel-turn",
+    "tab-league",
+    "competitors",
+    "board",
+    "rack",
+    "panel-round",
+    "actions",
+    "panel-log",
+    "panel-howto"
+  ]
 }

@@ -27,7 +27,7 @@ test("new user: empty Your Games section, full dashboard hierarchy, and username
   await expect(page.getByRole("link", { name: "Browse Public Lobby" })).toBeVisible();
 
   await claimUsername(page, "DashNew");
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(page);
   await expect(page.getByRole("button", { name: /play vs computer/i })).toBeEnabled();
 });
 
@@ -37,15 +37,15 @@ test("New Game, Join Room by Name, and Browse Public Lobby navigate to their rou
   await waitForReady(page);
   await claimUsername(page, "DashNav");
 
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(page);
   await page.getByRole("link", { name: "New Game" }).click();
   await expect(page.getByRole("heading", { name: "Create a room" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(page);
   await page.getByRole("link", { name: "Join Room by Name" }).click();
   await expect(page.getByLabel("Room name")).toBeVisible();
 
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(page);
   await page.getByRole("link", { name: "Browse Public Lobby" }).click();
   await expect(page.getByRole("heading", { name: "Public lobby" })).toBeVisible();
 });
@@ -66,7 +66,7 @@ test("a private room shows Open before it fills, then Active once the host manua
   // Capacity 3: two members joining leaves it below capacity, so it stays
   // "open" until the host explicitly starts early -- auto-start only fires
   // at exactly-capacity (Phase 4).
-  await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(hostPage);
   await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "3 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
@@ -76,7 +76,7 @@ test("a private room shows Open before it fills, then Active once the host manua
     hostPage.getByRole("heading", { name: hostUsername }),
   );
 
-  await guestPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(guestPage);
   await guestPage.getByRole("link", { name: "Join Room by Name" }).click();
   await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
@@ -85,7 +85,7 @@ test("a private room shows Open before it fills, then Active once the host manua
     guestPage.getByRole("heading", { name: hostUsername }),
   );
 
-  await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(hostPage);
   const openCard = hostPage.getByRole("link", { name: new RegExp(hostUsername) });
   await expect(openCard).toBeVisible();
   await expect(openCard).toContainText("Open");
@@ -100,7 +100,7 @@ test("a private room shows Open before it fills, then Active once the host manua
     hostPage.getByRole("heading", { name: "Your rack (14)" }),
   );
 
-  await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(hostPage);
   const activeCard = hostPage.getByRole("link", { name: new RegExp(hostUsername) });
   await expect(activeCard).toBeVisible();
   await expect(activeCard).toContainText("Active");
@@ -120,7 +120,7 @@ test("a 2-player room shows Active on the dashboard immediately after capacity a
   const hostUsername = await claimUsername(hostPage, "DashAuto");
   await claimUsername(guestPage, "DashAutoGuest");
 
-  await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(hostPage);
   await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
@@ -130,7 +130,7 @@ test("a 2-player room shows Active on the dashboard immediately after capacity a
     hostPage.getByRole("heading", { name: hostUsername }),
   );
 
-  await guestPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(guestPage);
   await guestPage.getByRole("link", { name: "Join Room by Name" }).click();
   await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
@@ -141,7 +141,7 @@ test("a 2-player room shows Active on the dashboard immediately after capacity a
       .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
   );
 
-  await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(hostPage);
   const card = hostPage.getByRole("link", { name: new RegExp(hostUsername) });
   await expect(card).toBeVisible({ timeout: 15000 });
   await expect(card).toContainText("Active");
@@ -160,7 +160,7 @@ test("Completed vs Resigned: the resigning player sees Resigned, the other sees 
   const hostUsername = await claimUsername(hostPage, "DashEnd");
   await claimUsername(guestPage, "DashEndGuest");
 
-  await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(hostPage);
   await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
@@ -171,7 +171,7 @@ test("Completed vs Resigned: the resigning player sees Resigned, the other sees 
   );
   const roomCode = await readRoomCode(hostPage);
 
-  await guestPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(guestPage);
   await guestPage.getByRole("link", { name: "Join Room by Name" }).click();
   await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
@@ -181,7 +181,17 @@ test("Completed vs Resigned: the resigning player sees Resigned, the other sees 
       .getByRole("heading", { name: hostUsername })
       .or(guestPage.getByRole("heading", { name: "Your rack (14)" })),
   );
-  expect(await readRoomCode(hostPage)).toBe(roomCode);
+  // The guest's join fills the 2-seat room, so capacity auto-start can
+  // navigate the host off the waiting room at any moment now -- the room
+  // code line only exists until then. Assert code stability only if the
+  // waiting room is still observable; otherwise the game heading below
+  // covers the same successful-join fact.
+  const hostCodeLine = hostPage.getByText(/^Room code: /);
+  const hostRack = hostPage.getByRole("heading", { name: "Your rack (14)" });
+  await hostCodeLine.or(hostRack).first().waitFor({ timeout: 15000 });
+  if (await hostCodeLine.count()) {
+    expect(await readRoomCode(hostPage)).toBe(roomCode);
+  }
 
   await expect(hostPage.getByRole("heading", { name: "Your rack (14)" })).toBeVisible({
     timeout: 15000,
@@ -200,12 +210,12 @@ test("Completed vs Resigned: the resigning player sees Resigned, the other sees 
     timeout: 10000,
   });
 
-  await guestPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(guestPage);
   const guestCard = guestPage.getByRole("link", { name: new RegExp(hostUsername) });
   await expect(guestCard).toBeVisible();
   await expect(guestCard).toContainText("Resigned");
 
-  await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(hostPage);
   const hostCard = hostPage.getByRole("link", { name: new RegExp(hostUsername) });
   await expect(hostCard).toBeVisible();
   await expect(hostCard).toContainText("Completed");
@@ -246,7 +256,7 @@ test("a Play vs Computer room shows its computer indicator on the dashboard card
   test.setTimeout(60000);
   await waitForReady(page);
   await claimUsername(page, "DashBot");
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(page);
 
   await clickUntilSettled(
     page,
@@ -254,7 +264,7 @@ test("a Play vs Computer room shows its computer indicator on the dashboard card
     page.getByRole("button", { name: "Leave room" }),
   );
 
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  await waitForReady(page);
   const card = page.getByRole("link").filter({ hasText: "vs Computer" });
   await expect(card).toBeVisible();
   await expect(card).toContainText("Open");

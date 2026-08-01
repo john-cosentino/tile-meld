@@ -373,6 +373,8 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   const hostUsername = await claimUsername(hostPage, "Host");
   await claimUsername(guestPage, "Guest");
 
+  await waitForReady(hostPage);
+
   await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
@@ -455,6 +457,8 @@ export async function startNPlayerGame(
   for (const [index, guestPage] of guestPages.entries()) {
     await claimUsername(guestPage, `P${index + 2}`);
   }
+
+  await waitForReady(hostPage);
 
   await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: `${capacity} players` }).check();

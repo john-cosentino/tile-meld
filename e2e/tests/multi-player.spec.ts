@@ -73,6 +73,8 @@ test("3-player room: host manually starts early with only 2 of 3 seats filled", 
   const hostUsername = await claimUsername(hostPage, "Early3Host");
   await claimUsername(guestPage, "Early3Guest");
 
+  await waitForReady(hostPage);
+
   await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "3 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
