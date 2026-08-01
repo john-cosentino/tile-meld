@@ -15,6 +15,12 @@ export function RootLayout() {
   // every other route's header is completely untouched, still the same
   // markup and links either way.
   const isTabletop = useMatch("/games/:gameId") !== null;
+  // Home owns its own full-bleed arcade-dashboard composition, and its own
+  // primary-action tiles restate every link the global nav offers -- the
+  // horizontal .app-nav row is redundant chrome there. The links stay in
+  // the DOM, still real <a> elements, on every OTHER route exactly as
+  // before; only Home's own .app-nav is hidden via .app-header--home.
+  const isHome = useMatch("/") !== null;
 
   if (state.status === "loading") {
     return (
@@ -42,7 +48,7 @@ export function RootLayout() {
         Skip to main content
       </a>
       <header
-        className={`app-header row${isTabletop ? " app-header--tabletop" : ""}`}
+        className={`app-header row${isTabletop ? " app-header--tabletop" : ""}${isHome ? " app-header--home" : ""}`}
         style={{ justifyContent: "space-between" }}
       >
         <div className="row">
@@ -76,7 +82,11 @@ export function RootLayout() {
       {/* tabIndex={-1} so activating the skip link above actually moves
           focus here -- an in-page fragment link only scrolls without it,
           leaving keyboard/AT users with no indication anything happened. */}
-      <main id="main-content" className={isTabletop ? "page page--tabletop" : "page"} tabIndex={-1}>
+      <main
+        id="main-content"
+        className={isTabletop ? "page page--tabletop" : isHome ? "page page--home" : "page"}
+        tabIndex={-1}
+      >
         <Outlet />
       </main>
     </>

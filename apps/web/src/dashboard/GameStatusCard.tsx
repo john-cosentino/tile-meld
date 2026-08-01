@@ -28,9 +28,6 @@ export function GameStatusCard({ room }: { readonly room: DashboardRoomSummary }
   const href = dashboardCardHref(room, status);
   const displayName = formatRoomName(room);
   const visibilityLabel = room.visibility === "public" ? "Public" : "Private";
-  const meta = `${room.memberCount}/${room.capacity} players · ${visibilityLabel}${
-    room.hasComputer ? " · vs Computer" : ""
-  }`;
   const activity = `Last activity ${formatRelativeTime(room.lastActivityAt)}`;
 
   const body = (
@@ -39,8 +36,15 @@ export function GameStatusCard({ room }: { readonly room: DashboardRoomSummary }
         <strong>{displayName}</strong>
         <span className={`status-badge status-badge--${status.tone}`}>{status.label}</span>
       </div>
-      <div className="muted">{meta}</div>
-      <div className="muted">{activity}</div>
+      <div className="muted dashboard-card-meta">
+        {room.memberCount}/{room.capacity} players ·{" "}
+        <span className={`dashboard-card-visibility dashboard-card-visibility--${room.visibility}`}>
+          {visibilityLabel}
+        </span>
+        {room.hasComputer && <span className="dashboard-card-tag"> · vs Computer</span>}
+        {" · "}
+        {activity}
+      </div>
     </>
   );
 
