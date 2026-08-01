@@ -16,24 +16,19 @@ Display font of the original 2026-07 visual refresh (decision D5,
 - The `.ttf` files were converted to `.woff2` with `ttf2woff2` (lossless
   container conversion); only the runtime `.woff2` files are kept.
 
-## Arcade pixel-font candidates (2026-08-01)
+## VT323 — the arcade font (2026-08-01)
 
-Candidates for `--font-arcade`, the single typeface of the concept-art
-fidelity rebuild (see `docs/design-reference/arcade-review/font-candidates`
-sheets and the arcade kit gallery at `/prototype/arcade-kit`). Latin-subset
-`.woff2` files fetched directly from Google Fonts' CDN
-(`fonts.gstatic.com`) via the `fonts.googleapis.com/css2` API on
-2026-08-01:
+`--font-arcade`, the single typeface of the concept-art fidelity rebuild.
+User-selected at the Phase 2 checkpoint from a four-candidate comparison
+against the concept text (`docs/design-reference/arcade-review/
+font-candidates.png`); the losing candidates (Press Start 2P,
+DotGothic16) were deleted after the decision.
 
 - `VT323-Regular.woff2` — VT323, by Peter Hull. OFL 1.1.
   Upstream: <https://github.com/phoikoi/VT323>
-- `PressStart2P-Regular.woff2` — Press Start 2P, by CodeMan38. OFL 1.1.
-  Upstream: <https://github.com/codeman38/PressStart2P>
-- `DotGothic16-Regular.woff2` — DotGothic16, by Fontworks. OFL 1.1.
-  Upstream: <https://github.com/fontworks-fonts/DotGothic16>
-
-The losing candidates will be deleted once the user picks the winner at
-the Phase 2 checkpoint.
+- Latin-subset `.woff2` fetched directly from Google Fonts' CDN
+  (`fonts.gstatic.com`) via the `fonts.googleapis.com/css2` API on
+  2026-08-01.
 
 ## License
 

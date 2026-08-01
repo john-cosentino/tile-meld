@@ -13,10 +13,10 @@
 
 /* ---------------------------------------------------------------- fonts */
 
-/* Arcade font candidates (all OFL, self-hosted -- see assets/fonts/README.md).
-   The Phase 2 checkpoint picks one; the losers get deleted. An @font-face
-   that is never referenced is never downloaded, so declaring all three is
-   free at runtime. */
+/* VT323 -- the arcade font, user-selected at the 2026-08-01 Phase 2
+   checkpoint from a four-candidate comparison against the concept text
+   (docs/design-reference/arcade-review/font-candidates.png). OFL,
+   self-hosted -- see assets/fonts/README.md. */
 @font-face {
   font-family: "VT323";
   src: url("../assets/fonts/VT323-Regular.woff2") format("woff2");
@@ -25,25 +25,7 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "Press Start 2P";
-  src: url("../assets/fonts/PressStart2P-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "DotGothic16";
-  src: url("../assets/fonts/DotGothic16-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
-  /* Tentative default pending the Phase 2 checkpoint decision. VT323 is the
-     closest shape to the concept's terminal-style mono pixel font. */
   --font-arcade: "VT323", "Silkscreen", monospace;
   /* One glow recipe shared by arcade text so panels read as one machine. */
   --arcade-text-glow: 0 0 6px rgba(63, 224, 255, 0.45);

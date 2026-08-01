@@ -13,11 +13,10 @@ import "./gallery.css";
 // Mock content on purpose: this route mounts outside AppProviders, so it
 // must not touch auth, sockets, or the API.
 
+// VT323 was user-selected at the Phase 2 checkpoint (2026-08-01); the
+// specimen stays so future kit reviews can eyeball the type at a glance.
 const FONT_CANDIDATES = [
-  { label: "VT323 (tentative default)", family: '"VT323", monospace' },
-  { label: "Press Start 2P", family: '"Press Start 2P", monospace' },
-  { label: "DotGothic16", family: '"DotGothic16", monospace' },
-  { label: "Silkscreen (current display font)", family: '"Silkscreen", monospace' },
+  { label: "VT323 (--font-arcade, user-selected 2026-08-01)", family: '"VT323", monospace' },
 ];
 
 const FONT_SAMPLES = [
@@ -33,7 +32,7 @@ export function ArcadeKitGallery() {
     <main className="kit-gallery arcade-scanlines">
       <h1 className="kit-gallery-heading">Arcade kit gallery — dev only</h1>
 
-      <h2 className="kit-gallery-section">Font candidates (pick one at this checkpoint)</h2>
+      <h2 className="kit-gallery-section">Type specimen</h2>
       <div className="kit-gallery-fonts">
         {FONT_CANDIDATES.map((font) => (
           <section key={font.label} className="kit-gallery-font-card">
