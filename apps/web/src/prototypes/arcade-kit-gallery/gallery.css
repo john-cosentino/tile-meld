@@ -1,0 +1,96 @@
+/* Dev-only gallery chrome; never shipped (route is DEV-gated in App.tsx). */
+
+.kit-gallery {
+  position: relative;
+  min-height: 100dvh;
+  padding: 1.5rem 2rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.kit-gallery-heading {
+  font-family: var(--font-arcade);
+  text-transform: uppercase;
+  color: var(--neon-gold);
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.kit-gallery-section {
+  font-family: var(--font-arcade);
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  font-size: 1.15rem;
+  margin: 1.25rem 0 0;
+  border-bottom: 1px solid var(--grid-line);
+  padding-bottom: 0.25rem;
+}
+
+.kit-gallery-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.kit-gallery-tiles {
+  align-items: flex-end;
+}
+
+.kit-gallery-fonts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.kit-gallery-font-card {
+  border: 1px solid var(--grid-line);
+  padding: 0.75rem 1rem;
+}
+
+.kit-gallery-font-name {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+}
+
+.kit-gallery-font-sample {
+  margin: 0.35rem 0;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.kit-gallery-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.kit-gallery-log li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kit-gallery-lcd-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.kit-gallery-badge {
+  font-family: var(--font-arcade);
+  text-transform: uppercase;
+  color: var(--neon-gold);
+  font-size: 1.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 420px;
+}

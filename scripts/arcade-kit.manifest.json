@@ -363,7 +363,23 @@
         40
       ],
       "out": "frame/panel-recovery.png",
-      "note": "RECOVERY ACCESS magenta panel."
+      "note": "RECOVERY ACCESS magenta panel.",
+      "erase": [
+        {
+          "rect": [
+            104,
+            98,
+            200,
+            28
+          ],
+          "sample": [
+            1350,
+            470,
+            80,
+            40
+          ]
+        }
+      ]
     },
     "panel-activity": {
       "source": "homeSpec",

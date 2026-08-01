@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App.js";
 import { applyBrandingTokens } from "./styles/applyBrandingTokens.js";
 import "./styles/global.css";
+import "./styles/arcade-kit.css";
 
 applyBrandingTokens();
 
