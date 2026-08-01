@@ -70,7 +70,7 @@ export interface ArcadeAsset {
 }
 
 export const arcadeAssets = {
-  "wordmark": { url: img_wordmark, width: 672, height: 224 },
+  "wordmark": { url: img_wordmark, width: 680, height: 210 },
   "plate-menu-cyan": { url: img_plate_menu_cyan, width: 344, height: 112, slice: { top: 16, right: 16, bottom: 16, left: 16 } },
   "plate-menu-gold": { url: img_plate_menu_gold, width: 348, height: 126, slice: { top: 16, right: 16, bottom: 16, left: 16 } },
   "plate-menu-purple": { url: img_plate_menu_purple, width: 348, height: 106, slice: { top: 16, right: 16, bottom: 16, left: 16 } },

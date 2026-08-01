@@ -69,7 +69,10 @@ export function RootLayout() {
         </div>
         <NotificationsControl />
       </header>
-      {state.newRecoverySecret && (
+      {/* On home the arcade composition owns this guidance: HomePage
+          renders the same alert inside its Recovery Access panel, so the
+          banner would double up (and break the concept layout) there. */}
+      {state.newRecoverySecret && !isHome && (
         <div
           className="error-banner"
           role="alert"

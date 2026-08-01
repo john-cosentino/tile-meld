@@ -1,21 +1,21 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { frameStyle } from "./frameStyle.js";
 import type { ArcadeAssetName } from "../assets/arcade/manifest.js";
 
 type HeadingLevel = "h1" | "h2" | "h3";
 
-interface ArcadePanelProps {
+interface ArcadePanelProps extends Omit<HTMLAttributes<HTMLElement>, "title"> {
   /** 9-sliced frame asset, e.g. "panel-log", "panel-profile". */
   frame: ArcadeAssetName;
   /** Live-text panel title, rendered top-center in the arcade font. */
-  title?: string;
+  title?: string | undefined;
   /** Heading element for the title (default h2). */
-  as?: HeadingLevel;
+  as?: HeadingLevel | undefined;
   /** Title color token, e.g. "var(--neon-gold)"; defaults to the frame's accent via CSS. */
-  titleColor?: string;
-  className?: string;
-  style?: CSSProperties;
-  children?: ReactNode;
+  titleColor?: string | undefined;
+  className?: string | undefined;
+  style?: CSSProperties | undefined;
+  children?: ReactNode | undefined;
 }
 
 /**
@@ -31,9 +31,11 @@ export function ArcadePanel({
   className,
   style,
   children,
+  ...rest
 }: ArcadePanelProps) {
   return (
     <section
+      {...rest}
       className={className ? `arcade-kit-panel ${className}` : "arcade-kit-panel"}
       style={{ ...frameStyle(frame), ...style }}
     >

@@ -17,7 +17,14 @@ function PlateContent({ icon, iconScale = 1, label, sublabel }: PlateContentProp
       {icon && <ArcadeIcon name={icon} scale={iconScale} className="arcade-kit-plate-icon" />}
       <span className="arcade-kit-plate-text">
         <span className="arcade-kit-plate-label">{label}</span>
-        {sublabel !== undefined && <span className="arcade-kit-plate-sub">{sublabel}</span>}
+        {/* aria-hidden keeps the control's accessible name exactly the
+            label (tests and SC 2.5.3 Label in Name both depend on it);
+            the sublabel is a visual hint only. */}
+        {sublabel !== undefined && (
+          <span className="arcade-kit-plate-sub" aria-hidden="true">
+            {sublabel}
+          </span>
+        )}
       </span>
     </>
   );

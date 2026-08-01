@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import type { GetRoomResponse } from "@tile-meld/shared";
@@ -102,9 +102,9 @@ describe("HomePage -- page hierarchy", () => {
 
   it("labels every creation action exactly as specified, and retains Play vs Computer", async () => {
     renderHome();
-    expect(await screen.findByRole("button", { name: "New Game" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Join Room by Name" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Browse Public Lobby" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "New Game" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Join Room by Name" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Browse Public Lobby" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /play vs computer/i })).toBeInTheDocument();
   });
 });
@@ -150,7 +150,9 @@ describe("HomePage -- Your Games loading/empty/error states", () => {
     );
     renderHome();
 
-    expect(await screen.findByText("StillHere")).toBeInTheDocument();
+    expect(
+      await within(await screen.findByRole("list", { name: "Your games" })).findByText("StillHere"),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(removeRecentRoom).toHaveBeenCalledWith("room-1");
   });
@@ -172,7 +174,9 @@ describe("HomePage -- friendly name and legacy fallback", () => {
     getRoom.mockResolvedValue(roomFixture({ name: "John" }));
     renderHome();
 
-    expect(await screen.findByText("John")).toBeInTheDocument();
+    expect(
+      await within(await screen.findByRole("list", { name: "Your games" })).findByText("John"),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/room abcd1234/i)).not.toBeInTheDocument();
   });
 
@@ -181,7 +185,9 @@ describe("HomePage -- friendly name and legacy fallback", () => {
     getRoom.mockResolvedValue(roomFixture({ roomId: "room-2", code: "LEGACY01", name: null }));
     renderHome();
 
-    expect(await screen.findByText("Room LEGACY01")).toBeInTheDocument();
+    expect(
+      await within(await screen.findByRole("list", { name: "Your games" })).findByText("Room LEGACY01"),
+    ).toBeInTheDocument();
   });
 });
 

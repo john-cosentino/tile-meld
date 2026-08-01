@@ -26,7 +26,7 @@ test("Home page has no serious/critical accessibility violations", async ({ page
 
 test("Create Room page has no serious/critical accessibility violations", async ({ page }) => {
   await waitForReady(page);
-  await page.getByRole("link", { name: "Create Room" }).click();
+  await page.getByRole("link", { name: "New Game" }).click();
   await expect(page.getByRole("heading", { name: "Create a room" })).toBeVisible();
   await assertNoSeriousViolations(page, "Create Room");
 });
@@ -56,7 +56,7 @@ test("Recovery page has no serious/critical accessibility violations", async ({ 
 test("Waiting Room page has no serious/critical accessibility violations", async ({ page }) => {
   await waitForReady(page);
   const username = await claimUsername(page, "A11y");
-  await page.getByRole("link", { name: "Create Room" }).click();
+  await page.getByRole("link", { name: "New Game" }).click();
   await page.getByRole("radio", { name: "2 players" }).check();
   await page.getByRole("radio", { name: "Private (invite by code)" }).check();
   await clickUntilSettled(

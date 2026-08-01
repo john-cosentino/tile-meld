@@ -8,16 +8,16 @@
   },
   "assets": {
     "wordmark": {
-      "source": "concept01",
+      "source": "homeSpec",
       "rect": [
-        370,
+        400,
         8,
-        672,
-        224
+        680,
+        210
       ],
       "center": "keep",
       "out": "masthead/wordmark.png",
-      "note": "Full painted MELD MASTERS lockup incl. TM and tagline rail; used as <img alt='Meld Masters'>."
+      "note": "Masthead crop from the home spec at exactly the masthead region rect (region-maps/home-desktop.json), so the region renders the spec's own pixels. Used as <img alt='Meld Masters'>."
     },
     "plate-menu-cyan": {
       "source": "homeSpec",
@@ -213,6 +213,20 @@
             6,
             270,
             40
+          ],
+          "sample": [
+            700,
+            450,
+            80,
+            60
+          ]
+        },
+        {
+          "rect": [
+            240,
+            505,
+            280,
+            47
           ],
           "sample": [
             700,
@@ -1005,6 +1019,20 @@
             40,
             28,
             206
+          ],
+          "sample": [
+            1300,
+            720,
+            60,
+            40
+          ]
+        },
+        {
+          "rect": [
+            8,
+            266,
+            242,
+            22
           ],
           "sample": [
             1300,

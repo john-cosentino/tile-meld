@@ -312,3 +312,442 @@
   text-transform: uppercase;
   color: var(--text-primary);
 }
+
+/* ------------------------------------------------------- home composition */
+
+/* The Home screen traced from the concept spec new_layout1.png. Every
+   home-region--* rule below is that region's rect from
+   docs/design-reference/region-maps/home-desktop.json expressed as
+   percentages of the composition (rect / sourceSize); the arcade-regions
+   e2e spec asserts the live layout stays within tolerance of the same
+   numbers. Change the map, then these values -- never just one side. */
+
+.app-header--home {
+  /* The concept home has no top nav bar; the menu rail IS the main
+     navigation landmark on this screen (HomePage.tsx). The header's
+     links stay in the DOM for direct-URL layouts but play no part here. */
+  display: none;
+}
+
+.page--home {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+
+.home-arcade {
+  position: relative;
+  height: 100dvh;
+  min-height: 640px;
+  overflow: hidden;
+  font-family: var(--font-arcade);
+}
+
+.home-region {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+}
+
+.home-region--info-badge { left: 0.911%; top: 0.781%; width: 19.01%; height: 9.766%; }
+.home-region--menu-rail { left: 0.911%; top: 13.672%; width: 22.656%; height: 60.742%; }
+.home-region--notice { left: 0.781%; top: 77.148%; width: 31.25%; height: 15.039%; }
+.home-region--masthead { left: 26.042%; top: 0.781%; width: 44.271%; height: 20.508%; }
+.home-region--browser { left: 24.349%; top: 22.07%; width: 49.609%; height: 53.906%; }
+.home-region--bottom-strip { left: 33.203%; top: 76.66%; width: 40.755%; height: 15.625%; }
+.home-region--signed-in { left: 73.828%; top: 0.781%; width: 24.74%; height: 9.766%; }
+.home-region--profile { left: 75.13%; top: 12.305%; width: 23.568%; height: 25.977%; }
+.home-region--recovery { left: 75.13%; top: 39.062%; width: 23.568%; height: 13.281%; }
+.home-region--activity { left: 74.74%; top: 53.32%; width: 23.958%; height: 19.531%; }
+.home-region--rail-extra { left: 74.74%; top: 73.828%; width: 23.958%; height: 15.625%; }
+.home-region--tip-strip { left: 0.651%; top: 92.969%; width: 68.099%; height: 6.055%; }
+
+.home-masthead-heading {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-wordmark {
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+}
+
+.home-info-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.home-info-line {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.2vw, 1.15rem);
+  line-height: 1.1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  text-shadow: var(--arcade-text-glow);
+}
+
+.home-menu-rail {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5%;
+}
+
+.home-claim-note {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.home-menu-plate {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.home-browser .arcade-kit-panel-body {
+  overflow-y: auto;
+  padding: 0.75rem 1.25rem;
+}
+
+.home-games-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Concept browser rows: flatten the dashboard card into a dense list row.
+   The card keeps its identity as one focusable link. */
+.home-browser .dashboard-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--grid-line);
+  border-radius: 0;
+  background: rgba(6, 16, 24, 0.55);
+  text-decoration: none;
+  color: var(--text-primary);
+  font-family: var(--font-arcade);
+  font-size: 1.1rem;
+}
+
+.home-browser .dashboard-card:hover,
+.home-browser .dashboard-card:focus-visible {
+  border-color: var(--neon-gold);
+  box-shadow: 0 0 8px rgba(255, 201, 77, 0.35);
+}
+
+.home-browser .dashboard-card .row {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.home-browser-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.home-bottom-strip,
+.home-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 1.25rem;
+}
+
+.home-strip-text {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.1vw, 1.2rem);
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.home-tip-label {
+  color: var(--neon-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 1.25rem;
+}
+
+.home-signed-in {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.4rem 1.4rem;
+  gap: 2px;
+}
+
+.home-signed-in-eyebrow {
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--neon-gold);
+}
+
+.home-signed-in-name {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-profile-body {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  height: 100%;
+}
+
+.home-profile-window {
+  flex: none;
+  display: block;
+  padding: 3px;
+  background: #061018;
+  border: 2px solid;
+  border-color: #03080d #1b3a4a #1b3a4a #03080d;
+}
+
+.home-profile-portrait {
+  display: block;
+  width: 72px;
+  height: 108px;
+  image-rendering: pixelated;
+}
+
+.home-profile-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.home-profile-name {
+  font-size: 1.35rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-profile-fact {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.home-recovery-text {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.home-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.home-activity-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 1.02rem;
+}
+
+.home-activity-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.home-activity-when {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.home-activity-empty,
+.home-howto-list {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.home-howto-list {
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 1.0rem;
+}
+
+.home-notice {
+  padding: 0.5rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  overflow: hidden;
+}
+
+.home-notice-title {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--neon-cyan);
+  text-shadow: var(--arcade-text-glow);
+}
+
+.home-notice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+
+.home-notice-list li::before {
+  content: "▪ ";
+  color: var(--neon-green);
+}
+
+/* Panels' interior scroll: composition height is fixed, content is real. */
+.home-recovery .arcade-kit-panel-body,
+.home-activity .arcade-kit-panel-body,
+.home-howto .arcade-kit-panel-body,
+.home-profile .arcade-kit-panel-body {
+  overflow-y: auto;
+  padding: 0.4rem 1rem;
+}
+
+/* Recomposed single-column flow on small screens -- a purpose-built
+   mobile arrangement, not a squeezed desktop grid. */
+@media (max-width: 900px) {
+  .home-arcade {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .home-region {
+    position: static;
+    width: auto;
+    height: auto;
+  }
+
+  .home-region--masthead {
+    order: 0;
+    height: clamp(120px, 24vw, 180px);
+  }
+
+  .home-region--signed-in { order: 1; }
+  .home-region--menu-rail { order: 2; gap: 0.6rem; }
+  .home-menu-plate { min-height: 64px; }
+  .home-region--browser { order: 3; min-height: 240px; }
+  .home-region--bottom-strip { order: 4; }
+  .home-region--profile { order: 5; }
+  .home-region--recovery { order: 6; }
+  .home-region--activity { order: 7; }
+  .home-region--rail-extra { order: 8; }
+  .home-region--notice { order: 9; }
+  .home-region--tip-strip { order: 10; }
+  .home-region--info-badge { display: none; }
+}
+
+.home-recovery-alert {
+  margin: 0 0 0.35rem;
+  font-size: 1.02rem;
+  line-height: 1.25;
+  color: var(--neon-gold);
+}
+
+/* Concept menu plates wrap their labels over two lines; single-line
+   ellipsis was cutting "Play vs Computer (beta)". */
+.home-menu-plate .arcade-kit-plate-label {
+  white-space: normal;
+  overflow: visible;
+  font-size: clamp(1.1rem, 1.5vw, 1.5rem);
+}
+
+.home-menu-plate .arcade-kit-plate-sub {
+  white-space: normal;
+  overflow: visible;
+}
+
+.home-wordmark {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Concept background: perspective-grid glow horizon behind the masthead
+   plus the fine navy grid, layered over --bg-page. */
+.home-arcade {
+  background:
+    radial-gradient(ellipse 60% 28% at 50% 8%, rgba(63, 224, 255, 0.14), transparent 70%),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 48px),
+    var(--bg-page);
+}
+
+.home-profile-portrait {
+  width: 64px;
+  height: 96px;
+}
+
+.home-profile-body {
+  align-items: flex-start;
+}
+
+/* The masthead asset is the spec's own pixels at exactly this region's
+   rect, so it fills the region edge to edge; its baked backdrop continues
+   the page's CSS grid/glow. */
+.home-wordmark {
+  object-fit: fill;
+}
+
+.home-signed-in {
+  padding: 0.15rem 1.3rem;
+  gap: 0;
+}
+
+.home-signed-in-eyebrow {
+  font-size: 0.85rem;
+}
+
+.home-signed-in-name {
+  font-size: 1.15rem;
+}
+
+.home-notice-list {
+  font-size: 0.92rem;
+  overflow: hidden;
+}

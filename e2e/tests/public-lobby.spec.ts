@@ -40,7 +40,7 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   // headroom to spare even after the Quick Join arrival further below --
   // so this test can verify the lobby-join UI itself, not auto-start
   // (already covered by two-player-smoke.spec.ts / multi-player.spec.ts).
-  await hostPage.getByRole("link", { name: "Create Room" }).click();
+  await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "4 players" }).check();
   await hostPage.getByRole("radio", { name: "Public (listed in the lobby)" }).check();
   const hostRoomName = `public_${hostUsername}`;
@@ -101,7 +101,7 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   // fill and auto-start -- landing directly on the Tabletop with a dealt
   // rack. Either one proves the same thing this test cares about: the
   // endpoint placed the player into a real, live public room, end to end.
-  await quickJoinHostPage.getByRole("link", { name: "Create Room" }).click();
+  await quickJoinHostPage.getByRole("link", { name: "New Game" }).click();
   await quickJoinHostPage.getByRole("radio", { name: "3 players" }).check();
   await quickJoinHostPage.getByRole("radio", { name: "Public (listed in the lobby)" }).check();
   await clickUntilSettled(

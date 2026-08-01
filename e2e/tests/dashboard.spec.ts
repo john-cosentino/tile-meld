@@ -22,9 +22,9 @@ test("new user: empty Your Games section, full dashboard hierarchy, and username
   const playVsComputer = page.getByRole("button", { name: /play vs computer/i });
   await expect(playVsComputer).toBeDisabled();
   await expect(page.getByText(/claim a username/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: "New Game" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Join Room by Name" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Browse Public Lobby" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "New Game" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Join Room by Name" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Browse Public Lobby" })).toBeVisible();
 
   await claimUsername(page, "DashNew");
   await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
@@ -38,15 +38,15 @@ test("New Game, Join Room by Name, and Browse Public Lobby navigate to their rou
   await claimUsername(page, "DashNav");
 
   await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await page.getByRole("button", { name: "New Game" }).click();
+  await page.getByRole("link", { name: "New Game" }).click();
   await expect(page.getByRole("heading", { name: "Create a room" })).toBeVisible();
 
   await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await page.getByRole("button", { name: "Join Room by Name" }).click();
+  await page.getByRole("link", { name: "Join Room by Name" }).click();
   await expect(page.getByLabel("Room name")).toBeVisible();
 
   await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await page.getByRole("button", { name: "Browse Public Lobby" }).click();
+  await page.getByRole("link", { name: "Browse Public Lobby" }).click();
   await expect(page.getByRole("heading", { name: "Public lobby" })).toBeVisible();
 });
 
@@ -67,7 +67,7 @@ test("a private room shows Open before it fills, then Active once the host manua
   // "open" until the host explicitly starts early -- auto-start only fires
   // at exactly-capacity (Phase 4).
   await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await hostPage.getByRole("button", { name: "New Game" }).click();
+  await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "3 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
   await clickUntilSettled(
@@ -77,7 +77,7 @@ test("a private room shows Open before it fills, then Active once the host manua
   );
 
   await guestPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await guestPage.getByRole("button", { name: "Join Room by Name" }).click();
+  await guestPage.getByRole("link", { name: "Join Room by Name" }).click();
   await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
     guestPage,
@@ -121,7 +121,7 @@ test("a 2-player room shows Active on the dashboard immediately after capacity a
   await claimUsername(guestPage, "DashAutoGuest");
 
   await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await hostPage.getByRole("button", { name: "New Game" }).click();
+  await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
   await clickUntilSettled(
@@ -131,7 +131,7 @@ test("a 2-player room shows Active on the dashboard immediately after capacity a
   );
 
   await guestPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await guestPage.getByRole("button", { name: "Join Room by Name" }).click();
+  await guestPage.getByRole("link", { name: "Join Room by Name" }).click();
   await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
     guestPage,
@@ -161,7 +161,7 @@ test("Completed vs Resigned: the resigning player sees Resigned, the other sees 
   await claimUsername(guestPage, "DashEndGuest");
 
   await hostPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await hostPage.getByRole("button", { name: "New Game" }).click();
+  await hostPage.getByRole("link", { name: "New Game" }).click();
   await hostPage.getByRole("radio", { name: "2 players" }).check();
   await hostPage.getByRole("radio", { name: "Private (invite by code)" }).check();
   await clickUntilSettled(
@@ -172,7 +172,7 @@ test("Completed vs Resigned: the resigning player sees Resigned, the other sees 
   const roomCode = await readRoomCode(hostPage);
 
   await guestPage.getByRole("link", { name: "Meld Masters", exact: true }).click();
-  await guestPage.getByRole("button", { name: "Join Room by Name" }).click();
+  await guestPage.getByRole("link", { name: "Join Room by Name" }).click();
   await guestPage.getByLabel("Room name").fill(hostUsername);
   await clickUntilSettled(
     guestPage,
@@ -265,7 +265,7 @@ test("dashboard fits a narrow mobile viewport without horizontal overflow", asyn
   await waitForReady(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Meld Masters" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "New Game" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "New Game" })).toBeVisible();
 
   const hasOverflow = await page.locator("html").evaluate((el) => el.scrollWidth > el.clientWidth);
   expect(hasOverflow).toBe(false);
