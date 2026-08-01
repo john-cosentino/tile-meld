@@ -22,7 +22,7 @@ export const PRODUCT_NAME = "Meld Masters";
  * (manifestIcons.test.ts) asserts all of those literals equal this
  * constant AND that global.css still defines --bg-page with the same
  * value, so the two can never silently drift apart. */
-export const THEME_COLOR = "#0a0e1a";
+export const THEME_COLOR = "#020c16";
 
 export type TileColorCode = "C1" | "C2" | "C3" | "C4";
 

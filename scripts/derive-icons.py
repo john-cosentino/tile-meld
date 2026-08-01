@@ -21,10 +21,12 @@ modifies the master itself:
      (PIL's native multi-size ICO writer), plus a 128px raster embedded in a
      self-contained SVG wrapper for favicon.svg.
 
-Background color: `--bg-page` (apps/web/src/styles/global.css), the
-Phase 2-approved arcade navy (#0a0e1a) -- see the Phase 6 summary for why
-this was chosen over a color sampled from the logo's own (slightly
-different) interior navy.
+Background color: `--bg-page` (apps/web/src/styles/global.css). Originally
+#0a0e1a (the Phase 2-approved arcade navy -- see the Phase 6 summary for
+why this was chosen over a color sampled from the logo's own slightly
+different interior navy); changed to #020c16 to close a measured
+saturation gap against the Meld Masters concept reference (see the
+--bg-page comment in global.css for the measurement).
 
 Source: docs/design-reference/meld-masters/meld-masters-concept-logo.png
 Usage:  python3 scripts/derive-icons.py
@@ -41,7 +43,7 @@ SRC = REPO_ROOT / "docs/design-reference/meld-masters/meld-masters-concept-logo.
 ICONS_DIR = REPO_ROOT / "apps/web/public/icons"
 PUBLIC_DIR = REPO_ROOT / "apps/web/public"
 
-NAVY_BG = (10, 14, 26)  # --bg-page, apps/web/src/styles/global.css
+NAVY_BG = (2, 12, 22)  # --bg-page, apps/web/src/styles/global.css
 FLOOD_THRESHOLD = 40  # tuned against the master: background very quickly
 # jumps by >30 per channel at the shape's true edge (see Phase 6 summary).
 

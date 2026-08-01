@@ -29,8 +29,11 @@
      the system stack if the font is still loading or fails to load. */
   --font-display: "Silkscreen", var(--font-sans);
 
-  /* Page and surface layers (navy stack, darkest to lightest). */
-  --bg-page: #0a0e1a;
+  /* Page and surface layers (navy stack, darkest to lightest). --bg-page is
+     sampled from the concept art's actual background fill (near-zero red);
+     it must stay equal to THEME_COLOR in packages/shared/src/branding.ts,
+     index.html, and manifest.json -- manifestIcons.test.ts enforces this. */
+  --bg-page: #020c16;
   --bg-panel: #101828;
   --bg-panel-raised: #16223a;
   --bg-inset: #0c1322;
