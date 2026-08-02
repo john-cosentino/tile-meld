@@ -16,8 +16,9 @@ concept art (chrome sliced from the concept PNGs, VT323, region-checked
 compositions) — state, verification, and next steps in `docs/task.md`;
 mechanics in `docs/arcade-visual-kit.md`. Verified on the branch:
 469 web unit tests, full chromium e2e 46/46, three region contracts.
-The branch is **not merged and not deployed**; the deployed site still
-shows the superseded glossy tabletop.
+**Merged to `main` (tip `ddac7f7`) and deployed 2026-08-02** — live at
+`https://tile-meld.onrender.com`, confirmed via `/build-info.json`,
+`/api/health` 200, and a production screenshot.
 
 - **Last verified:** 2026-07-28 (CI security-gate restructuring, on top
   of the dependency security remediation checkpoint, on top of Phase 8)

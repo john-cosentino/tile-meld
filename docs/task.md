@@ -6,10 +6,11 @@ its follow-ups were judged not close enough. Plan of record: the
 user-approved concept-fidelity plan of 2026-08-01 — approach and commands
 in `docs/arcade-visual-kit.md`, decisions in `docs/decisions.md`.
 
-**State: all seven phases complete on `feature/arcade-pixel-kit`; the
-kit, Home, Tabletop, and utility-screen checkpoints were each
-user-approved from comparison-sheet evidence. Not merged to `main`, not
-deployed.**
+**State: SHIPPED.** All seven phases completed on
+`feature/arcade-pixel-kit` with each checkpoint user-approved; merged to
+`main` (fast-forward, tip `ddac7f7`) and deployed 2026-08-02 — verified
+live at `https://tile-meld.onrender.com` via `/build-info.json`
+(`ddac7f7`), `/api/health` 200, and a production screenshot.
 
 Phase summary (one commit each on the branch):
 
@@ -37,13 +38,12 @@ Verification at completion: 469 web unit tests; full chromium e2e suite
 region contracts. WebKit/Firefox remain CI-only (machine-freeze
 incident, `docs/current-state.md`).
 
-**Next steps (user-driven):**
+**Open items:**
 
-1. Manual play-through of the branch.
-2. Merge `feature/arcade-pixel-kit` → `main`; push (Render auto-deploys
-   `main`; verify `/build-info.json` advances).
-3. Pre-existing, untouched: `packages/shared test/schemas.test.ts`
-   RedactedGameViewSchema case fails on `main` too.
+1. Pre-existing, untouched: `packages/shared test/schemas.test.ts`
+   RedactedGameViewSchema case fails (predates this work).
+2. Optional polish noted at the Phase 5 checkpoint: the tabletop board
+   frame's painted-floor/CSS-floor seam.
 
 ---
 
