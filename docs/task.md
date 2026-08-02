@@ -1,8 +1,59 @@
-# Current task — Meld Masters visual refresh
+# Current task — concept-art fidelity rebuild (complete, pending review/merge)
 
-**Active initiative:** Meld Masters visual refresh (rename Tile Meld →
+**Active initiative (2026-08-01):** make the app visually identical to the
+pixel-art arcade concept art, after the 2026-07 visual refresh below and
+its follow-ups were judged not close enough. Plan of record: the
+user-approved concept-fidelity plan of 2026-08-01 — approach and commands
+in `docs/arcade-visual-kit.md`, decisions in `docs/decisions.md`.
+
+**State: all seven phases complete on `feature/arcade-pixel-kit`; the
+kit, Home, Tabletop, and utility-screen checkpoints were each
+user-approved from comparison-sheet evidence. Not merged to `main`, not
+deployed.**
+
+Phase summary (one commit each on the branch):
+
+- **0** — glossy WIP home attempt preserved on `wip/home-glossy-attempt`;
+  concept-sampled theme color `#020c16` landed as an atomic set.
+- **1** — concept-slice asset pipeline: 60 chrome assets cropped/9-sliced
+  from the concept PNGs (`scripts/extract-arcade-kit.py` +
+  `scripts/arcade-kit.manifest.json`); portraits deterministically
+  pixelated (no AI anywhere).
+- **2** — arcade component kit (`apps/web/src/arcade/`), dev gallery at
+  `/prototype/arcade-kit`, VT323 selected as `--font-arcade`.
+- **3** — permanent verification tooling: region maps, triptych/silhouette
+  builders, live `?concept-overlay=` tool, `pnpm run test:arcade`.
+- **4** — Home rebuilt to `new_layout1.png` (region-checked within 3%);
+  the menu rail is the Main-navigation landmark; header hidden on home.
+- **5** — Tabletop rebuilt to concept-01 (desktop) + concept-03 (phone
+  flow); glossy tabletop-production art deleted.
+- **6** — Create Room / Join / Lobby / Recovery / Waiting Room reskinned
+  onto the kit vocabulary.
+- **7** — dead CSS/asset cleanup, `docs/arcade-visual-kit.md`, doc
+  refresh, final regression.
+
+Verification at completion: 469 web unit tests; full chromium e2e suite
+46/46 (drag-and-drop, reconnect, multi-player, axe scans); all three
+region contracts. WebKit/Firefox remain CI-only (machine-freeze
+incident, `docs/current-state.md`).
+
+**Next steps (user-driven):**
+
+1. Manual play-through of the branch.
+2. Merge `feature/arcade-pixel-kit` → `main`; push (Render auto-deploys
+   `main`; verify `/build-info.json` advances).
+3. Pre-existing, untouched: `packages/shared test/schemas.test.ts`
+   RedactedGameViewSchema case fails on `main` too.
+
+---
+
+# Superseded — Meld Masters visual refresh (2026-07, historical)
+
+**Initiative:** Meld Masters visual refresh (rename Tile Meld →
 Meld Masters, retro-arcade visual redesign, new smartphone/PWA icon
-pipeline). Authoritative plan: `docs/meld-masters-visual-refresh-plan.md`.
+pipeline). Plan: `docs/meld-masters-visual-refresh-plan.md`. Its visual
+approach is superseded by the rebuild above; the rename, icon pipeline,
+and accessibility work carry forward.
 
 **Current checkpoint: CI security-gate restructuring — completed,
 pending human review.** A small, focused follow-up on top of the

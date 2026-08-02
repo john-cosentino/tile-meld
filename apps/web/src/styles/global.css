@@ -353,50 +353,6 @@ button.danger {
   padding: var(--space-4);
 }
 
-.arcade-panel--raised {
-  background: var(--bg-panel-raised);
-}
-
-.arcade-panel--accent-cyan {
-  border-color: var(--neon-cyan);
-}
-
-.arcade-panel--accent-orange {
-  border-color: var(--neon-orange);
-}
-
-.arcade-panel--accent-gold {
-  border-color: var(--neon-gold);
-}
-
-.arcade-panel--accent-purple {
-  border-color: var(--neon-purple);
-}
-
-.arcade-panel--accent-green {
-  border-color: var(--neon-green);
-}
-
-/* Two-layer notch: the outer element supplies the neon "border" color and
-   is clipped to the notched octagon; the inner element supplies the panel
-   fill and is clipped to a slightly smaller version of the same shape, so
-   a --frame-width ring of the outer color shows through as the border
-   without clip-path ever cutting a `border` property (which would clip
-   unevenly and defeat the point). Not used by any Phase 2 component; see
-   the comment above .arcade-panel. */
-.arcade-panel--notched {
-  clip-path: polygon(
-    var(--corner-notch) 0,
-    calc(100% - var(--corner-notch)) 0,
-    100% var(--corner-notch),
-    100% calc(100% - var(--corner-notch)),
-    calc(100% - var(--corner-notch)) 100%,
-    var(--corner-notch) 100%,
-    0 calc(100% - var(--corner-notch)),
-    0 var(--corner-notch)
-  );
-}
-
 /* Global application shell: header, brand wordmark, decorative monogram,
    and navigation (§ "Header and navigation implementation"). */
 
@@ -602,22 +558,6 @@ button.danger {
 }
 
 
-/* Small inline label, e.g. the computer-opponent "BOT" marker. Unobtrusive;
-   reuses existing surface/border tokens rather than introducing new ones. */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.05rem var(--space-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  vertical-align: middle;
-}
-
 .error-banner {
   background: color-mix(in srgb, var(--color-danger) 12%, var(--color-bg));
   border: 1px solid var(--color-danger);
@@ -644,27 +584,6 @@ button.danger {
 .warning-banner a {
   color: inherit;
   text-decoration: underline;
-}
-
-/* Home dashboard (Phase 6). The large page title deliberately sits above
-   the normal heading scale used elsewhere in the app -- this is the one
-   place a bigger-than-body-copy title is wanted (§ "large, prominent
-   Meld Masters page heading"). */
-.dashboard-title {
-  font-family: var(--font-display);
-  letter-spacing: 0.03em;
-  font-size: 2.5rem;
-  margin: 0;
-}
-
-.dashboard-grid {
-  display: grid;
-  /* auto-fill + a 1fr max means a card is never wider than its column, so
-     this never causes horizontal overflow on a narrow phone viewport --
-     it simply collapses to a single column instead of shrinking cards
-     below a readable width. */
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-4);
 }
 
 /* Every dashboard card is a single link (or, for the rare unavailable

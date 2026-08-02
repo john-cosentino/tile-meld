@@ -1,6 +1,13 @@
 # Meld Masters — Visual Baseline v1
 
-**Status: approved and locked.** This document records the tabletop's
+> **SUPERSEDED 2026-08-01.** The glossy-asset composition this document
+> locks was replaced wholesale by the concept-art fidelity rebuild
+> (`feature/arcade-pixel-kit`) — see `docs/arcade-visual-kit.md` and the
+> 2026-08-01 entry in `docs/decisions.md`. Kept as the historical record
+> of the approach it describes; its "deferred concept-fidelity work" list
+> is what the rebuild delivered.
+
+**Status (historical): approved and locked.** This document records the tabletop's
 visual composition as of commit `962c666` (branch
 `feature/tabletop-arcade-integration`) as the stable foundation for the
 production/stabilization phase that follows it. It is a snapshot of

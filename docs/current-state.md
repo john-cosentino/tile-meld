@@ -5,6 +5,20 @@ Public product name: **Meld Masters** (renamed from Tile Meld, Phase 1 of
 the internal repository name, package scope, and deployment identifier —
 see the plan's §5.5.
 
+## Addendum 2026-08-01 — concept-art fidelity rebuild (branch, unmerged)
+
+Everything below the addendum describes `main` as of 2026-07-28 and,
+separately, `main` later received the tabletop arcade integration +
+first deployment (`8f98c8e`, live at `https://tile-meld.onrender.com/` —
+see `docs/meld-masters-deployment-fix-report.md`). Since then the entire
+visual layer was rebuilt on **`feature/arcade-pixel-kit`** to match the
+concept art (chrome sliced from the concept PNGs, VT323, region-checked
+compositions) — state, verification, and next steps in `docs/task.md`;
+mechanics in `docs/arcade-visual-kit.md`. Verified on the branch:
+469 web unit tests, full chromium e2e 46/46, three region contracts.
+The branch is **not merged and not deployed**; the deployed site still
+shows the superseded glossy tabletop.
+
 - **Last verified:** 2026-07-28 (CI security-gate restructuring, on top
   of the dependency security remediation checkpoint, on top of Phase 8)
 - **Commit at verification start:** `358ab99e428fcf31e853b20920a31076bb9d86c1`

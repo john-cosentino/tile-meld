@@ -37,6 +37,38 @@ The load-bearing ones, in short — the plan is authoritative, not this summary:
 
 ## Decisions recorded here
 
+### 2026-08-01 — Concept-art fidelity rebuild: four user decisions
+
+After six failed attempts (2026-07-26 → 08-01) to make the app match the
+concept art, the user approved a rebuild governed by four decisions:
+
+1. **The concept PNGs are both the spec and the asset source.** Chrome is
+   cropped/9-sliced directly from `docs/design-reference/meld-masters/`
+   and `docs/design-reference/v2/new_layout1.png`; **no AI image
+   generation**. This revokes the visual-refresh plan's §4/§17.7 rule
+   forbidding cropping the concepts.
+2. **The glossy generated "production" assets are retired wholesale**
+   (tabletop-production/, home-production/ — deleted; history keeps them).
+3. **Portraits are deterministically pixelated** from the approved smooth
+   pack (`scripts/pixelate-portraits.py`), reviewed before/after.
+4. **Order Home → Tabletop → utility screens, one user checkpoint per
+   screen; evidence is concept-vs-app comparison sheets, never
+   self-assessment.**
+
+Follow-on decisions made at checkpoints: **VT323** is `--font-arcade`
+(picked from a 4-candidate sheet); on home the **menu rail is the
+Main-navigation landmark** and the header nav is hidden on home and
+tabletop (links stay in the DOM; utility screens keep a slim header).
+
+Mechanics, contracts, and commands: `docs/arcade-visual-kit.md`.
+Supersedes the visual approach of `docs/meld-masters-visual-refresh-plan.md`
+(D3 "no art assets", §13.2 acceptance without resemblance criteria) and
+`docs/meld-masters-visual-baseline-v1.md`.
+
+**Date:** 2026-08-01.
+
+---
+
 ### 2026-07-25 — D-GITGUARD superseded: Claude has full Git control
 
 **Decided:** Claude may run Git write and history commands directly in this
