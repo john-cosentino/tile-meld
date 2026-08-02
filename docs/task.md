@@ -66,8 +66,12 @@ a baked "NOTICE BOARD" ghost title from `panel-notice`.
 
 **Open items:**
 
-1. Pre-existing, untouched: `packages/shared test/schemas.test.ts`
-   RedactedGameViewSchema case fails (predates this work).
+1. ~~Pre-existing `packages/shared test/schemas.test.ts`
+   RedactedGameViewSchema failure~~ — resolved 2026-08-02: the fixture
+   predated the required-but-nullable `winnerSeatIndex` field (the
+   server's redaction always emits it, `apps/server/src/db/redact.ts`).
+   Full workspace suite green for the first time: 1,014 tests across
+   shared/engine/bot/web/server.
 2. Optional polish noted at the Phase 5 checkpoint: the tabletop board
    frame's painted-floor/CSS-floor seam.
 3. Tabletop action plates (Draw/Pass/Commit) still use the desktop
