@@ -1547,13 +1547,13 @@
         28,
         1028,
         1016,
-        242
+        232
       ],
       "center": "flatten",
       "transparentInset": {
         "top": 36,
         "right": 60,
-        "bottom": 44,
+        "bottom": 30,
         "left": 55
       },
       "flattenSample": [
@@ -1585,15 +1585,15 @@
       "source": "phoneHome",
       "rect": [
         29,
-        1326,
+        1303,
         1012,
-        210
+        240
       ],
       "center": "flatten",
       "transparentInset": {
-        "top": 40,
+        "top": 55,
         "right": 55,
-        "bottom": 45,
+        "bottom": 46,
         "left": 55
       },
       "flattenSample": [
@@ -1611,7 +1611,7 @@
         29,
         1578,
         1012,
-        202
+        210
       ],
       "center": "flatten",
       "transparentInset": {
