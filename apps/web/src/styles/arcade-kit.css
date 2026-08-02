@@ -2170,22 +2170,23 @@ button.danger:disabled {
   .home-menu-plate[data-plate="plate-menu-purple"] { background-image: url("../assets/arcade/plate/phone-purple.png"); }
   .home-menu-plate[data-plate="plate-menu-gold"] { background-image: url("../assets/arcade/plate/phone-gold.png"); }
 
-  /* Action plates: the slanted silhouettes keep baked background in their
-     rectangular crops' corners, so clip to the plate outline (a hair
-     outside it, preserving the painted glow). */
+  /* Action plates. Closed-frame rule (user, 2026-08-02): keep every
+     bright edge line. Cyan's corners hold only near-black art background
+     (indistinguishable from the page), so no clip; Pass uses a phone
+     variant with its top bleed erased and bottom bar mirrored up; only
+     Commit still clips -- its corners carry visible grid-texture bleed --
+     with bounds that spare the top dashes and bottom bar. */
   .tt-plate[data-plate="plate-action-cyan"] {
     background-image: url("../assets/arcade/plate/action-cyan.png");
-    clip-path: polygon(8% 3%, 100% 3%, 96.5% 96%, 0% 96%);
   }
 
   .tt-plate[data-plate="plate-action-purple"] {
-    background-image: url("../assets/arcade/plate/action-purple.png");
-    clip-path: inset(4% 0.5% 2% 0.5%);
+    background-image: url("../assets/arcade/plate/action-purple-phone.png");
   }
 
   .tt-plate[data-plate="plate-action-orange"] {
     background-image: url("../assets/arcade/plate/action-orange.png");
-    clip-path: polygon(0.3% 2.5%, 95.8% 2.5%, 100% 96.7%, 2.9% 96.7%);
+    clip-path: polygon(0.3% 0%, 96% 0%, 100% 96.8%, 2.9% 96.8%);
   }
 
   .tt-plate {

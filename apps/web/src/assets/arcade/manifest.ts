@@ -69,6 +69,7 @@ import img_plate_phone_green from "./plate/phone-green.png";
 import img_plate_phone_red from "./plate/phone-red.png";
 import img_card_phone_purple from "./card/phone-purple.png";
 import img_card_phone_cyan from "./card/phone-cyan.png";
+import img_plate_action_purple_phone from "./plate/action-purple-phone.png";
 
 export interface ArcadeAsset {
   url: string;
@@ -147,6 +148,7 @@ export const arcadeAssets = {
   "plate-phone-red": { url: img_plate_phone_red, width: 1014, height: 262 },
   "card-phone-purple": { url: img_card_phone_purple, width: 548, height: 372 },
   "card-phone-cyan": { url: img_card_phone_cyan, width: 442, height: 378 },
+  "plate-action-purple-phone": { url: img_plate_action_purple_phone, width: 246, height: 118, slice: { top: 16, right: 16, bottom: 16, left: 16 } },
 } as const satisfies Record<string, ArcadeAsset>;
 
 export type ArcadeAssetName = keyof typeof arcadeAssets;

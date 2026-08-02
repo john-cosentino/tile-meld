@@ -1733,6 +1733,57 @@
       ],
       "out": "card/phone-cyan.png",
       "note": "Phone comp COMPUTER card (cyan/gold tone)."
+    },
+    "plate-action-purple-phone": {
+      "source": "concept01",
+      "rect": [
+        414,
+        926,
+        246,
+        118
+      ],
+      "center": "flatten",
+      "slice": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "flattenSample": [
+        540,
+        985,
+        60,
+        30
+      ],
+      "erase": [
+        {
+          "rect": [
+            0,
+            0,
+            246,
+            10
+          ],
+          "sample": [
+            540,
+            985,
+            60,
+            30
+          ]
+        }
+      ],
+      "mirrorBand": [
+        {
+          "rect": [
+            4,
+            108,
+            238,
+            10
+          ],
+          "destY": 0
+        }
+      ],
+      "out": "plate/action-purple-phone.png",
+      "note": "PASS plate for phone whole-art stretch: top bleed from the concept row above erased, bottom bar mirrored up so the frame reads closed."
     }
   }
 }
