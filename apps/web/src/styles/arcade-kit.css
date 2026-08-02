@@ -913,10 +913,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Board: the concept's tapered ON THE TABLE frame; live sets inside. */
+/* Board: tapered ON THE TABLE window; live sets inside. The visible
+   frame is the CSS neon trapezoid in the page-level scene block below
+   (the raster board-frame chrome was retired with its floor seam). */
 .tabletop-board {
-  background: url("../assets/arcade/board/board-frame.png") center / 100% 100% no-repeat;
-  image-rendering: pixelated;
   padding: 5.5% 9% 3.5%;
   display: flex;
   flex-direction: column;
@@ -1495,15 +1495,6 @@
   min-height: 56px;
 }
 
-/* Board floor: the frame's interior is punched transparent (the concept
-   crop had baked tiles there), so paint a matching perspective floor
-   beneath it. */
-.tabletop-board {
-  background:
-    url("../assets/arcade/board/board-frame.png") center / 100% 100% no-repeat,
-    linear-gradient(180deg, #10233f 0%, #0a1830 55%, #071224 100%);
-}
-
 .tabletop-footer {
   width: 30%;
   left: 35%;
@@ -1512,17 +1503,6 @@
 
 .tt-region--actions {
   z-index: 1;
-}
-
-/* Board floor tones sampled from concept-01's actual table surface
-   (#00142f center, #000d22 edges) so the punched interior blends into
-   the frame's painted floor; faint cyan grid matches the concept's. */
-.tabletop-board {
-  background:
-    url("../assets/arcade/board/board-frame.png") center / 100% 100% no-repeat,
-    repeating-linear-gradient(90deg, rgba(63, 224, 255, 0.05) 0 1px, transparent 1px 56px),
-    repeating-linear-gradient(180deg, rgba(63, 224, 255, 0.05) 0 1px, transparent 1px 56px),
-    radial-gradient(ellipse 70% 60% at 50% 45%, #00142f 0%, #000f26 70%, #000c1f 100%);
 }
 
 .tabletop-footer {

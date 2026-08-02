@@ -72,12 +72,16 @@ a baked "NOTICE BOARD" ghost title from `panel-notice`.
    server's redaction always emits it, `apps/server/src/db/redact.ts`).
    Full workspace suite green for the first time: 1,014 tests across
    shared/engine/bot/web/server.
-2. Optional polish noted at the Phase 5 checkpoint: the tabletop board
-   frame's painted-floor/CSS-floor seam.
-3. Tabletop action plates (Draw/Pass/Commit) still use the desktop
-   concept extractions with clip-paths; if the user's closed-frame
-   standard extends to them, they may want the same brightening
-   treatment.
+2. ~~Phase 5 optional polish: the board frame's painted-floor/CSS-floor
+   seam~~ — obsolete, closed 2026-08-02: the seam vanished when the
+   raster board frame was replaced by the CSS neon trapezoid scene
+   (`0697894`); the three leftover dead `.tabletop-board` background
+   declarations still referencing `board-frame.png` were removed, with
+   the desktop board region verified pixel-identical before/after.
+3. ~~Closed-frame treatment for the tabletop action plates~~ — done
+   2026-08-02 (`5689b47`): Draw keeps its full outline (clip removed),
+   Pass gets a phone variant with bleed erased and its bottom bar
+   mirrored up, Commit's clip rebounded to spare its edge details.
 
 ---
 
