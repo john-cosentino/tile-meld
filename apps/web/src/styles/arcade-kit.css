@@ -1553,3 +1553,341 @@
 .tabletop-masthead {
   pointer-events: none;
 }
+
+/* ------------------------------------------- secondary screens (Phase 6) */
+
+/* Create Room, Join by Name, Public Lobby, Recovery, and Waiting Room
+   share one class vocabulary (originally global.css's Phase-3 section,
+   deleted in this phase). Same DOM and accessible names; the chrome is
+   now the concept-sliced kit language. No 1:1 concept exists for these
+   screens -- they are derived from the same kit as home/tabletop. */
+
+/* Slim arcade header on utility screens (hidden on home/tabletop). */
+.app-header {
+  font-family: var(--font-arcade);
+  background: rgba(2, 12, 22, 0.92);
+  border-bottom: 1px solid var(--neon-cyan-dim);
+  padding: 0.3rem 1rem;
+}
+
+.app-header .app-nav a {
+  font-family: var(--font-arcade);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.1rem 0.4rem;
+}
+
+.app-header .app-nav a:hover,
+.app-header .app-nav a:focus-visible {
+  color: var(--neon-cyan);
+  text-shadow: var(--arcade-text-glow);
+}
+
+.brand-wordmark-text {
+  font-family: var(--font-arcade);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--neon-gold);
+}
+
+.page {
+  font-family: var(--font-arcade);
+}
+
+.page-title {
+  font-family: var(--font-arcade);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--neon-gold);
+  text-shadow: 0 0 8px rgba(255, 201, 77, 0.4);
+  overflow-wrap: break-word;
+}
+
+.panel-title {
+  font-family: var(--font-arcade);
+  font-weight: 400;
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--neon-cyan);
+  text-shadow: var(--arcade-text-glow);
+}
+
+/* The shared framed panel: concept chat/log frame, 9-sliced. */
+.arcade-panel {
+  border-style: solid;
+  border-width: 18px;
+  border-image: url("../assets/arcade/frame/panel-browser.png") 18 fill stretch;
+  image-rendering: pixelated;
+  border-radius: 0;
+  background: none;
+  padding: 0.75rem 1rem;
+}
+
+.arcade-panel--accent-gold,
+.arcade-panel.card--accent-gold {
+  border-image-source: url("../assets/arcade/frame/panel-profile.png");
+}
+
+/* Form fields across the utility screens. */
+.page input[type="text"],
+.page input:not([type]),
+.page textarea,
+.page select {
+  font-family: var(--font-arcade);
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  background: #04121c;
+  border: 1px solid var(--neon-cyan-dim);
+  padding: 0.35rem 0.6rem;
+  min-width: 0;
+}
+
+.page input:focus-visible,
+.page textarea:focus-visible,
+.page select:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 1px;
+}
+
+.page label {
+  font-size: 1.05rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Primary CTAs become small concept plates. */
+button.primary,
+button.accent-cyan,
+button.accent-gold,
+button.danger {
+  font-family: var(--font-arcade);
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background: none;
+  border-style: solid;
+  border-width: 12px 16px;
+  border-image: url("../assets/arcade/plate/action-cyan.png") 16 20 fill stretch;
+  image-rendering: pixelated;
+  border-radius: 0;
+  padding: 0.1rem 0.6rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+button.accent-gold,
+button.primary {
+  border-image-source: url("../assets/arcade/plate/action-orange.png");
+}
+
+button.danger {
+  border-image-source: url("../assets/arcade/plate/menu-red.png");
+  border-image-slice: 16 fill;
+}
+
+button.primary:hover,
+button.accent-cyan:hover,
+button.accent-gold:hover,
+button.danger:hover,
+button.primary:focus-visible,
+button.accent-cyan:focus-visible,
+button.accent-gold:focus-visible,
+button.danger:focus-visible {
+  filter: brightness(1.22);
+}
+
+button.primary:disabled,
+button.accent-cyan:disabled,
+button.accent-gold:disabled,
+button.danger:disabled {
+  filter: saturate(0.35) brightness(0.7);
+  cursor: not-allowed;
+}
+
+/* Segmented radio choices (player count, visibility). */
+.arcade-choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.arcade-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-arcade);
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: rgba(6, 20, 34, 0.7);
+  border: 1px solid var(--neon-cyan-dim);
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+
+.arcade-choice:has(input:checked) {
+  color: var(--text-on-accent);
+  background: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+}
+
+.arcade-choice:has(input:focus-visible) {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+/* Lobby room rows: same dense-row language as home's games list. */
+.room-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  border: 1px solid var(--grid-line);
+  border-image: none;
+  background: rgba(6, 16, 24, 0.55);
+  padding: 0.5rem 0.9rem;
+  font-size: 1.1rem;
+}
+
+.room-row:hover,
+.room-row:focus-within {
+  border-color: var(--neon-gold);
+  box-shadow: 0 0 8px rgba(255, 201, 77, 0.35);
+}
+
+.room-row-meta {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Recovery credentials readouts: LCD language. */
+.code-readout {
+  display: inline-block;
+  font-family: var(--font-arcade);
+  font-size: 1.3rem;
+  letter-spacing: 0.15em;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(63, 224, 255, 0.5);
+  background: #04121c;
+  border: 1px solid rgba(63, 224, 255, 0.35);
+  padding: 0.3rem 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+/* Waiting-room seats: the concept competitor cards, one tone per seat. */
+.seat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.seat-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-style: solid;
+  border-width: 16px;
+  border-image: url("../assets/arcade/card/competitor-gold.png") 16 fill stretch;
+  image-rendering: pixelated;
+  padding: 1.2rem 0.9rem 0.8rem;
+  background: none;
+}
+
+.seat-panel--accent-0 { border-image-source: url("../assets/arcade/card/competitor-gold.png"); --seat-accent: var(--neon-gold); }
+.seat-panel--accent-1 { border-image-source: url("../assets/arcade/card/competitor-purple.png"); --seat-accent: var(--neon-purple); }
+.seat-panel--accent-2 { border-image-source: url("../assets/arcade/card/competitor-pink.png"); --seat-accent: var(--neon-pink); }
+.seat-panel--accent-3 { border-image-source: url("../assets/arcade/card/competitor-green.png"); --seat-accent: var(--neon-green); }
+
+.seat-identity {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.seat-portrait {
+  flex: none;
+  width: 48px;
+  height: 72px;
+  image-rendering: pixelated;
+  padding: 2px;
+  background: #061018;
+  border: 2px solid;
+  border-color: #03080d #1b3a4a #1b3a4a #03080d;
+  box-sizing: content-box;
+}
+
+.seat-name {
+  font-family: var(--font-arcade);
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--seat-accent, var(--neon-cyan));
+  text-shadow: var(--arcade-text-glow);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.seat-state {
+  font-size: 0.98rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.seat-state--ready {
+  color: var(--state-success);
+}
+
+.seat-state--waiting {
+  color: var(--text-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-family: var(--font-arcade);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  color: var(--neon-purple);
+  padding: 0 0.35rem;
+}
+
+/* Generic buttons and banners on utility screens: arcade type, square. */
+.page button,
+.error-banner,
+.warning-banner {
+  font-family: var(--font-arcade);
+  border-radius: 0;
+}
+
+.error-banner,
+.warning-banner {
+  font-size: 1.05rem;
+}
+
+/* Seat cards keep near-concept proportions instead of stretching the
+   frame art across the full page width. */
+.seat-list {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 340px));
+}
