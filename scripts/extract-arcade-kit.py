@@ -77,6 +77,28 @@ def apply_erase(
         ImageDraw.Draw(crop).rectangle([ex, ey, ex + ew - 1, ey + eh - 1], fill=fill)
 
 
+def apply_mirror_bands(asset_name: str, entry: dict, crop: Image.Image) -> None:
+    """Lighten-paste a vertically flipped copy of a bright band elsewhere.
+
+    Some concept plates are lit from above: a bright top bar but a near-black
+    bottom bevel (or vice versa). On phone the dim side reads as a missing
+    edge (user verdict 2026-08-02), so mirror the plate's own bright bar onto
+    its weak side. Lighten blend preserves whatever art is already there.
+    """
+    from PIL import ImageChops
+
+    for i, mb in enumerate(entry.get("mirrorBand", [])):
+        x, y, w, h = mb["rect"]
+        dest_y = mb["destY"]
+        if x < 0 or y < 0 or x + w > crop.width or y + h > crop.height:
+            raise ValueError(f"{asset_name}: mirrorBand[{i}] rect exceeds crop")
+        if dest_y < 0 or dest_y + h > crop.height:
+            raise ValueError(f"{asset_name}: mirrorBand[{i}] destY exceeds crop")
+        band = crop.crop((x, y, x + w, y + h)).transpose(Image.FLIP_TOP_BOTTOM)
+        region = crop.crop((x, dest_y, x + w, dest_y + h))
+        crop.paste(ImageChops.lighter(region, band), (x, dest_y))
+
+
 def apply_center(
     asset_name: str, entry: dict, crop: Image.Image, src_im: Image.Image
 ) -> Image.Image:
@@ -138,6 +160,7 @@ def extract(manifest: dict, write_assets: bool) -> dict[str, Image.Image]:
         crop = src.crop((x, y, x + w, y + h))
         apply_erase(name, entry, crop, src)
         crop = apply_center(name, entry, crop, src)
+        apply_mirror_bands(name, entry, crop)
         results[name] = crop
         if write_assets:
             out_path = OUT_ROOT / entry["out"]

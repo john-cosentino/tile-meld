@@ -1515,7 +1515,18 @@
         40
       ],
       "out": "frame/badge-phone-signed-in.png",
-      "note": "Phone comp SIGNED IN badge, whole-art stretch on phone (no 9-slice)."
+      "note": "Phone comp SIGNED IN badge, whole-art stretch on phone (no 9-slice).",
+      "mirrorBand": [
+        {
+          "rect": [
+            60,
+            18,
+            914,
+            14
+          ],
+          "destY": 197
+        }
+      ]
     },
     "plate-phone-cyan": {
       "source": "phoneHome",
@@ -1579,6 +1590,17 @@
             30
           ]
         }
+      ],
+      "mirrorBand": [
+        {
+          "rect": [
+            60,
+            14,
+            890,
+            16
+          ],
+          "destY": 212
+        }
       ]
     },
     "plate-phone-purple": {
@@ -1603,7 +1625,18 @@
         30
       ],
       "out": "plate/phone-purple.png",
-      "note": "Phone comp JOIN ROOM plate."
+      "note": "Phone comp JOIN ROOM plate.",
+      "mirrorBand": [
+        {
+          "rect": [
+            60,
+            208,
+            890,
+            22
+          ],
+          "destY": 4
+        }
+      ]
     },
     "plate-phone-green": {
       "source": "phoneHome",
