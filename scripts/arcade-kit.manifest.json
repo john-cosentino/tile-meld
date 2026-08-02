@@ -4,7 +4,9 @@
     "concept01": "docs/design-reference/meld-masters/meld-masters-concept-01.png",
     "concept02": "docs/design-reference/meld-masters/meld-masters-concept-02.png",
     "concept03": "docs/design-reference/meld-masters/meld-masters-concept-03.png",
-    "homeSpec": "docs/design-reference/v2/new_layout1.png"
+    "homeSpec": "docs/design-reference/v2/new_layout1.png",
+    "phoneHome": "docs/design-reference/mainscreen.jpg",
+    "phoneGame": "docs/design-reference/mobile.jpeg"
   },
   "assets": {
     "wordmark": {
@@ -1474,6 +1476,230 @@
       "center": "keep",
       "out": "masthead/wordmark-tabletop.png",
       "note": "Tabletop masthead crop from concept-01 at exactly the masthead region rect (region-maps/tabletop-desktop.json)."
+    },
+    "badge-phone-signed-in": {
+      "source": "phoneHome",
+      "rect": [
+        24,
+        495,
+        1034,
+        226
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 36,
+        "right": 64,
+        "bottom": 36,
+        "left": 64
+      },
+      "flattenSample": [
+        724,
+        615,
+        80,
+        40
+      ],
+      "out": "frame/badge-phone-signed-in.png",
+      "note": "Phone comp SIGNED IN badge, whole-art stretch on phone (no 9-slice)."
+    },
+    "plate-phone-cyan": {
+      "source": "phoneHome",
+      "rect": [
+        24,
+        730,
+        1034,
+        274
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 44,
+        "right": 50,
+        "bottom": 42,
+        "left": 50
+      },
+      "flattenSample": [
+        750,
+        930,
+        80,
+        30
+      ],
+      "out": "plate/phone-cyan.png",
+      "note": "Phone comp PLAY VS COMPUTER plate."
+    },
+    "plate-phone-gold": {
+      "source": "phoneHome",
+      "rect": [
+        28,
+        1026,
+        1016,
+        219
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 30,
+        "right": 60,
+        "bottom": 28,
+        "left": 55
+      },
+      "flattenSample": [
+        700,
+        1180,
+        80,
+        30
+      ],
+      "out": "plate/phone-gold.png",
+      "note": "Phone comp NEW GAME plate.",
+      "erase": [
+        {
+          "rect": [
+            70,
+            180,
+            200,
+            24
+          ],
+          "sample": [
+            700,
+            1180,
+            80,
+            30
+          ]
+        }
+      ]
+    },
+    "plate-phone-purple": {
+      "source": "phoneHome",
+      "rect": [
+        29,
+        1301,
+        1012,
+        243
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 45,
+        "right": 55,
+        "bottom": 45,
+        "left": 55
+      },
+      "flattenSample": [
+        750,
+        1460,
+        80,
+        30
+      ],
+      "out": "plate/phone-purple.png",
+      "note": "Phone comp JOIN ROOM plate."
+    },
+    "plate-phone-green": {
+      "source": "phoneHome",
+      "rect": [
+        29,
+        1566,
+        1012,
+        230
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 45,
+        "right": 55,
+        "bottom": 45,
+        "left": 55
+      },
+      "flattenSample": [
+        750,
+        1720,
+        80,
+        30
+      ],
+      "out": "plate/phone-green.png",
+      "note": "Phone comp BROWSE PUBLIC LOBBY plate."
+    },
+    "plate-phone-red": {
+      "source": "phoneHome",
+      "rect": [
+        27,
+        1812,
+        1014,
+        264
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 48,
+        "right": 58,
+        "bottom": 48,
+        "left": 58
+      },
+      "flattenSample": [
+        780,
+        1980,
+        80,
+        30
+      ],
+      "out": "plate/phone-red.png",
+      "note": "Phone comp RECOVERY plate."
+    },
+    "card-phone-purple": {
+      "source": "phoneGame",
+      "rect": [
+        16,
+        952,
+        506,
+        378
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 26,
+        "right": 16,
+        "bottom": 36,
+        "left": 80
+      },
+      "flattenSample": [
+        330,
+        1240,
+        60,
+        24
+      ],
+      "out": "card/phone-purple.png",
+      "note": "Phone comp self/competitor card (purple tone).",
+      "erase": [
+        {
+          "rect": [
+            470,
+            140,
+            34,
+            80
+          ],
+          "sample": [
+            330,
+            1240,
+            60,
+            24
+          ]
+        }
+      ]
+    },
+    "card-phone-cyan": {
+      "source": "phoneGame",
+      "rect": [
+        598,
+        952,
+        464,
+        378
+      ],
+      "center": "flatten",
+      "transparentInset": {
+        "top": 32,
+        "right": 18,
+        "bottom": 30,
+        "left": 55
+      },
+      "flattenSample": [
+        900,
+        1240,
+        60,
+        24
+      ],
+      "out": "card/phone-cyan.png",
+      "note": "Phone comp COMPUTER card (cyan/gold tone)."
     }
   }
 }

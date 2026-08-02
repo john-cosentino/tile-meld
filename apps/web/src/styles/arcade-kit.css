@@ -2144,6 +2144,15 @@ button.danger:disabled {
     background-size: 100% 100%;
   }
 
+  /* The home plates, badge, and cards use frames extracted from the
+     designer's phone comps at 1080px -- downscaled here, so smooth
+     sampling, not pixelated (which drops rows from the thin bevels). */
+  .home-menu-plate,
+  .home-signed-in,
+  .competitor-card {
+    image-rendering: auto;
+  }
+
   .home-menu-plate {
     min-height: 96px;
     padding: 0.5rem 3rem;
@@ -2152,21 +2161,14 @@ button.danger:disabled {
   .home-signed-in {
     min-height: 76px;
     padding: 0.4rem 2.6rem;
-    background-image: url("../assets/arcade/frame/badge-signed-in.png");
+    background-image: url("../assets/arcade/frame/badge-phone-signed-in.png");
   }
 
-  .home-menu-plate[data-plate="plate-menu-cyan"] { background-image: url("../assets/arcade/plate/menu-cyan.png"); }
-  .home-menu-plate[data-plate="plate-menu-green"] { background-image: url("../assets/arcade/plate/menu-green.png"); }
-  .home-menu-plate[data-plate="plate-menu-red"] { background-image: url("../assets/arcade/plate/menu-red.png"); }
-  .home-menu-plate[data-plate="plate-menu-purple"] { background-image: url("../assets/arcade/plate/menu-purple.png"); }
-
-  /* Gold art carries ~6px of baked page background under its bottom bar;
-     oversize the background height so that band lands outside the box. */
-  .home-menu-plate[data-plate="plate-menu-gold"] {
-    background-image: url("../assets/arcade/plate/menu-gold.png");
-    background-size: 100% 106%;
-    background-position: top;
-  }
+  .home-menu-plate[data-plate="plate-menu-cyan"] { background-image: url("../assets/arcade/plate/phone-cyan.png"); }
+  .home-menu-plate[data-plate="plate-menu-green"] { background-image: url("../assets/arcade/plate/phone-green.png"); }
+  .home-menu-plate[data-plate="plate-menu-red"] { background-image: url("../assets/arcade/plate/phone-red.png"); }
+  .home-menu-plate[data-plate="plate-menu-purple"] { background-image: url("../assets/arcade/plate/phone-purple.png"); }
+  .home-menu-plate[data-plate="plate-menu-gold"] { background-image: url("../assets/arcade/plate/phone-gold.png"); }
 
   /* Action plates: the slanted silhouettes keep baked background in their
      rectangular crops' corners, so clip to the plate outline (a hair
@@ -2195,17 +2197,20 @@ button.danger:disabled {
     padding: 0.35rem 2.2rem;
   }
 
-  /* Competitor cards: same whole-art treatment via the tone classes. */
+  /* Competitor cards: same whole-art treatment via the tone classes.
+     Gold and purple (the 2-seat tones) use the phone-comp card frames;
+     min-height keeps the render near the comp cards' aspect. */
   .competitor-card {
     border: 0;
     border-image: none;
     background-repeat: no-repeat;
     background-size: 100% 100%;
     padding: 1.1rem 0.8rem 0.7rem;
+    min-height: 116px;
   }
 
-  .competitor-card--tone-gold { background-image: url("../assets/arcade/card/competitor-gold.png"); }
-  .competitor-card--tone-purple { background-image: url("../assets/arcade/card/competitor-purple.png"); }
+  .competitor-card--tone-gold { background-image: url("../assets/arcade/card/phone-cyan.png"); }
+  .competitor-card--tone-purple { background-image: url("../assets/arcade/card/phone-purple.png"); }
   .competitor-card--tone-pink { background-image: url("../assets/arcade/card/competitor-pink.png"); }
   .competitor-card--tone-green { background-image: url("../assets/arcade/card/competitor-green.png"); }
 

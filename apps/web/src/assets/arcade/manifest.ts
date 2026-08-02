@@ -61,6 +61,14 @@ import img_button_speaker from "./icon/button-speaker.png";
 import img_footer_strip_phone from "./frame/footer-strip-phone.png";
 import img_button_square_menu from "./icon/button-square-menu.png";
 import img_wordmark_tabletop from "./masthead/wordmark-tabletop.png";
+import img_badge_phone_signed_in from "./frame/badge-phone-signed-in.png";
+import img_plate_phone_cyan from "./plate/phone-cyan.png";
+import img_plate_phone_gold from "./plate/phone-gold.png";
+import img_plate_phone_purple from "./plate/phone-purple.png";
+import img_plate_phone_green from "./plate/phone-green.png";
+import img_plate_phone_red from "./plate/phone-red.png";
+import img_card_phone_purple from "./card/phone-purple.png";
+import img_card_phone_cyan from "./card/phone-cyan.png";
 
 export interface ArcadeAsset {
   url: string;
@@ -131,6 +139,14 @@ export const arcadeAssets = {
   "footer-strip-phone": { url: img_footer_strip_phone, width: 706, height: 56, slice: { top: 14, right: 14, bottom: 14, left: 14 } },
   "button-square-menu": { url: img_button_square_menu, width: 82, height: 82 },
   "wordmark-tabletop": { url: img_wordmark_tabletop, width: 672, height: 224 },
+  "badge-phone-signed-in": { url: img_badge_phone_signed_in, width: 1034, height: 226 },
+  "plate-phone-cyan": { url: img_plate_phone_cyan, width: 1034, height: 274 },
+  "plate-phone-gold": { url: img_plate_phone_gold, width: 1016, height: 219 },
+  "plate-phone-purple": { url: img_plate_phone_purple, width: 1012, height: 243 },
+  "plate-phone-green": { url: img_plate_phone_green, width: 1012, height: 230 },
+  "plate-phone-red": { url: img_plate_phone_red, width: 1014, height: 264 },
+  "card-phone-purple": { url: img_card_phone_purple, width: 506, height: 378 },
+  "card-phone-cyan": { url: img_card_phone_cyan, width: 464, height: 378 },
 } as const satisfies Record<string, ArcadeAsset>;
 
 export type ArcadeAssetName = keyof typeof arcadeAssets;

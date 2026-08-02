@@ -43,8 +43,28 @@ function pngSize(file: string): { width: number; height: number } {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
+/** Width/height from a JPEG's first SOF marker (phone-comp sources). */
+function jpegSize(file: string): { width: number; height: number } {
+  const buf = readFileSync(file);
+  expect(buf.readUInt16BE(0)).toBe(0xffd8);
+  let pos = 2;
+  while (pos + 9 < buf.length) {
+    expect(buf[pos]).toBe(0xff);
+    const marker = buf[pos + 1]!;
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
+      return { width: buf.readUInt16BE(pos + 7), height: buf.readUInt16BE(pos + 5) };
+    }
+    pos += 2 + buf.readUInt16BE(pos + 2);
+  }
+  throw new Error(`${file}: no JPEG SOF marker found`);
+}
+
+function imageSize(file: string): { width: number; height: number } {
+  return /\.jpe?g$/i.test(file) ? jpegSize(file) : pngSize(file);
+}
+
 const sourceSizes = new Map<string, { width: number; height: number }>(
-  Object.entries(manifest.sources).map(([key, rel]) => [key, pngSize(path.join(repoRoot, rel))]),
+  Object.entries(manifest.sources).map(([key, rel]) => [key, imageSize(path.join(repoRoot, rel))]),
 );
 
 describe("arcade-kit manifest", () => {

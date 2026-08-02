@@ -22,9 +22,15 @@ Binding targets:
 | Screen | Spec |
 |---|---|
 | Home desktop | `docs/design-reference/v2/new_layout1.png` |
+| Home phone | `docs/design-reference/mainscreen.jpg` (designer phone comp, 2026-08-02) |
 | Tabletop desktop | `docs/design-reference/meld-masters/meld-masters-concept-01.png` |
-| Tabletop phone portrait | `.../meld-masters-concept-03.png` |
+| Tabletop phone portrait | `docs/design-reference/mobile.jpeg` + `gameplay.jpg` (designer phone comps, 2026-08-02; supersede `.../meld-masters-concept-03.png`) |
 | Utility screens | derived from the kit language (no 1:1 concept) |
+
+Phone-specific chrome (the `*-phone-*` assets) is extracted from the phone
+comps and rendered as a whole-art background stretch on phone — the
+desktop frames' braces and slants don't 9-slice cleanly at phone
+aspect ratios (see the round-4 notes in `arcade-kit.css`).
 
 ## Asset pipeline
 
