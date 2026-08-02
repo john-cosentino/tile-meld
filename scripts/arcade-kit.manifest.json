@@ -1497,9 +1497,9 @@
       "source": "phoneHome",
       "rect": [
         24,
-        495,
+        496,
         1034,
-        226
+        214
       ],
       "center": "flatten",
       "transparentInset": {
@@ -1521,15 +1521,15 @@
       "source": "phoneHome",
       "rect": [
         24,
-        730,
+        734,
         1034,
-        274
+        264
       ],
       "center": "flatten",
       "transparentInset": {
         "top": 44,
         "right": 50,
-        "bottom": 42,
+        "bottom": 50,
         "left": 50
       },
       "flattenSample": [
@@ -1545,15 +1545,15 @@
       "source": "phoneHome",
       "rect": [
         28,
-        1026,
+        1028,
         1016,
-        219
+        242
       ],
       "center": "flatten",
       "transparentInset": {
-        "top": 30,
+        "top": 36,
         "right": 60,
-        "bottom": 28,
+        "bottom": 44,
         "left": 55
       },
       "flattenSample": [
@@ -1567,10 +1567,10 @@
       "erase": [
         {
           "rect": [
-            70,
-            180,
-            200,
-            24
+            80,
+            158,
+            280,
+            44
           ],
           "sample": [
             700,
@@ -1585,13 +1585,13 @@
       "source": "phoneHome",
       "rect": [
         29,
-        1301,
+        1326,
         1012,
-        243
+        210
       ],
       "center": "flatten",
       "transparentInset": {
-        "top": 45,
+        "top": 40,
         "right": 55,
         "bottom": 45,
         "left": 55
@@ -1609,22 +1609,22 @@
       "source": "phoneHome",
       "rect": [
         29,
-        1566,
+        1578,
         1012,
-        230
+        202
       ],
       "center": "flatten",
       "transparentInset": {
-        "top": 45,
+        "top": 30,
         "right": 55,
         "bottom": 45,
         "left": 55
       },
       "flattenSample": [
         750,
-        1720,
+        1690,
         80,
-        30
+        20
       ],
       "out": "plate/phone-green.png",
       "note": "Phone comp BROWSE PUBLIC LOBBY plate."
@@ -1633,15 +1633,15 @@
       "source": "phoneHome",
       "rect": [
         27,
-        1812,
+        1822,
         1014,
-        264
+        262
       ],
       "center": "flatten",
       "transparentInset": {
-        "top": 48,
+        "top": 34,
         "right": 58,
-        "bottom": 48,
+        "bottom": 40,
         "left": 58
       },
       "flattenSample": [
@@ -1656,61 +1656,45 @@
     "card-phone-purple": {
       "source": "phoneGame",
       "rect": [
-        16,
-        952,
-        506,
-        378
+        20,
+        960,
+        548,
+        372
       ],
       "center": "flatten",
       "transparentInset": {
-        "top": 26,
-        "right": 16,
-        "bottom": 36,
-        "left": 80
+        "top": 25,
+        "right": 22,
+        "bottom": 32,
+        "left": 75
       },
       "flattenSample": [
-        330,
-        1240,
+        350,
+        1120,
         60,
         24
       ],
       "out": "card/phone-purple.png",
-      "note": "Phone comp self/competitor card (purple tone).",
-      "erase": [
-        {
-          "rect": [
-            470,
-            140,
-            34,
-            80
-          ],
-          "sample": [
-            330,
-            1240,
-            60,
-            24
-          ]
-        }
-      ]
+      "note": "Phone comp self/competitor card (purple tone)."
     },
     "card-phone-cyan": {
       "source": "phoneGame",
       "rect": [
-        598,
-        952,
-        464,
+        614,
+        950,
+        442,
         378
       ],
       "center": "flatten",
       "transparentInset": {
-        "top": 32,
-        "right": 18,
-        "bottom": 30,
-        "left": 55
+        "top": 30,
+        "right": 20,
+        "bottom": 22,
+        "left": 60
       },
       "flattenSample": [
-        900,
-        1240,
+        950,
+        1100,
         60,
         24
       ],
