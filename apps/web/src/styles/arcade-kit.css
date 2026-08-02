@@ -2101,3 +2101,42 @@ button.danger:disabled {
     height: auto;
   }
 }
+
+/* --------------------------- phone polish round 3 (2026-08-02 feedback) */
+
+/* Home plates on phone: the concept plates' corner braces span ~64x30px
+   of source art -- far larger than the 16px slice used at desktop rail
+   widths -- so full-width phone plates smeared their corners into the
+   stretched edge bands. Slice the full brace geometry and render it at
+   half scale for crisp, complete corners and uniform box heights.
+   (!important: the slice/width come from frameStyle's inline style.) */
+@media (max-width: 900px) {
+  .home-menu-plate {
+    border-image-slice: 30 64 30 64 fill !important;
+    border-width: 15px 32px !important;
+    min-height: 96px;
+  }
+
+  .home-signed-in {
+    border-image-slice: 26 48 26 48 fill !important;
+    border-width: 13px 24px !important;
+  }
+
+  /* Board window: straight-sided on phone -- the perspective taper reads
+     wrong on a tall scrolling board (user feedback, gameplay.jpg). */
+  .tabletop-board {
+    padding: 2.2rem 4% 1rem;
+  }
+
+  .tabletop-board::before {
+    clip-path: none;
+    background: none;
+    border: 2px solid #2cc4e8;
+    filter: drop-shadow(0 0 6px rgba(63, 224, 255, 0.5));
+  }
+
+  .tabletop-board::after {
+    clip-path: none;
+    inset: 5px;
+  }
+}
