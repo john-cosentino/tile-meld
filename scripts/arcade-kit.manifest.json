@@ -860,15 +860,15 @@
         "bottom": 14,
         "left": 14
       },
-      "center": "flatten",
-      "flattenSample": [
-        1300,
-        75,
-        60,
-        30
-      ],
+      "center": "transparent",
       "out": "frame/panel-round.png",
-      "note": "ROUND / TARGET SCORE list panel (top right)."
+      "note": "ROUND / TARGET SCORE list panel (top right).",
+      "transparentInset": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      }
     },
     "panel-turn-lcd": {
       "source": "concept01",
@@ -884,15 +884,15 @@
         "bottom": 16,
         "left": 16
       },
-      "center": "flatten",
-      "flattenSample": [
-        1300,
-        230,
-        60,
-        20
-      ],
+      "center": "transparent",
       "out": "frame/panel-turn-lcd.png",
-      "note": "YOUR TURN gold panel; LCD + meter live inside."
+      "note": "YOUR TURN gold panel; LCD + meter live inside.",
+      "transparentInset": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      }
     },
     "lcd-screen": {
       "source": "concept01",
@@ -950,13 +950,7 @@
         "bottom": 14,
         "left": 14
       },
-      "center": "flatten",
-      "flattenSample": [
-        1300,
-        500,
-        60,
-        40
-      ],
+      "center": "transparent",
       "out": "frame/panel-log.png",
       "note": "MOVE LOG cyan panel.",
       "erase": [
@@ -988,7 +982,13 @@
             40
           ]
         }
-      ]
+      ],
+      "transparentInset": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      }
     },
     "panel-howto": {
       "source": "concept01",
@@ -1004,13 +1004,7 @@
         "bottom": 14,
         "left": 14
       },
-      "center": "flatten",
-      "flattenSample": [
-        1300,
-        720,
-        60,
-        40
-      ],
+      "center": "transparent",
       "out": "frame/panel-howto.png",
       "erase": [
         {
@@ -1041,7 +1035,13 @@
             40
           ]
         }
-      ]
+      ],
+      "transparentInset": {
+        "top": 14,
+        "right": 14,
+        "bottom": 14,
+        "left": 14
+      }
     },
     "sprite-mascot": {
       "source": "concept01",

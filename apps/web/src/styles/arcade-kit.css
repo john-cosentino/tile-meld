@@ -1891,3 +1891,213 @@ button.danger:disabled {
 .seat-list {
   grid-template-columns: repeat(auto-fill, minmax(260px, 340px));
 }
+
+/* ------------------------- tabletop polish round 2 (2026-08-02 feedback) */
+
+/* User feedback on the shipped tabletop: backgrounds didn't match
+   (masthead crop vs board hole vs page), spacing broke at 1920-wide and
+   on phones, board art carried baked junk in its side bands. This pass:
+   ONE page-level scene, a CSS neon trapezoid instead of the raster board
+   frame, transparent panel interiors over a shared fill, a composition
+   width cap, and a phone-first card grid. */
+
+/* One continuous scene, painted at page level so it runs full-bleed
+   behind the (width-capped) composition. */
+.page--tabletop {
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 55% 22% at 50% 4%, rgba(63, 224, 255, 0.16), transparent 70%),
+    radial-gradient(ellipse 90% 45% at 50% 115%, rgba(10, 40, 80, 0.55), transparent 75%),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 56px),
+    var(--bg-page);
+}
+
+.tabletop-shell {
+  background: none;
+  max-width: 1680px;
+  margin-inline: auto;
+}
+
+/* Feather the masthead crop's baked backdrop into the scene instead of
+   ending in a hard rectangle. */
+.tabletop-masthead-wordmark {
+  mask-image:
+    linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(180deg, #000 0, #000 78%, transparent 100%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+
+/* Board: CSS neon trapezoid on the scene -- geometric lines scale
+   crisply at any size and carry no baked artifacts. The raster
+   board-frame asset is no longer referenced. */
+.tabletop-board {
+  position: relative;
+  background: none;
+  padding: 2.6rem 7% 1.4rem;
+}
+
+.tabletop-board::before,
+.tabletop-board::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Outer neon edge. */
+.tabletop-board::before {
+  inset: 0;
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, #35d6f5 0%, #1899c4 60%, #0f7aa6 100%);
+  filter: drop-shadow(0 0 6px rgba(63, 224, 255, 0.5));
+}
+
+/* Interior floor, inset from the edge so the neon reads as a 3px line. */
+.tabletop-board::after {
+  inset: 3px 3px 3px 3px;
+  clip-path: polygon(calc(7% + 4px) 0, calc(93% - 4px) 0, 100% 100%, 0 100%);
+  background:
+    repeating-linear-gradient(90deg, rgba(63, 224, 255, 0.06) 0 1px, transparent 1px 52px),
+    repeating-linear-gradient(180deg, rgba(63, 224, 255, 0.06) 0 1px, transparent 1px 44px),
+    radial-gradient(ellipse 75% 65% at 50% 40%, #0d2140 0%, #081630 55%, #050e22 100%);
+}
+
+.tabletop-board > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Side panels: transparent frame interiors over ONE shared fill so all
+   four rail panels (and the meta tab) read as the same machine. */
+.tt-turn,
+.tt-meta,
+.tt-chat,
+.tt-howto {
+  background: rgba(4, 16, 28, 0.85);
+}
+
+/* Your Turn panel: center the content, kill the dead space (the inline
+   row styles come from TabletopStatus markup, hence the importants). */
+.tt-turn {
+  justify-content: center;
+  padding: 0.4rem 0.9rem 0.6rem;
+}
+
+.tt-turn .tabletop-status {
+  flex: none;
+  align-items: center;
+  text-align: center;
+}
+
+.tt-turn .tabletop-status .row {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: center !important;
+}
+
+/* Chat: center the collapsed toggle instead of leaving a void. */
+.tt-chat {
+  justify-content: center;
+}
+
+.tt-chat:has(#tabletop-chat-panel:not([hidden])) {
+  justify-content: flex-start;
+}
+
+/* Footer: clear of the action plates. */
+.tabletop-footer {
+  width: 18%;
+  left: 41%;
+  bottom: 0;
+  min-height: 22px;
+  border-width: 10px;
+  font-size: 0.85rem;
+}
+
+/* Phone: 2-up competitor grid (no clipped horizontal scroller) and
+   tightened panel chrome. */
+@media (max-width: 900px) {
+  .tabletop-competitors {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    overflow-x: visible;
+  }
+
+  .tabletop-opponents {
+    display: contents;
+  }
+
+  .competitor-card {
+    min-width: 0;
+    flex: none;
+  }
+
+  .tt-region--turn {
+    border-width: 26px 14px 12px 14px !important;
+  }
+
+  .tt-turn {
+    padding: 0.3rem 0.6rem 0.45rem;
+  }
+
+  .tabletop-turn {
+    font-size: 1.3rem;
+  }
+
+  .tt-region--board {
+    min-height: 260px;
+  }
+
+  .tabletop-board {
+    padding: 2.2rem 5% 1rem;
+  }
+}
+
+/* Phone competitor cards: smaller chrome so names get the space. */
+@media (max-width: 900px) {
+  .competitor-card {
+    padding: 1rem 0.55rem 0.55rem;
+    min-height: 96px;
+  }
+
+  .opponent-portrait {
+    width: 36px;
+    height: 54px;
+  }
+
+  .competitor-name {
+    font-size: 0.92rem;
+  }
+
+  .competitor-meta {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Plate labels wrap instead of truncating at phone widths. */
+  .tt-plate .arcade-kit-plate-label {
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .tabletop-footer {
+    width: 60%;
+    margin: 0.5rem auto 0;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 900px) {
+  /* The board stays position:relative for its trapezoid pseudo-elements,
+     so the desktop percent offsets must be explicitly cleared here --
+     relative positioning honors left/top that static was neutralizing. */
+  .tt-region--board.tabletop-board {
+    inset: auto;
+    width: auto;
+    height: auto;
+  }
+}
