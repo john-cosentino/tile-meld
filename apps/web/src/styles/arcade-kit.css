@@ -2104,24 +2104,7 @@ button.danger:disabled {
 
 /* --------------------------- phone polish round 3 (2026-08-02 feedback) */
 
-/* Home plates on phone: the concept plates' corner braces span ~64x30px
-   of source art -- far larger than the 16px slice used at desktop rail
-   widths -- so full-width phone plates smeared their corners into the
-   stretched edge bands. Slice the full brace geometry and render it at
-   half scale for crisp, complete corners and uniform box heights.
-   (!important: the slice/width come from frameStyle's inline style.) */
 @media (max-width: 900px) {
-  .home-menu-plate {
-    border-image-slice: 30 64 30 64 fill !important;
-    border-width: 15px 32px !important;
-    min-height: 96px;
-  }
-
-  .home-signed-in {
-    border-image-slice: 26 48 26 48 fill !important;
-    border-width: 13px 24px !important;
-  }
-
   /* Board window: straight-sided on phone -- the perspective taper reads
      wrong on a tall scrolling board (user feedback, gameplay.jpg). */
   .tabletop-board {
@@ -2138,5 +2121,105 @@ button.danger:disabled {
   .tabletop-board::after {
     clip-path: none;
     inset: 5px;
+  }
+}
+
+/* --------------------------- phone polish round 4 (2026-08-02 feedback) */
+
+/* On phone, framed chrome stops 9-slicing. The concept frames' braces,
+   slants, and corner cuts don't decompose into corner-plus-tileable-edge
+   patches, so any slice geometry smears or steps once a plate is much
+   wider and shorter than its source art. The designer's own phone comps
+   (mainscreen.jpg, mobile.jpeg) squash each plate as one piece, so do the
+   same: stretch the whole asset edge to edge. Desktop keeps the 9-slice
+   (there the render size tracks the art size closely).
+   (!important: the sliced chrome comes from frameStyle's inline style.) */
+@media (max-width: 900px) {
+  .home-menu-plate,
+  .home-signed-in,
+  .tabletop-actions-primary .tt-plate {
+    border: 0 !important;
+    border-image: none !important;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  .home-menu-plate {
+    min-height: 96px;
+    padding: 0.5rem 3rem;
+  }
+
+  .home-signed-in {
+    min-height: 76px;
+    padding: 0.4rem 2.6rem;
+    background-image: url("../assets/arcade/frame/badge-signed-in.png");
+  }
+
+  .home-menu-plate[data-plate="plate-menu-cyan"] { background-image: url("../assets/arcade/plate/menu-cyan.png"); }
+  .home-menu-plate[data-plate="plate-menu-green"] { background-image: url("../assets/arcade/plate/menu-green.png"); }
+  .home-menu-plate[data-plate="plate-menu-red"] { background-image: url("../assets/arcade/plate/menu-red.png"); }
+  .home-menu-plate[data-plate="plate-menu-purple"] { background-image: url("../assets/arcade/plate/menu-purple.png"); }
+
+  /* Gold art carries ~6px of baked page background under its bottom bar;
+     oversize the background height so that band lands outside the box. */
+  .home-menu-plate[data-plate="plate-menu-gold"] {
+    background-image: url("../assets/arcade/plate/menu-gold.png");
+    background-size: 100% 106%;
+    background-position: top;
+  }
+
+  /* Action plates: the slanted silhouettes keep baked background in their
+     rectangular crops' corners, so clip to the plate outline (a hair
+     outside it, preserving the painted glow). */
+  .tt-plate[data-plate="plate-action-cyan"] {
+    background-image: url("../assets/arcade/plate/action-cyan.png");
+    clip-path: polygon(8% 3%, 100% 3%, 96.5% 96%, 0% 96%);
+  }
+
+  .tt-plate[data-plate="plate-action-purple"] {
+    background-image: url("../assets/arcade/plate/action-purple.png");
+    clip-path: inset(4% 0.5% 2% 0.5%);
+  }
+
+  .tt-plate[data-plate="plate-action-orange"] {
+    background-image: url("../assets/arcade/plate/action-orange.png");
+    clip-path: polygon(0.3% 2.5%, 95.8% 2.5%, 100% 96.7%, 2.9% 96.7%);
+  }
+
+  .tt-plate {
+    padding: 0.35rem 1.4rem;
+  }
+
+  .tt-plate--commit {
+    min-height: 68px;
+    padding: 0.35rem 2.2rem;
+  }
+
+  /* Competitor cards: same whole-art treatment via the tone classes. */
+  .competitor-card {
+    border: 0;
+    border-image: none;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    padding: 1.1rem 0.8rem 0.7rem;
+  }
+
+  .competitor-card--tone-gold { background-image: url("../assets/arcade/card/competitor-gold.png"); }
+  .competitor-card--tone-purple { background-image: url("../assets/arcade/card/competitor-purple.png"); }
+  .competitor-card--tone-pink { background-image: url("../assets/arcade/card/competitor-pink.png"); }
+  .competitor-card--tone-green { background-image: url("../assets/arcade/card/competitor-green.png"); }
+
+  /* Rack: the concept band art loses its header tab to extraction erases
+     and its corner curves smear on a tall box, so use the same clean neon
+     frame the phone board window got. box-shadow, not filter: a filter
+     here would make the rack a containing block for dragged tiles. */
+  .tabletop-rack {
+    border: 2px solid #2cc4e8;
+    border-image: none;
+    background: rgba(6, 16, 28, 0.85);
+    box-shadow:
+      0 0 6px rgba(63, 224, 255, 0.5),
+      inset 0 0 8px rgba(63, 224, 255, 0.15);
+    padding: 0.5rem 0.75rem;
   }
 }

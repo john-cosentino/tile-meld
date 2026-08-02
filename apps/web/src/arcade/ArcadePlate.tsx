@@ -57,6 +57,7 @@ export function ArcadePlate({
       {...buttonProps}
       type={type}
       className={className ? `arcade-kit-plate ${className}` : "arcade-kit-plate"}
+      data-plate={plate}
       style={frameStyle(plate)}
     >
       <PlateContent icon={icon} iconScale={iconScale} label={label} sublabel={sublabel} />
@@ -84,6 +85,7 @@ export function ArcadePlateLink({
     <Link
       to={to}
       className={className ? `arcade-kit-plate ${className}` : "arcade-kit-plate"}
+      data-plate={plate}
       style={frameStyle(plate)}
     >
       <PlateContent icon={icon} iconScale={iconScale} label={label} sublabel={sublabel} />
