@@ -1702,10 +1702,10 @@
         "left": 75
       },
       "flattenSample": [
-        350,
-        1120,
-        60,
-        24
+        330,
+        1286,
+        70,
+        14
       ],
       "out": "card/phone-purple.png",
       "note": "Phone comp self/competitor card (purple tone)."
