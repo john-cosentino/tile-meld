@@ -18,7 +18,12 @@ mechanics in `docs/arcade-visual-kit.md`. Verified on the branch:
 469 web unit tests, full chromium e2e 46/46, three region contracts.
 **Merged to `main` (tip `ddac7f7`) and deployed 2026-08-02** — live at
 `https://tile-meld.onrender.com`, confirmed via `/build-info.json`,
-`/api/health` 200, and a production screenshot.
+`/api/health` 200, and a production screenshot. Seven phone-polish
+rounds followed the same day (`796ac56`..`76ed5fd`, all deployed): phone
+chrome now stretches whole frames extracted from the designer's phone
+comps rather than 9-slicing, with a `mirrorBand` extraction treatment
+closing dim plate edges — details and the user's closed-frame acceptance
+bar in `docs/task.md`. 501 web unit tests at the last round.
 
 - **Last verified:** 2026-07-28 (CI security-gate restructuring, on top
   of the dependency security remediation checkpoint, on top of Phase 8)

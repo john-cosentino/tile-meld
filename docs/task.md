@@ -38,12 +38,42 @@ Verification at completion: 469 web unit tests; full chromium e2e suite
 region contracts. WebKit/Firefox remain CI-only (machine-freeze
 incident, `docs/current-state.md`).
 
+**Follow-up (2026-08-02, post-merge): phone polish rounds.** Seven
+user-feedback rounds on `main` (`796ac56`..`76ed5fd`), all deployed and
+verified live via `/build-info.json`:
+
+- Phone framed chrome no longer 9-slices: plates, badge, and cards
+  stretch whole assets extracted from the designer's phone comps
+  (`mainscreen.jpg`, `mobile.jpeg` — now the binding phone specs, see
+  `docs/arcade-visual-kit.md`). `data-plate`/`data-frame` attributes on
+  `ArcadePlate`/`ArcadePanel` let the phone media query target assets.
+- The board window and rack use clean CSS neon frames on phone; 9-sliced
+  info panels render at double border-width; competitor cards close
+  their silhouettes with translucent toned borders.
+- New `mirrorBand` extraction treatment mirrors a plate's bright bar
+  onto its dim edge. **Acceptance bar (user verdict): every window must
+  read as a closed frame at true phone scale — comp fidelity is NOT
+  sufficient**, because the comps' lit-from-above plates have near-black
+  bottom/top bevels that read as missing edges.
+- Review captures are full-page at deviceScaleFactor 3 so they show what
+  a phone shows.
+
+Verification at the last round: 501 web unit tests (the manifest guard
+grew with the new assets and learned JPEG sources); arcade-regions +
+tabletopMobile + mobileOverflow + accessibility e2e 18/18 (chromium);
+desktop home pixel-identical throughout except the deliberate removal of
+a baked "NOTICE BOARD" ghost title from `panel-notice`.
+
 **Open items:**
 
 1. Pre-existing, untouched: `packages/shared test/schemas.test.ts`
    RedactedGameViewSchema case fails (predates this work).
 2. Optional polish noted at the Phase 5 checkpoint: the tabletop board
    frame's painted-floor/CSS-floor seam.
+3. Tabletop action plates (Draw/Pass/Commit) still use the desktop
+   concept extractions with clip-paths; if the user's closed-frame
+   standard extends to them, they may want the same brightening
+   treatment.
 
 ---
 
