@@ -183,7 +183,23 @@
         40
       ],
       "out": "frame/panel-notice.png",
-      "note": "NOTICE BOARD panel with header hump."
+      "note": "NOTICE BOARD panel with header hump.",
+      "erase": [
+        {
+          "rect": [
+            28,
+            5,
+            300,
+            28
+          ],
+          "sample": [
+            340,
+            800,
+            40,
+            20
+          ]
+        }
+      ]
     },
     "panel-browser": {
       "source": "homeSpec",

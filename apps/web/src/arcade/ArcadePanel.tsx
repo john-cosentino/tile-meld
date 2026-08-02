@@ -41,6 +41,7 @@ export function ArcadePanel({
     <section
       {...rest}
       className={className ? `arcade-kit-panel ${className}` : "arcade-kit-panel"}
+      data-frame={frame}
       style={{ ...frameStyle(frame), ...style }}
     >
       {title !== undefined && (

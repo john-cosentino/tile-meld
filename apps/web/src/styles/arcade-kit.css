@@ -2200,8 +2200,11 @@ button.danger:disabled {
   /* Competitor cards: same whole-art treatment via the tone classes.
      Gold and purple (the 2-seat tones) use the phone-comp card frames;
      min-height keeps the render near the comp cards' aspect. */
+  /* The comp card frames deliberately fade on their right/bottom sides,
+     which reads as a broken box at card size (user feedback round 6) --
+     a translucent toned border closes the silhouette over the art. */
   .competitor-card {
-    border: 0;
+    border: 2px solid rgba(63, 224, 255, 0.35);
     border-image: none;
     background-repeat: no-repeat;
     background-size: 100% 100%;
@@ -2210,9 +2213,34 @@ button.danger:disabled {
   }
 
   .competitor-card--tone-gold { background-image: url("../assets/arcade/card/phone-cyan.png"); }
-  .competitor-card--tone-purple { background-image: url("../assets/arcade/card/phone-purple.png"); }
-  .competitor-card--tone-pink { background-image: url("../assets/arcade/card/competitor-pink.png"); }
-  .competitor-card--tone-green { background-image: url("../assets/arcade/card/competitor-green.png"); }
+  .competitor-card--tone-purple {
+    background-image: url("../assets/arcade/card/phone-purple.png");
+    border-color: rgba(190, 120, 255, 0.4);
+  }
+  .competitor-card--tone-pink {
+    background-image: url("../assets/arcade/card/competitor-pink.png");
+    border-color: rgba(255, 130, 200, 0.4);
+  }
+  .competitor-card--tone-green {
+    background-image: url("../assets/arcade/card/competitor-green.png");
+    border-color: rgba(130, 230, 150, 0.4);
+  }
+
+  /* 9-sliced info panels: their 14-18px chrome is sized for desktop
+     rails; at phone width the thin edge lines all but vanish (user
+     feedback round 6). Rendering the same slices at double border-width
+     gives corners and edges the chunk the phone comps use. Widths are
+     2x each frame's slice insets. (!important: the sliced chrome comes
+     from frameStyle's inline style.) */
+  .arcade-kit-panel[data-frame="panel-browser"] { border-width: 36px !important; }
+  .arcade-kit-panel[data-frame="panel-profile"],
+  .arcade-kit-panel[data-frame="panel-recovery"],
+  .arcade-kit-panel[data-frame="panel-activity"] { border-width: 32px !important; }
+  .arcade-kit-panel[data-frame="panel-howto"] { border-width: 28px !important; }
+  .home-notice { border-width: 32px 28px 28px 28px !important; }
+  .tt-meta { border-width: 28px !important; }
+  .tt-chat { border-width: 28px !important; }
+  .tt-howto { border-width: 28px !important; }
 
   /* Rack: the concept band art loses its header tab to extraction erases
      and its corner curves smear on a tall box, so use the same clean neon
