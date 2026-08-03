@@ -16,6 +16,23 @@ export function generateRecoverySecret(): string {
   return randomBytes(32).toString("base64url");
 }
 
+/** Account passwords: same Argon2id treatment as recovery secrets (both are
+ * long-term credentials verified one row at a time, never looked up by). */
+export async function hashPassword(password: string): Promise<string> {
+  return hash(password);
+}
+
+export async function verifyPassword(hashValue: string, password: string): Promise<boolean> {
+  return verify(hashValue, password);
+}
+
+/** Password-reset tokens: 32-byte CSPRNG like recovery secrets; stored only
+ * as a keyed HMAC (hashSessionToken) because confirm must look the row up by
+ * token_hash through an index. */
+export function generateResetToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
 /** Session tokens: deterministic keyed HMAC-SHA256, so `sessions.token_hash`
  * can be looked up by an index -- Argon2id's deliberate slowness and
  * per-call random salt make it unsuitable for this. The HMAC key

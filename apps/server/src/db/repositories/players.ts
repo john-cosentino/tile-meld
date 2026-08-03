@@ -93,6 +93,142 @@ export async function rotateRecoverySecret(
     .executeTakeFirstOrThrow();
 }
 
+export type CreateAccountOutcome =
+  | { readonly kind: "created"; readonly player: PlayerRow }
+  | { readonly kind: "taken" };
+
+/**
+ * Creates a password-credentialed human identity with its username claimed
+ * in the same INSERT (accounts merge the old mint-then-claim two-step). The
+ * partial unique index on username_canonical is the concurrency arbiter,
+ * exactly as in claimUsername: a losing racer catches 23505 and reports
+ * "taken". Reserved-name policy stays at the route layer.
+ */
+export async function createAccount(
+  db: Kysely<Database> | Transaction<Database>,
+  input: { readonly username: string; readonly email: string; readonly passwordHash: string },
+): Promise<CreateAccountOutcome> {
+  try {
+    const player = await db
+      .insertInto("players")
+      .values({
+        kind: "human",
+        username: input.username,
+        username_canonical: canonicalizeUsername(input.username),
+        email: input.email,
+        password_hash: input.passwordHash,
+        password_updated_at: new Date(),
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    return { kind: "created", player };
+  } catch (err) {
+    if (isUniqueViolation(err)) return { kind: "taken" };
+    throw err;
+  }
+}
+
+export async function findPlayerByCanonicalUsername(
+  db: Kysely<Database> | Transaction<Database>,
+  usernameCanonical: string,
+): Promise<PlayerRow | undefined> {
+  return db
+    .selectFrom("players")
+    .selectAll()
+    .where("username_canonical", "=", usernameCanonical)
+    .where("kind", "=", "human")
+    .executeTakeFirst();
+}
+
+/** Sets a new password and retires the legacy recovery credential -- one
+ * credential system per account (accounts plan D4). recovery_rotated_at is
+ * left as history. */
+export async function setPassword(
+  db: Kysely<Database> | Transaction<Database>,
+  playerId: string,
+  passwordHash: string,
+): Promise<PlayerRow> {
+  return db
+    .updateTable("players")
+    .set({ password_hash: passwordHash, password_updated_at: new Date(), recovery_hash: null })
+    .where("id", "=", playerId)
+    .where("kind", "=", "human")
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export async function setEmail(
+  db: Kysely<Database> | Transaction<Database>,
+  playerId: string,
+  email: string,
+): Promise<PlayerRow> {
+  return db
+    .updateTable("players")
+    .set({ email })
+    .where("id", "=", playerId)
+    .where("kind", "=", "human")
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export async function setPortrait(
+  db: Kysely<Database> | Transaction<Database>,
+  playerId: string,
+  portraitId: number | null,
+): Promise<PlayerRow> {
+  return db
+    .updateTable("players")
+    .set({ portrait_id: portraitId })
+    .where("id", "=", playerId)
+    .where("kind", "=", "human")
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export type UpgradeLegacyAccountOutcome =
+  | { readonly kind: "upgraded"; readonly player: PlayerRow }
+  | { readonly kind: "already_upgraded" }
+  | { readonly kind: "not_eligible" };
+
+/**
+ * Converts a legacy recovery-code identity into a password account: sets
+ * email + password and retires the recovery credential in one guarded
+ * UPDATE. Like claimUsername, the WHERE clause is the decision and the
+ * follow-up read is diagnostic only.
+ */
+export async function upgradeLegacyAccount(
+  db: Kysely<Database> | Transaction<Database>,
+  playerId: string,
+  input: { readonly email: string; readonly passwordHash: string },
+): Promise<UpgradeLegacyAccountOutcome> {
+  const updated = await db
+    .updateTable("players")
+    .set({
+      email: input.email,
+      password_hash: input.passwordHash,
+      password_updated_at: new Date(),
+      recovery_hash: null,
+    })
+    .where("id", "=", playerId)
+    .where("kind", "=", "human")
+    .where("password_hash", "is", null)
+    .where("recovery_hash", "is not", null)
+    .returningAll()
+    .executeTakeFirst();
+
+  if (updated) return { kind: "upgraded", player: updated };
+
+  const current = await db
+    .selectFrom("players")
+    .selectAll()
+    .where("id", "=", playerId)
+    .executeTakeFirst();
+  if (current && current.kind === "human" && current.password_hash !== null) {
+    return { kind: "already_upgraded" };
+  }
+  return { kind: "not_eligible" };
+}
+
 export type ClaimUsernameOutcome =
   | { readonly kind: "claimed"; readonly player: PlayerRow }
   | { readonly kind: "already_claimed_same"; readonly player: PlayerRow }

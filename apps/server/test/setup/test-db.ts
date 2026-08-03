@@ -38,6 +38,7 @@ const TABLES = [
   "games",
   "room_members",
   "rooms",
+  "password_reset_tokens",
   "sessions",
   "players",
 ] as const;

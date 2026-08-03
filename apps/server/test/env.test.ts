@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { loadEnv, isRetentionSweepEnabled, isE2ERateLimitBypassEnabled } from "../src/env.js";
+import {
+  loadEnv,
+  isAccountsEnabled,
+  isRetentionSweepEnabled,
+  isE2ERateLimitBypassEnabled,
+} from "../src/env.js";
 
 const REQUIRED = {
   DATABASE_URL: "postgres://tilemeld:tilemeld@localhost:5432/tilemeld",
@@ -145,5 +150,38 @@ describe("E2E_DISABLE_RATE_LIMITS / isE2ERateLimitBypassEnabled", () => {
   it("rejects an invalid value the same way other boolean-style env vars are validated", () => {
     expect(() => loadEnv({ ...REQUIRED, E2E_DISABLE_RATE_LIMITS: "yes" })).toThrow();
     expect(() => loadEnv({ ...REQUIRED, E2E_DISABLE_RATE_LIMITS: "1" })).toThrow();
+  });
+});
+
+// User-accounts cutover flag (accounts plan D1) plus the SMTP vars it
+// travels with. Same explicit-opt-in polarity as ENABLE_RETENTION_SWEEP:
+// requiring accounts is the breaking change, so absence means today's
+// guest flow.
+describe("ENABLE_ACCOUNTS / isAccountsEnabled and SMTP vars", () => {
+  it("defaults to disabled when the var is entirely absent", () => {
+    const env = loadEnv(REQUIRED);
+    expect(env.ENABLE_ACCOUNTS).toBeUndefined();
+    expect(isAccountsEnabled(env)).toBe(false);
+  });
+
+  it('is disabled for an explicit "false" and enabled only for an explicit "true"', () => {
+    expect(isAccountsEnabled(loadEnv({ ...REQUIRED, ENABLE_ACCOUNTS: "false" }))).toBe(false);
+    expect(isAccountsEnabled(loadEnv({ ...REQUIRED, ENABLE_ACCOUNTS: "true" }))).toBe(true);
+  });
+
+  it("rejects an invalid value the same way other boolean-style env vars are validated", () => {
+    expect(() => loadEnv({ ...REQUIRED, ENABLE_ACCOUNTS: "yes" })).toThrow();
+  });
+
+  it("treats empty-string SMTP vars as absent, per the optionalString convention", () => {
+    const env = loadEnv({ ...REQUIRED, SMTP_HOST: "", EMAIL_FROM: "", APP_BASE_URL: "" });
+    expect(env.SMTP_HOST).toBeUndefined();
+    expect(env.EMAIL_FROM).toBeUndefined();
+    expect(env.APP_BASE_URL).toBeUndefined();
+  });
+
+  it("coerces SMTP_PORT to a bounded integer", () => {
+    expect(loadEnv({ ...REQUIRED, SMTP_PORT: "587" }).SMTP_PORT).toBe(587);
+    expect(() => loadEnv({ ...REQUIRED, SMTP_PORT: "0" })).toThrow();
   });
 });

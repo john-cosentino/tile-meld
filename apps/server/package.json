@@ -26,6 +26,7 @@
     "fastify": "^5.2.1",
     "fastify-type-provider-zod": "^4.0.2",
     "kysely": "^0.28.17",
+    "nodemailer": "^9.0.3",
     "pg": "^8.13.1",
     "socket.io": "^4.8.3",
     "web-push": "^3.6.7",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.11.10",
     "@types/web-push": "^3.6.4",
     "esbuild": "^0.25.0",

@@ -46,7 +46,8 @@ export interface PlayersTable {
   id: Generated<string>;
   created_at: ColumnType<Date, Date | string | undefined, never>;
   // Nullable since migration 0018: a computer player has no recovery secret.
-  // A DB CHECK enforces non-null for humans and null for computers.
+  // Since migration 0022 a human needs recovery_hash OR password_hash (one
+  // long-term credential); computers have neither.
   recovery_hash: string | null;
   recovery_rotated_at: Timestamp | null;
   display_name_default: string | null;
@@ -57,6 +58,14 @@ export interface PlayersTable {
   // are NULL until claimed, and NULL forever for kind='computer'.
   username: string | null;
   username_canonical: string | null;
+  // Account credentials + profile (migration 0022). All human-only; the
+  // players_credentials_kind_ck CHECK pins every one of them NULL for the
+  // computer player. email is deliberately non-unique and only ever used to
+  // send password-reset links (never looked up by).
+  password_hash: string | null;
+  email: string | null;
+  password_updated_at: Timestamp | null;
+  portrait_id: number | null;
 }
 
 export interface SessionsTable {
@@ -206,9 +215,21 @@ export interface RoomScoresTable {
   games_won: Generated<number>;
 }
 
+export interface PasswordResetTokensTable {
+  id: Generated<string>;
+  player_id: string;
+  // Keyed HMAC of the reset token (like sessions.token_hash), never the
+  // token itself; single-use via used_at, expiry enforced on read.
+  token_hash: string;
+  created_at: ColumnType<Date, Date | string | undefined, never>;
+  expires_at: Timestamp;
+  used_at: Timestamp | null;
+}
+
 export interface Database {
   players: PlayersTable;
   sessions: SessionsTable;
+  password_reset_tokens: PasswordResetTokensTable;
   rooms: RoomsTable;
   room_members: RoomMembersTable;
   games: GamesTable;

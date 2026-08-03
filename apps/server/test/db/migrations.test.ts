@@ -27,6 +27,7 @@ describe("migrations", () => {
         "game_seats",
         "games",
         "idempotency_keys",
+        "password_reset_tokens",
         "players",
         "push_subscriptions",
         "racks",
