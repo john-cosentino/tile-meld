@@ -133,8 +133,8 @@ export function HomePage() {
         <h2 className="visually-hidden">Create a Game</h2>
         {!username && (
           <p className="home-claim-note" role="status">
-            You need a username before creating games.{" "}
-            <Link to="/recovery">Claim a username</Link> to get started.
+            You need a username before creating games. <Link to="/recovery">Claim a username</Link>{" "}
+            to get started.
           </p>
         )}
         <ArcadePlate

@@ -349,18 +349,78 @@
   min-height: 0;
 }
 
-.home-region--info-badge { left: 0.911%; top: 0.781%; width: 19.01%; height: 9.766%; }
-.home-region--menu-rail { left: 0.911%; top: 13.672%; width: 22.656%; height: 60.742%; }
-.home-region--notice { left: 0.781%; top: 77.148%; width: 31.25%; height: 15.039%; }
-.home-region--masthead { left: 26.042%; top: 0.781%; width: 44.271%; height: 20.508%; }
-.home-region--browser { left: 24.349%; top: 22.07%; width: 49.609%; height: 53.906%; }
-.home-region--bottom-strip { left: 33.203%; top: 76.66%; width: 40.755%; height: 15.625%; }
-.home-region--signed-in { left: 73.828%; top: 0.781%; width: 24.74%; height: 9.766%; }
-.home-region--profile { left: 75.13%; top: 12.305%; width: 23.568%; height: 25.977%; }
-.home-region--recovery { left: 75.13%; top: 39.062%; width: 23.568%; height: 13.281%; }
-.home-region--activity { left: 74.74%; top: 53.32%; width: 23.958%; height: 19.531%; }
-.home-region--rail-extra { left: 74.74%; top: 73.828%; width: 23.958%; height: 15.625%; }
-.home-region--tip-strip { left: 0.651%; top: 92.969%; width: 68.099%; height: 6.055%; }
+.home-region--info-badge {
+  left: 0.911%;
+  top: 0.781%;
+  width: 19.01%;
+  height: 9.766%;
+}
+.home-region--menu-rail {
+  left: 0.911%;
+  top: 13.672%;
+  width: 22.656%;
+  height: 60.742%;
+}
+.home-region--notice {
+  left: 0.781%;
+  top: 77.148%;
+  width: 31.25%;
+  height: 15.039%;
+}
+.home-region--masthead {
+  left: 26.042%;
+  top: 0.781%;
+  width: 44.271%;
+  height: 20.508%;
+}
+.home-region--browser {
+  left: 24.349%;
+  top: 22.07%;
+  width: 49.609%;
+  height: 53.906%;
+}
+.home-region--bottom-strip {
+  left: 33.203%;
+  top: 76.66%;
+  width: 40.755%;
+  height: 15.625%;
+}
+.home-region--signed-in {
+  left: 73.828%;
+  top: 0.781%;
+  width: 24.74%;
+  height: 9.766%;
+}
+.home-region--profile {
+  left: 75.13%;
+  top: 12.305%;
+  width: 23.568%;
+  height: 25.977%;
+}
+.home-region--recovery {
+  left: 75.13%;
+  top: 39.062%;
+  width: 23.568%;
+  height: 13.281%;
+}
+.home-region--activity {
+  left: 74.74%;
+  top: 53.32%;
+  width: 23.958%;
+  height: 19.531%;
+}
+.home-region--rail-extra {
+  left: 74.74%;
+  top: 73.828%;
+  width: 23.958%;
+  height: 15.625%;
+}
+.home-region--tip-strip {
+  left: 0.651%;
+  top: 92.969%;
+  width: 68.099%;
+  height: 6.055%;
+}
 
 .home-masthead-heading {
   margin: 0;
@@ -598,7 +658,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 1.0rem;
+  font-size: 1rem;
 }
 
 .home-notice {
@@ -668,18 +728,44 @@
     height: clamp(120px, 24vw, 180px);
   }
 
-  .home-region--signed-in { order: 1; }
-  .home-region--menu-rail { order: 2; gap: 0.6rem; }
-  .home-menu-plate { min-height: 64px; }
-  .home-region--browser { order: 3; min-height: 240px; }
-  .home-region--bottom-strip { order: 4; }
-  .home-region--profile { order: 5; }
-  .home-region--recovery { order: 6; }
-  .home-region--activity { order: 7; }
-  .home-region--rail-extra { order: 8; }
-  .home-region--notice { order: 9; }
-  .home-region--tip-strip { order: 10; }
-  .home-region--info-badge { display: none; }
+  .home-region--signed-in {
+    order: 1;
+  }
+  .home-region--menu-rail {
+    order: 2;
+    gap: 0.6rem;
+  }
+  .home-menu-plate {
+    min-height: 64px;
+  }
+  .home-region--browser {
+    order: 3;
+    min-height: 240px;
+  }
+  .home-region--bottom-strip {
+    order: 4;
+  }
+  .home-region--profile {
+    order: 5;
+  }
+  .home-region--recovery {
+    order: 6;
+  }
+  .home-region--activity {
+    order: 7;
+  }
+  .home-region--rail-extra {
+    order: 8;
+  }
+  .home-region--notice {
+    order: 9;
+  }
+  .home-region--tip-strip {
+    order: 10;
+  }
+  .home-region--info-badge {
+    display: none;
+  }
 }
 
 .home-recovery-alert {
@@ -714,8 +800,7 @@
   background:
     radial-gradient(ellipse 60% 28% at 50% 8%, rgba(63, 224, 255, 0.14), transparent 70%),
     repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 48px),
-    var(--bg-page);
+    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 48px), var(--bg-page);
 }
 
 .home-profile-portrait {
@@ -770,8 +855,7 @@
   background:
     radial-gradient(ellipse 60% 26% at 50% 6%, rgba(63, 224, 255, 0.13), transparent 70%),
     repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 48px),
-    var(--bg-page);
+    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 48px), var(--bg-page);
 }
 
 .tt-region {
@@ -780,16 +864,66 @@
   min-height: 0;
 }
 
-.tt-region--masthead { left: 25.552%; top: 0.737%; width: 46.409%; height: 20.626%; }
-.tt-region--tab { left: 0.552%; top: 1.657%; width: 17.679%; height: 9.392%; }
-.tt-region--competitors { left: 0.552%; top: 13.628%; width: 17.679%; height: 67.219%; }
-.tt-region--board { left: 15.746%; top: 22.652%; width: 64.641%; height: 45.12%; }
-.tt-region--rack { left: 16.16%; top: 67.587%; width: 64.088%; height: 16.943%; }
-.tt-region--actions { left: 10.221%; top: 85.267%; width: 78.729%; height: 11.233%; }
-.tt-region--round { left: 81.906%; top: 1.657%; width: 17.541%; height: 10.866%; }
-.tt-region--turn { left: 81.768%; top: 14.917%; width: 17.817%; height: 19.89%; }
-.tt-region--log { left: 81.492%; top: 35.912%; width: 17.955%; height: 20.442%; }
-.tt-region--howto { left: 81.768%; top: 56.906%; width: 17.817%; height: 27.256%; }
+.tt-region--masthead {
+  left: 25.552%;
+  top: 0.737%;
+  width: 46.409%;
+  height: 20.626%;
+}
+.tt-region--tab {
+  left: 0.552%;
+  top: 1.657%;
+  width: 17.679%;
+  height: 9.392%;
+}
+.tt-region--competitors {
+  left: 0.552%;
+  top: 13.628%;
+  width: 17.679%;
+  height: 67.219%;
+}
+.tt-region--board {
+  left: 15.746%;
+  top: 22.652%;
+  width: 64.641%;
+  height: 45.12%;
+}
+.tt-region--rack {
+  left: 16.16%;
+  top: 67.587%;
+  width: 64.088%;
+  height: 16.943%;
+}
+.tt-region--actions {
+  left: 10.221%;
+  top: 85.267%;
+  width: 78.729%;
+  height: 11.233%;
+}
+.tt-region--round {
+  left: 81.906%;
+  top: 1.657%;
+  width: 17.541%;
+  height: 10.866%;
+}
+.tt-region--turn {
+  left: 81.768%;
+  top: 14.917%;
+  width: 17.817%;
+  height: 19.89%;
+}
+.tt-region--log {
+  left: 81.492%;
+  top: 35.912%;
+  width: 17.955%;
+  height: 20.442%;
+}
+.tt-region--howto {
+  left: 81.768%;
+  top: 56.906%;
+  width: 17.817%;
+  height: 27.256%;
+}
 
 .tabletop-masthead {
   height: 100%;
@@ -826,8 +960,7 @@
   justify-content: center;
   gap: 2px;
   border: 1px solid var(--neon-cyan-dim);
-  background:
-    url("../assets/arcade/frame/tab-arcade-league.png") center / 100% 100% no-repeat;
+  background: url("../assets/arcade/frame/tab-arcade-league.png") center / 100% 100% no-repeat;
   image-rendering: pixelated;
   text-transform: uppercase;
 }
@@ -1215,10 +1348,18 @@
   flex: 1;
 }
 
-.competitor-card--tone-gold { border-image: url("../assets/arcade/card/competitor-gold.png") 16 fill stretch; }
-.competitor-card--tone-purple { border-image: url("../assets/arcade/card/competitor-purple.png") 16 fill stretch; }
-.competitor-card--tone-pink { border-image: url("../assets/arcade/card/competitor-pink.png") 16 fill stretch; }
-.competitor-card--tone-green { border-image: url("../assets/arcade/card/competitor-green.png") 16 fill stretch; }
+.competitor-card--tone-gold {
+  border-image: url("../assets/arcade/card/competitor-gold.png") 16 fill stretch;
+}
+.competitor-card--tone-purple {
+  border-image: url("../assets/arcade/card/competitor-purple.png") 16 fill stretch;
+}
+.competitor-card--tone-pink {
+  border-image: url("../assets/arcade/card/competitor-pink.png") 16 fill stretch;
+}
+.competitor-card--tone-green {
+  border-image: url("../assets/arcade/card/competitor-green.png") 16 fill stretch;
+}
 
 .competitor-card--active {
   filter: brightness(1.25) saturate(1.15);
@@ -1407,26 +1548,82 @@
     height: auto;
   }
 
-  .tt-region--masthead { order: 0; height: clamp(110px, 24vw, 170px); }
-  .tt-region--turn { order: 1; }
-  .tt-region--tab { order: 2; flex-direction: row; gap: 0.5rem; padding: 0.3rem 0.75rem; }
-  .tt-region--competitors { order: 3; }
-  .tabletop-competitors { flex-direction: row; overflow-x: auto; height: auto; }
-  .tabletop-opponents { flex-direction: row; flex: none; }
-  .competitor-card { flex: none; min-width: 190px; }
-  .tt-region--board { order: 4; min-height: 300px; }
-  .tt-region--rack { order: 5; }
-  .tt-region--round { order: 6; }
-  .tt-region--actions { order: 7; }
-  .tabletop-actions { flex-direction: column; }
-  .tabletop-actions-primary { flex-wrap: wrap; }
-  .tt-plate { flex: 1 1 45%; min-height: 56px; }
-  .tt-plate--commit { flex: 1 1 100%; }
-  .tabletop-actions-secondary { flex-direction: row; flex-wrap: wrap; }
-  .tt-region--log { order: 8; }
-  .tt-region--howto { order: 9; }
-  .tt-overlays { position: static; width: auto; order: -1; }
-  .tabletop-footer { position: static; width: auto; margin-top: 0.5rem; order: 99; }
+  .tt-region--masthead {
+    order: 0;
+    height: clamp(110px, 24vw, 170px);
+  }
+  .tt-region--turn {
+    order: 1;
+  }
+  .tt-region--tab {
+    order: 2;
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+  }
+  .tt-region--competitors {
+    order: 3;
+  }
+  .tabletop-competitors {
+    flex-direction: row;
+    overflow-x: auto;
+    height: auto;
+  }
+  .tabletop-opponents {
+    flex-direction: row;
+    flex: none;
+  }
+  .competitor-card {
+    flex: none;
+    min-width: 190px;
+  }
+  .tt-region--board {
+    order: 4;
+    min-height: 300px;
+  }
+  .tt-region--rack {
+    order: 5;
+  }
+  .tt-region--round {
+    order: 6;
+  }
+  .tt-region--actions {
+    order: 7;
+  }
+  .tabletop-actions {
+    flex-direction: column;
+  }
+  .tabletop-actions-primary {
+    flex-wrap: wrap;
+  }
+  .tt-plate {
+    flex: 1 1 45%;
+    min-height: 56px;
+  }
+  .tt-plate--commit {
+    flex: 1 1 100%;
+  }
+  .tabletop-actions-secondary {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .tt-region--log {
+    order: 8;
+  }
+  .tt-region--howto {
+    order: 9;
+  }
+  .tt-overlays {
+    position: static;
+    width: auto;
+    order: -1;
+  }
+  .tabletop-footer {
+    position: static;
+    width: auto;
+    margin-top: 0.5rem;
+    order: 99;
+  }
 }
 
 /* Phone landscape -- two-column: game left, rails right. */
@@ -1442,21 +1639,48 @@
     grid-auto-rows: min-content;
   }
 
-  .tt-region { position: static; width: auto; height: auto; }
-  .tt-region--masthead { grid-column: 1 / -1; height: 90px; }
-  .tt-region--board { grid-column: 1; min-height: 260px; }
-  .tt-region--rack { grid-column: 1; }
-  .tt-region--actions { grid-column: 1; }
+  .tt-region {
+    position: static;
+    width: auto;
+    height: auto;
+  }
+  .tt-region--masthead {
+    grid-column: 1 / -1;
+    height: 90px;
+  }
+  .tt-region--board {
+    grid-column: 1;
+    min-height: 260px;
+  }
+  .tt-region--rack {
+    grid-column: 1;
+  }
+  .tt-region--actions {
+    grid-column: 1;
+  }
   .tt-region--turn,
   .tt-region--tab,
   .tt-region--round,
   .tt-region--competitors,
   .tt-region--log,
-  .tt-region--howto { grid-column: 2; }
-  .tabletop-competitors { height: auto; }
-  .competitor-card { flex: none; }
-  .tt-overlays { position: static; grid-column: 1 / -1; width: auto; }
-  .tabletop-footer { position: static; grid-column: 1 / -1; }
+  .tt-region--howto {
+    grid-column: 2;
+  }
+  .tabletop-competitors {
+    height: auto;
+  }
+  .competitor-card {
+    flex: none;
+  }
+  .tt-overlays {
+    position: static;
+    grid-column: 1 / -1;
+    width: auto;
+  }
+  .tabletop-footer {
+    position: static;
+    grid-column: 1 / -1;
+  }
 }
 
 /* The concept tabletop has no browser nav bar; same treatment as home.
@@ -1790,10 +2014,22 @@ button.danger:disabled {
   background: none;
 }
 
-.seat-panel--accent-0 { border-image-source: url("../assets/arcade/card/competitor-gold.png"); --seat-accent: var(--neon-gold); }
-.seat-panel--accent-1 { border-image-source: url("../assets/arcade/card/competitor-purple.png"); --seat-accent: var(--neon-purple); }
-.seat-panel--accent-2 { border-image-source: url("../assets/arcade/card/competitor-pink.png"); --seat-accent: var(--neon-pink); }
-.seat-panel--accent-3 { border-image-source: url("../assets/arcade/card/competitor-green.png"); --seat-accent: var(--neon-green); }
+.seat-panel--accent-0 {
+  border-image-source: url("../assets/arcade/card/competitor-gold.png");
+  --seat-accent: var(--neon-gold);
+}
+.seat-panel--accent-1 {
+  border-image-source: url("../assets/arcade/card/competitor-purple.png");
+  --seat-accent: var(--neon-purple);
+}
+.seat-panel--accent-2 {
+  border-image-source: url("../assets/arcade/card/competitor-pink.png");
+  --seat-accent: var(--neon-pink);
+}
+.seat-panel--accent-3 {
+  border-image-source: url("../assets/arcade/card/competitor-green.png");
+  --seat-accent: var(--neon-green);
+}
 
 .seat-identity {
   display: flex;
@@ -1889,8 +2125,7 @@ button.danger:disabled {
     radial-gradient(ellipse 55% 22% at 50% 4%, rgba(63, 224, 255, 0.16), transparent 70%),
     radial-gradient(ellipse 90% 45% at 50% 115%, rgba(10, 40, 80, 0.55), transparent 75%),
     repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 56px),
-    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 56px),
-    var(--bg-page);
+    repeating-linear-gradient(180deg, var(--grid-line) 0 1px, transparent 1px 56px), var(--bg-page);
 }
 
 .tabletop-shell {
@@ -2144,11 +2379,21 @@ button.danger:disabled {
     background-image: url("../assets/arcade/frame/badge-phone-signed-in.png");
   }
 
-  .home-menu-plate[data-plate="plate-menu-cyan"] { background-image: url("../assets/arcade/plate/phone-cyan.png"); }
-  .home-menu-plate[data-plate="plate-menu-green"] { background-image: url("../assets/arcade/plate/phone-green.png"); }
-  .home-menu-plate[data-plate="plate-menu-red"] { background-image: url("../assets/arcade/plate/phone-red.png"); }
-  .home-menu-plate[data-plate="plate-menu-purple"] { background-image: url("../assets/arcade/plate/phone-purple.png"); }
-  .home-menu-plate[data-plate="plate-menu-gold"] { background-image: url("../assets/arcade/plate/phone-gold.png"); }
+  .home-menu-plate[data-plate="plate-menu-cyan"] {
+    background-image: url("../assets/arcade/plate/phone-cyan.png");
+  }
+  .home-menu-plate[data-plate="plate-menu-green"] {
+    background-image: url("../assets/arcade/plate/phone-green.png");
+  }
+  .home-menu-plate[data-plate="plate-menu-red"] {
+    background-image: url("../assets/arcade/plate/phone-red.png");
+  }
+  .home-menu-plate[data-plate="plate-menu-purple"] {
+    background-image: url("../assets/arcade/plate/phone-purple.png");
+  }
+  .home-menu-plate[data-plate="plate-menu-gold"] {
+    background-image: url("../assets/arcade/plate/phone-gold.png");
+  }
 
   /* Action plates. Closed-frame rule (user, 2026-08-02): keep every
      bright edge line. Cyan's corners hold only near-black art background
@@ -2193,7 +2438,9 @@ button.danger:disabled {
     min-height: 116px;
   }
 
-  .competitor-card--tone-gold { background-image: url("../assets/arcade/card/phone-cyan.png"); }
+  .competitor-card--tone-gold {
+    background-image: url("../assets/arcade/card/phone-cyan.png");
+  }
   .competitor-card--tone-purple {
     background-image: url("../assets/arcade/card/phone-purple.png");
     border-color: rgba(190, 120, 255, 0.4);
@@ -2213,15 +2460,29 @@ button.danger:disabled {
      gives corners and edges the chunk the phone comps use. Widths are
      2x each frame's slice insets. (!important: the sliced chrome comes
      from frameStyle's inline style.) */
-  .arcade-kit-panel[data-frame="panel-browser"] { border-width: 36px !important; }
+  .arcade-kit-panel[data-frame="panel-browser"] {
+    border-width: 36px !important;
+  }
   .arcade-kit-panel[data-frame="panel-profile"],
   .arcade-kit-panel[data-frame="panel-recovery"],
-  .arcade-kit-panel[data-frame="panel-activity"] { border-width: 32px !important; }
-  .arcade-kit-panel[data-frame="panel-howto"] { border-width: 28px !important; }
-  .home-notice { border-width: 32px 28px 28px 28px !important; }
-  .tt-meta { border-width: 28px !important; }
-  .tt-chat { border-width: 28px !important; }
-  .tt-howto { border-width: 28px !important; }
+  .arcade-kit-panel[data-frame="panel-activity"] {
+    border-width: 32px !important;
+  }
+  .arcade-kit-panel[data-frame="panel-howto"] {
+    border-width: 28px !important;
+  }
+  .home-notice {
+    border-width: 32px 28px 28px 28px !important;
+  }
+  .tt-meta {
+    border-width: 28px !important;
+  }
+  .tt-chat {
+    border-width: 28px !important;
+  }
+  .tt-howto {
+    border-width: 28px !important;
+  }
 
   /* Rack: the concept band art loses its header tab to extraction erases
      and its corner curves smear on a tall box, so use the same clean neon

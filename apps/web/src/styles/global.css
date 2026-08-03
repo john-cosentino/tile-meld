@@ -557,7 +557,6 @@ button.danger {
   color: var(--color-text-muted);
 }
 
-
 .error-banner {
   background: color-mix(in srgb, var(--color-danger) 12%, var(--color-bg));
   border: 1px solid var(--color-danger);
@@ -637,4 +636,3 @@ a.dashboard-card:hover {
 .status-badge--grey {
   color: var(--color-text-muted);
 }
-

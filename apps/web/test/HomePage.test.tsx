@@ -186,7 +186,9 @@ describe("HomePage -- friendly name and legacy fallback", () => {
     renderHome();
 
     expect(
-      await within(await screen.findByRole("list", { name: "Your games" })).findByText("Room LEGACY01"),
+      await within(await screen.findByRole("list", { name: "Your games" })).findByText(
+        "Room LEGACY01",
+      ),
     ).toBeInTheDocument();
   });
 });

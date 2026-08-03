@@ -67,9 +67,7 @@ const SCREENS: ScreenSpec[] = [
 
 async function main() {
   const requested = process.argv.slice(2);
-  const screens = requested.length
-    ? SCREENS.filter((s) => requested.includes(s.name))
-    : SCREENS;
+  const screens = requested.length ? SCREENS.filter((s) => requested.includes(s.name)) : SCREENS;
   if (requested.length && screens.length !== requested.length) {
     const known = new Set(SCREENS.map((s) => s.name));
     throw new Error(`unknown screen(s): ${requested.filter((r) => !known.has(r)).join(", ")}`);

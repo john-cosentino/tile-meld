@@ -27,7 +27,8 @@ interface ArcadeTileFaceProps {
  */
 export function ArcadeTileFace({ value, colorId, color, className, style }: ArcadeTileFaceProps) {
   const pip = colorId ? PIP_BY_COLOR[colorId] : undefined;
-  const numeralColor = color ?? (colorId ? `var(--tile-color-${colorId})` : "var(--text-on-accent)");
+  const numeralColor =
+    color ?? (colorId ? `var(--tile-color-${colorId})` : "var(--text-on-accent)");
   return (
     <span
       className={className ? `arcade-kit-tile ${className}` : "arcade-kit-tile"}

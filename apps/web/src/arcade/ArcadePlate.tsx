@@ -31,8 +31,7 @@ function PlateContent({ icon, iconScale = 1, label, sublabel }: PlateContentProp
 }
 
 interface ArcadePlateProps
-  extends PlateContentProps,
-    Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+  extends PlateContentProps, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   /** 9-sliced plate asset, e.g. "plate-menu-cyan", "plate-action-orange". */
   plate: ArcadeAssetName;
 }
