@@ -25,6 +25,16 @@ comps rather than 9-slicing, with a `mirrorBand` extraction treatment
 closing dim plate edges — details and the user's closed-frame acceptance
 bar in `docs/task.md`. 501 web unit tests at the last round.
 
+**Full verification pass, 2026-08-02 evening (tip `8025445`):** all
+workspace unit tests green — shared 45, engine 115, bot 36, web 505,
+server 317 (the long-stale RedactedGameView fixture fixed the same day) —
+and the full chromium e2e suite 46/46. One environmental caveat found
+and documented: `turn-timeout.spec.ts` reaches Postgres directly and
+must run with `DATABASE_URL` pointing at the same database the dev
+server under test uses (see `docs/environment.md` and the machine's
+`CLAUDE.local.md`); with mismatched env it fails on its setup UPDATE,
+which is not an application regression.
+
 - **Last verified:** 2026-07-28 (CI security-gate restructuring, on top
   of the dependency security remediation checkpoint, on top of Phase 8)
 - **Commit at verification start:** `358ab99e428fcf31e853b20920a31076bb9d86c1`
