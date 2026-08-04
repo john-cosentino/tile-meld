@@ -3,6 +3,7 @@
 // and, later, apps/web (for client-side type-safety). Depends on nothing
 // but zod -- see docs/opus-implementation-plan.md §4.2.
 
+export * from "./schemas/account.js";
 export * from "./schemas/game.js";
 export * from "./schemas/identity.js";
 export * from "./schemas/rooms.js";

@@ -29,6 +29,7 @@ export async function requireSession(request: FastifyRequest, reply: FastifyRepl
     return;
   }
   request.player = { id: session.player_id };
+  request.session = { id: session.id };
 }
 
 /** Loads the requesting player's membership in a room, or replies 403 (not

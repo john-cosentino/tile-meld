@@ -94,8 +94,7 @@ export async function rotateRecoverySecret(
 }
 
 export type CreateAccountOutcome =
-  | { readonly kind: "created"; readonly player: PlayerRow }
-  | { readonly kind: "taken" };
+  { readonly kind: "created"; readonly player: PlayerRow } | { readonly kind: "taken" };
 
 /**
  * Creates a password-credentialed human identity with its username claimed

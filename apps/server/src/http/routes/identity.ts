@@ -11,7 +11,7 @@ import {
 import type { AppInstance } from "../types.js";
 import { sendError } from "../errors.js";
 import { requireSession } from "../auth.js";
-import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from "../../security/session.js";
+import { SESSION_TTL_MS, setSessionCookie } from "../../security/session.js";
 import { generateRecoverySecret, verifyRecoverySecret } from "../../security/hashing.js";
 import {
   claimUsername,
@@ -21,20 +21,7 @@ import {
 } from "../../db/repositories/players.js";
 import { createSession } from "../../db/repositories/sessions.js";
 import { identityCreateLimit, recoveryLimit, usernameClaimLimit } from "../rateLimits.js";
-
-function setSessionCookie(
-  reply: import("fastify").FastifyReply,
-  token: string,
-  secure: boolean,
-): void {
-  reply.setCookie(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: Math.floor(SESSION_TTL_MS / 1000),
-  });
-}
+import { isAccountsEnabled } from "../../env.js";
 
 export function registerIdentityRoutes(app: AppInstance): void {
   app.post(
@@ -44,6 +31,13 @@ export function registerIdentityRoutes(app: AppInstance): void {
       config: { rateLimit: identityCreateLimit },
     },
     async (request, reply) => {
+      // Accounts-required cutover (accounts plan D1): guest identities can
+      // no longer be minted; the client's /api/config check should have
+      // routed the user to /register before ever calling this.
+      if (isAccountsEnabled(app.env)) {
+        sendError(reply, "forbidden", "accounts are required -- register instead");
+        return;
+      }
       const recoverySecret = generateRecoverySecret();
       const player = await createPlayer(app.db, recoverySecret);
       const { token } = await createSession(
@@ -99,8 +93,17 @@ export function registerIdentityRoutes(app: AppInstance): void {
     {
       schema: { response: { 200: RotateRecoveryResponseSchema } },
       preValidation: requireSession,
+      config: { rateLimit: recoveryLimit },
     },
     async (request, reply) => {
+      // An upgraded account's credential is its password; minting a fresh
+      // recovery secret for it would silently reopen the retired legacy
+      // path (and violate one-credential-per-account, accounts plan D4).
+      const player = await findPlayerById(app.db, request.player!.id);
+      if (!player || player.password_hash !== null) {
+        sendError(reply, "conflict", "this account uses a password, not a recovery code");
+        return;
+      }
       const newSecret = generateRecoverySecret();
       await rotateRecoverySecret(app.db, request.player!.id, newSecret);
       reply.code(200).send({ recoverySecret: newSecret });

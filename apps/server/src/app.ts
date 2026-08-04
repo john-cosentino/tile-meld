@@ -16,7 +16,9 @@ import type { Kysely } from "kysely";
 import type { Database } from "./db/types.js";
 import { isE2ERateLimitBypassEnabled, type Env } from "./env.js";
 import type { AppInstance } from "./http/types.js";
+import { createMailer, type Mailer } from "./email/mailer.js";
 import { registerHealthRoutes } from "./http/routes/health.js";
+import { registerAccountRoutes } from "./http/routes/account.js";
 import { registerIdentityRoutes } from "./http/routes/identity.js";
 import { registerRoomRoutes } from "./http/routes/rooms.js";
 import { registerGameRoutes } from "./http/routes/games.js";
@@ -28,6 +30,9 @@ export type BuildAppOptions = {
   readonly db: Kysely<Database>;
   readonly env: Env;
   readonly logger?: boolean;
+  /** Test seam: capture outgoing password-reset email instead of sending.
+   * Defaults to the real SMTP/log-fallback mailer (email/mailer.ts). */
+  readonly mailer?: Mailer;
 };
 
 // Fastify's default request/response serializers don't include headers,
@@ -49,6 +54,12 @@ const REDACT_PATHS = [
   'res.headers["set-cookie"]',
   "req.body.recoverySecret",
   "res.body.recoverySecret",
+  // Account credentials (accounts plan, Phase B): passwords and the
+  // password-reset token are exactly as sensitive as a recovery secret.
+  "req.body.password",
+  "req.body.newPassword",
+  "req.body.currentPassword",
+  "req.body.token",
 ];
 
 export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
@@ -62,6 +73,7 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
 
   app.decorate("db", options.db);
   app.decorate("env", options.env);
+  app.decorate("mailer", options.mailer ?? createMailer(options.env, app.log));
 
   await app.register(helmet);
   await app.register(cors, {
@@ -105,6 +117,7 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
 
   registerHealthRoutes(app);
   registerIdentityRoutes(app);
+  registerAccountRoutes(app);
   registerRoomRoutes(app);
   registerGameRoutes(app);
   registerChatRoutes(app);
