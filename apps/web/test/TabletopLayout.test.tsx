@@ -69,6 +69,7 @@ function seat(overrides: Partial<RedactedGameView["self"]> = {}): RedactedGameVi
     status: "active",
     hasInitialMeld: false,
     isComputer: false,
+    portraitId: null,
     rack: [
       { kind: "numbered", tileId: "C1-5-a", color: "C1", value: 5 },
       { kind: "numbered", tileId: "C1-6-a", color: "C1", value: 6 },
@@ -87,6 +88,7 @@ function opponent(
     status: "active",
     hasInitialMeld: false,
     isComputer: false,
+    portraitId: null,
     ...overrides,
   };
 }

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PORTRAIT_ROSTER, PORTRAIT_FALLBACK, portraitForSeat } from "../src/branding/portraits.js";
+import { PORTRAIT_COUNT } from "@tile-meld/shared";
+import {
+  PORTRAIT_ROSTER,
+  PORTRAIT_FALLBACK,
+  portraitForPlayer,
+  portraitForSeat,
+} from "../src/branding/portraits.js";
 
 // Phase 5 (docs/meld-masters-visual-refresh-plan.md §9.3, §11 Phase 5).
 // portraitForSeat is a pure function of its inputs -- these tests assert
@@ -55,5 +61,33 @@ describe("portraitForSeat", () => {
   it("always returns the fallback for a computer seat, regardless of seat index", () => {
     expect(portraitForSeat(0, true)).toBe(PORTRAIT_FALLBACK);
     expect(portraitForSeat(3, true)).toBe(PORTRAIT_FALLBACK);
+  });
+});
+
+// Accounts plan, Phase C: portraitForPlayer resolves a persisted account
+// pick with the legacy seat mapping as its fallback.
+describe("portraitForPlayer", () => {
+  it("the roster size matches the shared PORTRAIT_COUNT contract the server validates against", () => {
+    expect(PORTRAIT_ROSTER).toHaveLength(PORTRAIT_COUNT);
+  });
+
+  it("a valid pick wins over the seat mapping", () => {
+    expect(portraitForPlayer(5, 0, false)).toBe(PORTRAIT_ROSTER[5]);
+    expect(portraitForPlayer(0, 3, false)).toBe(PORTRAIT_ROSTER[0]);
+  });
+
+  it("null and undefined fall back to the deterministic seat mapping", () => {
+    expect(portraitForPlayer(null, 2, false)).toBe(portraitForSeat(2, false));
+    expect(portraitForPlayer(undefined, 0, false)).toBe(portraitForSeat(0, false));
+  });
+
+  it("out-of-range or malformed picks fall back to the seat mapping, never crash", () => {
+    expect(portraitForPlayer(8, 1, false)).toBe(portraitForSeat(1, false));
+    expect(portraitForPlayer(-1, 1, false)).toBe(portraitForSeat(1, false));
+    expect(portraitForPlayer(2.5, 1, false)).toBe(portraitForSeat(1, false));
+  });
+
+  it("a computer seat always gets the fallback portrait, even with a pick present", () => {
+    expect(portraitForPlayer(3, 1, true)).toBe(PORTRAIT_FALLBACK);
   });
 });

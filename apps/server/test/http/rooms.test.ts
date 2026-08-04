@@ -386,8 +386,20 @@ describe("room lifecycle routes", () => {
       // (backward-compat-only) displayName field submitted at creation.
       expect(beforeBody.members).toEqual(
         expect.arrayContaining([
-          { playerId: host.playerId, displayName: "Host", isReady: false, isComputer: false },
-          { playerId: guest.playerId, displayName: "Guest", isReady: false, isComputer: false },
+          {
+            playerId: host.playerId,
+            displayName: "Host",
+            isReady: false,
+            isComputer: false,
+            portraitId: null,
+          },
+          {
+            playerId: guest.playerId,
+            displayName: "Guest",
+            isReady: false,
+            isComputer: false,
+            portraitId: null,
+          },
         ]),
       );
 

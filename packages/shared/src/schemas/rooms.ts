@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { USERNAME_MAX_LENGTH } from "./identity.js";
 import { GameStatusSchema, SeatStatusSchema } from "./game.js";
+import { PortraitIdSchema } from "./account.js";
 
 export const DisplayNameSchema = z.string().trim().min(1).max(40);
 export const RoomCodeSchema = z.string().trim().min(1).max(16);
@@ -103,6 +104,11 @@ export const RoomMemberSummarySchema = z.object({
   // True for the computer opponent's member -- lets the waiting room badge it
   // and treat it as always-ready. Non-sensitive.
   isComputer: z.boolean(),
+  // The member's chosen profile portrait (accounts plan, Phase C), resolved
+  // live from players.portrait_id at response-build time. null = no pick
+  // yet; clients fall back to the legacy seat-order portrait. Always null
+  // for the computer member.
+  portraitId: PortraitIdSchema,
 });
 export const GetRoomResponseSchema = z.object({
   roomId: z.string(),

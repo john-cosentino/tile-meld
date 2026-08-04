@@ -68,3 +68,28 @@ export function portraitForSeat(seatIndex: number, isComputer: boolean): string 
   if (!Number.isInteger(seatIndex) || seatIndex < 0) return PORTRAIT_FALLBACK;
   return PORTRAIT_ROSTER[seatIndex % PORTRAIT_ROSTER.length] ?? PORTRAIT_FALLBACK;
 }
+
+/**
+ * Resolves a participant's portrait with their account pick taking
+ * precedence (accounts plan, Phase C): a valid `portraitId` (an integer
+ * index into the roster, from the wire's `portraitId` field) wins;
+ * anything else -- null (no pick yet), out-of-range, or non-integer --
+ * falls back to the legacy deterministic seat mapping. Computer seats
+ * always get the fallback portrait regardless of data.
+ */
+export function portraitForPlayer(
+  portraitId: number | null | undefined,
+  seatIndex: number,
+  isComputer: boolean,
+): string {
+  if (isComputer) return PORTRAIT_FALLBACK;
+  if (
+    typeof portraitId === "number" &&
+    Number.isInteger(portraitId) &&
+    portraitId >= 0 &&
+    portraitId < PORTRAIT_ROSTER.length
+  ) {
+    return PORTRAIT_ROSTER[portraitId] ?? PORTRAIT_FALLBACK;
+  }
+  return portraitForSeat(seatIndex, isComputer);
+}

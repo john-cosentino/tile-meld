@@ -11,6 +11,9 @@ import type { RedactedGameView as WireGameView } from "@tile-meld/shared";
 export type SeatWithDisplayName = Seat & {
   readonly displayName: string;
   readonly isComputer: boolean;
+  /** Live players.portrait_id at load time (accounts plan, Phase C) --
+   * presentation preference, never a snapshotted game fact. */
+  readonly portraitId: number | null;
 };
 
 export type PersistedGameView = {
@@ -43,6 +46,7 @@ export type RedactedSeatView = {
   readonly status: Seat["status"];
   readonly hasInitialMeld: boolean;
   readonly isComputer: boolean;
+  readonly portraitId: number | null;
 };
 
 export type RedactedSelfView = RedactedSeatView & {
@@ -71,6 +75,7 @@ function toPublicView(seat: SeatWithDisplayName): RedactedSeatView {
     status: seat.status,
     hasInitialMeld: seat.hasInitialMeld,
     isComputer: seat.isComputer,
+    portraitId: seat.portraitId,
   };
 }
 

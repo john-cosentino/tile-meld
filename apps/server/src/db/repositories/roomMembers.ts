@@ -52,6 +52,24 @@ export async function listRoomMembers(
     .execute();
 }
 
+/** listRoomMembers plus each member's live players.portrait_id (accounts
+ * plan, Phase C) -- only for member-summary responses; authorization and
+ * game-start flows keep the narrower listRoomMembers. */
+export async function listRoomMembersWithPortraits(
+  db: Kysely<Database> | Transaction<Database>,
+  roomId: string,
+): Promise<(RoomMemberRow & { portrait_id: number | null })[]> {
+  return db
+    .selectFrom("room_members")
+    .leftJoin("players", "players.id", "room_members.player_id")
+    .selectAll("room_members")
+    .select("players.portrait_id")
+    .where("room_id", "=", roomId)
+    .where("left_at", "is", null)
+    .orderBy("joined_at", "asc")
+    .execute();
+}
+
 /** Current (not-left) membership for a specific player in a room, if any --
  * the basis for room-scoped authorization checks. */
 export async function findRoomMemberByRoomAndPlayer(

@@ -60,8 +60,20 @@ function roomFixture(overrides: Partial<GetRoomResponse> = {}): GetRoomResponse 
     hasComputer: false,
     lastActivityAt: "2026-07-20T12:00:00.000Z",
     members: [
-      { playerId: "p-host", displayName: "Alice", isReady: false, isComputer: false },
-      { playerId: "p-guest", displayName: "Bob", isReady: false, isComputer: false },
+      {
+        playerId: "p-host",
+        displayName: "Alice",
+        isReady: false,
+        isComputer: false,
+        portraitId: null,
+      },
+      {
+        playerId: "p-guest",
+        displayName: "Bob",
+        isReady: false,
+        isComputer: false,
+        portraitId: null,
+      },
     ],
     ...overrides,
   };

@@ -52,6 +52,7 @@ function view(activeSeat: number): RedactedGameView {
       status: "active",
       hasInitialMeld: false,
       isComputer: false,
+      portraitId: null,
       rack: [],
     },
     opponents: [
@@ -62,6 +63,7 @@ function view(activeSeat: number): RedactedGameView {
         status: "active",
         hasInitialMeld: false,
         isComputer: true,
+        portraitId: null,
       },
     ],
   };

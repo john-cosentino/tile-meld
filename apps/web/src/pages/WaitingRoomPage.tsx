@@ -5,7 +5,7 @@ import { api, ApiError } from "../api/client.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { addRecentRoom, removeRecentRoom } from "../state/recentRooms.js";
 import { formatRoomName } from "../state/roomName.js";
-import { portraitForSeat } from "../branding/portraits.js";
+import { portraitForPlayer } from "../branding/portraits.js";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -142,7 +142,7 @@ export function WaitingRoomPage() {
             <span className="seat-identity">
               <img
                 className="seat-portrait"
-                src={portraitForSeat(index, m.isComputer)}
+                src={portraitForPlayer(m.portraitId, index, m.isComputer)}
                 alt=""
                 width={56}
                 height={56}

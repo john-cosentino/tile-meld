@@ -70,7 +70,9 @@ function roomFixture(overrides: Partial<GetRoomResponse> = {}): GetRoomResponse 
     selfSeatStatus: null,
     hasComputer: false,
     lastActivityAt: "2026-07-20T11:00:00.000Z",
-    members: [{ playerId: "p1", displayName: "Alice", isReady: false, isComputer: false }],
+    members: [
+      { playerId: "p1", displayName: "Alice", isReady: false, isComputer: false, portraitId: null },
+    ],
     ...overrides,
   };
 }

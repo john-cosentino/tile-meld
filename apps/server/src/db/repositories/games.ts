@@ -138,9 +138,14 @@ export async function loadGameState(
     .where("id", "=", gameId)
     .executeTakeFirstOrThrow();
 
+  // players.portrait_id is joined LIVE (accounts plan, Phase C): a portrait
+  // is presentation preference, not game history, so it is never
+  // snapshotted onto game_seats the way display_name/controller_type are.
   const seatRows = await db
     .selectFrom("game_seats")
-    .selectAll()
+    .leftJoin("players", "players.id", "game_seats.player_id")
+    .selectAll("game_seats")
+    .select("players.portrait_id")
     .where("game_id", "=", gameId)
     .orderBy("seat_index", "asc")
     .execute();
@@ -162,6 +167,7 @@ export async function loadGameState(
     hasInitialMeld: row.has_initial_meld,
     displayName: row.display_name,
     isComputer: row.controller_type === "computer",
+    portraitId: row.portrait_id,
   }));
 
   const table = tableRows.map((row) => resolveTiles(row.tiles));

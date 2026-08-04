@@ -424,6 +424,68 @@ describe("account routes", () => {
     await app.close();
   });
 
+  it("a picked portrait appears in room member summaries and game seat views", async () => {
+    const app = await makeApp();
+    const register = await app.inject({
+      method: "POST",
+      url: "/api/account/register",
+      payload: GOOD_REGISTRATION,
+    });
+    const cookie = extractSessionCookie(register);
+    await app.inject({
+      method: "POST",
+      url: "/api/account/portrait",
+      headers: { cookie },
+      payload: { portraitId: 6 },
+    });
+
+    // Play vs Computer gives a room AND a startable game in one flow.
+    const room = await app.inject({
+      method: "POST",
+      url: "/api/rooms/vs-computer",
+      headers: { cookie },
+      payload: { displayName: "PlayerOne" },
+    });
+    expect(room.statusCode).toBe(200);
+    const { roomId } = room.json();
+
+    const roomView = await app.inject({
+      method: "GET",
+      url: `/api/rooms/${roomId}`,
+      headers: { cookie },
+    });
+    expect(roomView.statusCode).toBe(200);
+    const members = roomView.json().members;
+    const human = members.find((m: { isComputer: boolean }) => !m.isComputer);
+    const bot = members.find((m: { isComputer: boolean }) => m.isComputer);
+    expect(human.portraitId).toBe(6);
+    expect(bot.portraitId).toBeNull();
+
+    // Start the game and check the seat views carry it too.
+    await app.inject({
+      method: "POST",
+      url: `/api/rooms/${roomId}/ready`,
+      headers: { cookie },
+      payload: { ready: true },
+    });
+    const started = await app.inject({
+      method: "POST",
+      url: `/api/rooms/${roomId}/start`,
+      headers: { cookie },
+    });
+    expect(started.statusCode).toBe(200);
+    const { gameId } = started.json();
+    const gameView = await app.inject({
+      method: "GET",
+      url: `/api/games/${gameId}`,
+      headers: { cookie },
+    });
+    expect(gameView.statusCode).toBe(200);
+    expect(gameView.json().self.portraitId).toBe(6);
+    expect(gameView.json().opponents[0].portraitId).toBeNull();
+    await app.close();
+  });
+
   it("ENABLE_ACCOUNTS=true blocks guest minting and is reported by /api/config", async () => {
     const app = await makeApp({ ENABLE_ACCOUNTS: "true" });
     const config = await app.inject({ method: "GET", url: "/api/config" });

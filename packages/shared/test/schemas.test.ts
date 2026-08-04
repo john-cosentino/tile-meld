@@ -290,6 +290,7 @@ describe("RedactedGameViewSchema", () => {
         status: "active",
         hasInitialMeld: false,
         isComputer: false,
+        portraitId: null,
         rack: [{ kind: "joker", tileId: "J-a" }],
       },
       opponents: [
@@ -300,6 +301,7 @@ describe("RedactedGameViewSchema", () => {
           status: "active",
           hasInitialMeld: false,
           isComputer: false,
+          portraitId: null,
         },
       ],
     };

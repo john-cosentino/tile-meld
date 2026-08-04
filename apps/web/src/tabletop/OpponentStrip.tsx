@@ -1,5 +1,5 @@
 import type { RedactedGameView } from "@tile-meld/shared";
-import { portraitForSeat } from "../branding/portraits.js";
+import { portraitForPlayer } from "../branding/portraits.js";
 
 type OpponentStripProps = {
   readonly self: RedactedGameView["self"];
@@ -55,7 +55,7 @@ export function OpponentStrip({ self, opponents, activeSeat, gameStatus }: Oppon
       >
         <img
           className="opponent-portrait"
-          src={portraitForSeat(self.seatIndex, false)}
+          src={portraitForPlayer(self.portraitId, self.seatIndex, false)}
           alt=""
           width={64}
           height={96}
@@ -90,7 +90,7 @@ export function OpponentStrip({ self, opponents, activeSeat, gameStatus }: Oppon
               >
                 <img
                   className="opponent-portrait"
-                  src={portraitForSeat(o.seatIndex, o.isComputer)}
+                  src={portraitForPlayer(o.portraitId, o.seatIndex, o.isComputer)}
                   alt=""
                   width={64}
                   height={96}

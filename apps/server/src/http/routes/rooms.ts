@@ -37,6 +37,7 @@ import {
   findRoomMemberByRoomAndPlayer,
   findRoomMemberById,
   listRoomMembers,
+  listRoomMembersWithPortraits,
   markRoomMemberLeft,
   setRoomMemberReady,
 } from "../../db/repositories/roomMembers.js";
@@ -252,7 +253,7 @@ export function registerRoomRoutes(app: AppInstance): void {
       if (!member) return;
 
       const [members, hostMember, latestGame] = await Promise.all([
-        listRoomMembers(app.db, roomId),
+        listRoomMembersWithPortraits(app.db, roomId),
         room.host_room_member_id ? findRoomMemberById(app.db, room.host_room_member_id) : undefined,
         findLatestGameForRoom(app.db, roomId),
       ]);
@@ -277,6 +278,7 @@ export function registerRoomRoutes(app: AppInstance): void {
           displayName: m.display_name,
           isReady: m.is_ready,
           isComputer: m.controller_type === "computer",
+          portraitId: m.portrait_id,
         })),
         latestGameId: latestGame?.id ?? null,
         latestGameStatus: latestGame?.status ?? null,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PortraitIdSchema } from "./account.js";
 
 // Mirrors packages/engine's Tile/Color shape without importing it --
 // packages/shared depends on nothing but zod (see docs/opus-implementation-
@@ -35,6 +36,10 @@ export const RedactedSeatViewSchema = z.object({
   // Whether this seat is played by the computer opponent. Non-sensitive: it
   // lets the client badge the bot and show a "Computer is playing" turn state.
   isComputer: z.boolean(),
+  // Chosen profile portrait (accounts plan, Phase C), resolved live from
+  // players.portrait_id when the view is built -- never snapshotted onto
+  // the seat. null = no pick; clients fall back to seat-order portraits.
+  portraitId: PortraitIdSchema,
 });
 
 export const RedactedSelfViewSchema = RedactedSeatViewSchema.extend({

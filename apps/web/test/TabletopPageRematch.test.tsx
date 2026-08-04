@@ -35,6 +35,7 @@ function baseSeat() {
     status: "active" as const,
     hasInitialMeld: false,
     isComputer: false,
+    portraitId: null,
   };
 }
 

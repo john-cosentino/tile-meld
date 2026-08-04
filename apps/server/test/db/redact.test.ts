@@ -25,6 +25,7 @@ function seat(
     hasInitialMeld: false,
     displayName: `Player ${overrides.seatIndex}`,
     isComputer: false,
+    portraitId: null,
     ...overrides,
   };
 }
@@ -74,6 +75,7 @@ describe("redactGameFor", () => {
         status: "active",
         hasInitialMeld: false,
         isComputer: false,
+        portraitId: null,
       },
     ]);
     // Belt and suspenders: assert none of the opponent's actual tileIds
@@ -178,4 +180,17 @@ describe("redactGameFor -- no-leakage property", () => {
       }
     },
   );
+});
+
+// Accounts plan, Phase C: the chosen portrait travels through redaction as
+// public, non-sensitive presentation data -- for self and opponents alike.
+describe("portraitId threading", () => {
+  it("carries each seat's live portraitId into both self and opponent views", () => {
+    const view = game({
+      seats: [seat({ seatIndex: 0, portraitId: 4 }), seat({ seatIndex: 1, portraitId: null })],
+    });
+    const redacted = redactGameFor(view, 0);
+    expect(redacted.self.portraitId).toBe(4);
+    expect(redacted.opponents[0]?.portraitId).toBeNull();
+  });
 });
