@@ -153,7 +153,7 @@ describe("RegisterPage", () => {
 });
 
 describe("AccountPage", () => {
-  it("renders the full roster plus a Default option and saves a pick", async () => {
+  it("selecting a portrait saves only on the Save button, with a visible confirmation", async () => {
     mockAuth.setPortrait.mockResolvedValue(undefined);
     render(
       <MemoryRouter>
@@ -162,8 +162,20 @@ describe("AccountPage", () => {
     );
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(9); // 8 portraits + Default
+
+    // Nothing to save yet: the Save button starts disabled.
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save).toBeDisabled();
+
+    // Picking only selects -- no server call until Save is clicked.
     await userEvent.click(screen.getByRole("radio", { name: "Portrait 3" }));
+    expect(mockAuth.setPortrait).not.toHaveBeenCalled();
+    expect(screen.getByText(/\(unsaved\)/)).toBeInTheDocument();
+    expect(save).toBeEnabled();
+
+    await userEvent.click(save);
     expect(mockAuth.setPortrait).toHaveBeenCalledWith(2);
+    expect(await screen.findByText("Profile picture saved.")).toBeInTheDocument();
   });
 
   it("offers change-password and logout for a password account", () => {

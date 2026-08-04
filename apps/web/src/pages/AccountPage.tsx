@@ -12,6 +12,12 @@ export function AccountPage() {
   const navigate = useNavigate();
   const { state, accountsRequired, setPortrait, changePassword, logout } = useAuth();
   const [portraitError, setPortraitError] = useState<string | undefined>(undefined);
+  const [portraitStatus, setPortraitStatus] = useState<string | undefined>(undefined);
+  // undefined = no unsaved selection; a value (including null = Default)
+  // is a pending choice awaiting the Save button (user feedback,
+  // 2026-08-04: an instant-save picker gave no confirmation).
+  const [pendingPortraitId, setPendingPortraitId] = useState<number | null | undefined>(undefined);
+  const [savingPortrait, setSavingPortrait] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordStatus, setPasswordStatus] = useState<string | undefined>(undefined);
@@ -20,14 +26,30 @@ export function AccountPage() {
 
   if (state.status !== "ready") return null;
 
-  async function pickPortrait(portraitId: number | null): Promise<void> {
+  const savedPortraitId = state.status === "ready" ? state.portraitId : null;
+  const selectedPortraitId = pendingPortraitId === undefined ? savedPortraitId : pendingPortraitId;
+  const portraitDirty = selectedPortraitId !== savedPortraitId;
+
+  function pickPortrait(portraitId: number | null): void {
     setPortraitError(undefined);
+    setPortraitStatus(undefined);
+    setPendingPortraitId(portraitId);
+  }
+
+  async function onSavePortrait(): Promise<void> {
+    setPortraitError(undefined);
+    setPortraitStatus(undefined);
+    setSavingPortrait(true);
     try {
-      await setPortrait(portraitId);
+      await setPortrait(selectedPortraitId);
+      setPendingPortraitId(undefined);
+      setPortraitStatus("Profile picture saved.");
     } catch (err) {
       setPortraitError(
-        err instanceof ApiError ? err.message : "Could not save the portrait. Please retry.",
+        err instanceof ApiError ? err.message : "Could not save the picture. Please retry.",
       );
+    } finally {
+      setSavingPortrait(false);
     }
   }
 
@@ -70,15 +92,16 @@ export function AccountPage() {
             {portraitError}
           </div>
         )}
+        {portraitStatus && <p role="status">{portraitStatus}</p>}
         <div className="portrait-picker" role="radiogroup" aria-label="Profile picture">
           {Array.from({ length: PORTRAIT_COUNT }, (_, id) => (
             <button
               key={id}
               type="button"
               role="radio"
-              aria-checked={state.portraitId === id}
-              className={`portrait-choice${state.portraitId === id ? " portrait-choice--selected" : ""}`}
-              onClick={() => void pickPortrait(id)}
+              aria-checked={selectedPortraitId === id}
+              className={`portrait-choice${selectedPortraitId === id ? " portrait-choice--selected" : ""}`}
+              onClick={() => pickPortrait(id)}
             >
               <img src={PORTRAIT_ROSTER[id]} alt={`Portrait ${id + 1}`} width={64} height={96} />
             </button>
@@ -86,24 +109,33 @@ export function AccountPage() {
           <button
             type="button"
             role="radio"
-            aria-checked={state.portraitId === null}
-            className={`portrait-choice${state.portraitId === null ? " portrait-choice--selected" : ""}`}
-            onClick={() => void pickPortrait(null)}
+            aria-checked={selectedPortraitId === null}
+            className={`portrait-choice${selectedPortraitId === null ? " portrait-choice--selected" : ""}`}
+            onClick={() => pickPortrait(null)}
           >
             <span className="portrait-choice-none">Default</span>
           </button>
         </div>
         <p className="muted">
-          Current:{" "}
+          Selected:{" "}
           <img
-            src={portraitForPlayer(state.portraitId, -1, false)}
+            src={portraitForPlayer(selectedPortraitId, -1, false)}
             alt=""
             width={32}
             height={48}
             aria-hidden="true"
           />{" "}
-          {state.portraitId === null ? "table default" : `portrait ${state.portraitId + 1}`}
+          {selectedPortraitId === null ? "table default" : `portrait ${selectedPortraitId + 1}`}
+          {portraitDirty ? " (unsaved)" : ""}
         </p>
+        <button
+          type="button"
+          className="primary"
+          disabled={!portraitDirty || savingPortrait}
+          onClick={() => void onSavePortrait()}
+        >
+          {savingPortrait ? "Saving…" : "Save"}
+        </button>
       </section>
 
       {state.hasPassword ? (
