@@ -24,9 +24,23 @@ from PIL import Image, ImageDraw
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = REPO_ROOT / "docs" / "design-reference" / "meld-masters"
+# Roster expansion pack (user-supplied, 2026-08-04): four additional
+# characters. Kept under their delivery directory; shipped under the same
+# portrait-rival-NN convention so bundle filenames stay uniform and the
+# roster order (which persisted portrait ids index into) is explicit here.
+EXPANSION_SRC_DIR = REPO_ROOT / "docs" / "design-reference" / "chatgpt"
 OUT_DIR = REPO_ROOT / "apps" / "web" / "src" / "assets" / "portraits"
 
-NAMES = [f"portrait-rival-{i:02d}.png" for i in range(1, 9)] + ["portrait-fallback.png"]
+SOURCES: list[tuple[Path, str]] = (
+    [(SRC_DIR / f"portrait-rival-{i:02d}.png", f"portrait-rival-{i:02d}.png") for i in range(1, 9)]
+    + [(SRC_DIR / "portrait-fallback.png", "portrait-fallback.png")]
+    + [
+        (EXPANSION_SRC_DIR / "matthew.png", "portrait-rival-09.png"),
+        (EXPANSION_SRC_DIR / "amber.png", "portrait-rival-10.png"),
+        (EXPANSION_SRC_DIR / "jason.png", "portrait-rival-11.png"),
+        (EXPANSION_SRC_DIR / "emily.png", "portrait-rival-12.png"),
+    ]
+)
 
 # Coarse grid: 64x96 gives 2px blocks at the shipped 128x192, matching the
 # concept portraits' visible pixel pitch.
@@ -35,8 +49,24 @@ OUT_SIZE = (128, 192)
 COLORS = 40
 
 
+def crop_to_aspect(im: Image.Image, aspect_w: int, aspect_h: int) -> Image.Image:
+    """Center-crops to the target aspect. The original pack is already 2:3;
+    the expansion sources are 3:4, so a direct resize would squash them."""
+    w, h = im.size
+    target = aspect_w / aspect_h
+    if abs(w / h - target) < 1e-3:
+        return im
+    if w / h > target:
+        new_w = round(h * target)
+        x0 = (w - new_w) // 2
+        return im.crop((x0, 0, x0 + new_w, h))
+    new_h = round(w / target)
+    y0 = (h - new_h) // 2
+    return im.crop((0, y0, w, y0 + new_h))
+
+
 def pixelate(src: Image.Image) -> Image.Image:
-    rgba = src.convert("RGBA")
+    rgba = crop_to_aspect(src.convert("RGBA"), 2, 3)
     small = rgba.resize(GRID, Image.LANCZOS)
     alpha = small.getchannel("A").point(lambda a: 255 if a >= 128 else 0)
     rgb = small.convert("RGB").quantize(colors=COLORS, method=Image.MEDIANCUT, dither=Image.Dither.NONE)
@@ -51,8 +81,7 @@ def main() -> int:
     args = parser.parse_args()
 
     results: list[tuple[str, Image.Image, Image.Image]] = []
-    for name in NAMES:
-        src_path = SRC_DIR / name
+    for src_path, name in SOURCES:
         if not src_path.exists():
             raise FileNotFoundError(src_path)
         src = Image.open(src_path)

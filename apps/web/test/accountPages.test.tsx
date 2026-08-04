@@ -161,7 +161,7 @@ describe("AccountPage", () => {
       </MemoryRouter>,
     );
     const radios = screen.getAllByRole("radio");
-    expect(radios).toHaveLength(9); // 8 portraits + Default
+    expect(radios).toHaveLength(13); // 12 portraits + Default
 
     // Nothing to save yet: the Save button starts disabled.
     const save = screen.getByRole("button", { name: "Save" });

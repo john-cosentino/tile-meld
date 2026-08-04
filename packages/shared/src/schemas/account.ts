@@ -18,8 +18,9 @@ export const EmailSchema = z.string().trim().toLowerCase().email().max(254);
 /** Size of the selectable portrait roster (apps/web's PORTRAIT_ROSTER must
  * match -- cross-checked by a web unit test). The database only enforces
  * portrait_id >= 0; this constant is the real upper bound so growing the
- * roster is a code change, not a migration. */
-export const PORTRAIT_COUNT = 8;
+ * roster is a code change, not a migration -- as with the 2026-08-04
+ * expansion from 8 to 12. Append-only: persisted ids index the roster. */
+export const PORTRAIT_COUNT = 12;
 
 export const PortraitIdSchema = z
   .number()

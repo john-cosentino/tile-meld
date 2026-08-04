@@ -28,11 +28,16 @@ import rival05 from "../assets/portraits/portrait-rival-05.png";
 import rival06 from "../assets/portraits/portrait-rival-06.png";
 import rival07 from "../assets/portraits/portrait-rival-07.png";
 import rival08 from "../assets/portraits/portrait-rival-08.png";
+import rival09 from "../assets/portraits/portrait-rival-09.png";
+import rival10 from "../assets/portraits/portrait-rival-10.png";
+import rival11 from "../assets/portraits/portrait-rival-11.png";
+import rival12 from "../assets/portraits/portrait-rival-12.png";
 import fallback from "../assets/portraits/portrait-fallback.png";
 
-/** The 8 approved rival portraits, in a stable order -- index 0..7. Never
- * reordered at runtime; `portraitForSeat` is what makes the mapping to a
- * seat deterministic, not the order of this array changing. */
+/** The approved rival portraits, in a stable order -- indexes 0..11 (the
+ * original 8-portrait pack plus the 2026-08-04 expansion four). Persisted
+ * portrait ids index into this array, so entries are APPEND-ONLY: never
+ * reordered, never removed. */
 export const PORTRAIT_ROSTER: readonly string[] = [
   rival01,
   rival02,
@@ -42,6 +47,10 @@ export const PORTRAIT_ROSTER: readonly string[] = [
   rival06,
   rival07,
   rival08,
+  rival09,
+  rival10,
+  rival11,
+  rival12,
 ];
 
 /** Used whenever a specific portrait can't be resolved (out-of-range
