@@ -1,4 +1,4 @@
-# Current task — user accounts (feature/accounts branch, in progress)
+# Current task — user accounts (merged; deployed dark; cutover pending)
 
 **Active initiative (2026-08-03):** username+password accounts replace the
 guest + recovery-code flow (user decisions: accounts REQUIRED; email used
@@ -6,7 +6,13 @@ only for password reset; portraits picked from the existing 8-portrait
 gallery; existing players upgrade in place). Plan of record: the approved
 accounts plan of 2026-08-03 (session plan file); phases A–E on
 `feature/accounts`, one commit each, all gated on the full unit suites and
-the full chromium e2e:
+the full chromium e2e. **Merged to `main` (fast-forward, tip `dffb774`) and
+deployed 2026-08-04 with `ENABLE_ACCOUNTS="false"`** — verified live:
+`/build-info.json` = `dffb774`, `/api/health` ok, `/api/config` =
+`{"accountsRequired":false}` (production behavior unchanged; migrations
+0022/0023 applied pre-traffic). The cutover itself (SMTP configuration in
+the Render dashboard, a verified real reset email, then flipping the flag)
+is a manual runbook the user performs — `docs/deploy-render.md` §11.
 
 - **A** — schema (migrations 0022/0023: password/email/portrait columns,
   relaxed credential CHECK, HMAC-hashed single-use reset tokens),
