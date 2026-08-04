@@ -8,7 +8,7 @@ import {
   TEST_HMAC_SECRET,
 } from "../setup/game-fixture.js";
 import type { AppInstance } from "../../src/http/types.js";
-import { createPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { createSession } from "../../src/db/repositories/sessions.js";
 import { SESSION_COOKIE_NAME } from "../../src/security/session.js";
 
@@ -111,7 +111,7 @@ describe("realtime gateway", () => {
   // (apps/web/test/useGame.test.tsx), which had assumed the ack always
   // fires and so could not have caught this by construction.
   it("game:join acks with forbidden (not just an error event) for a nonexistent/inaccessible game, so the client's join always resolves", async () => {
-    const outsider = await createPlayer(app!.db, "outsider-secret");
+    const outsider = await createTestAccount(app!.db);
     const { token } = await createSession(app!.db, outsider.id, TEST_HMAC_SECRET, 3_600_000);
     const cookie = `${SESSION_COOKIE_NAME}=${token}`;
     const socket = await connect(cookie);

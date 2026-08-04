@@ -209,38 +209,26 @@ routine rollback. A code-level rollback of the *feature* is reverting the applic
 that added it, same as the forward-only migration policy already requires for any schema
 change (Decision D-MIGRATE, §5 above).
 
-## 11. Accounts cutover (`ENABLE_ACCOUNTS`)
+## 11. Accounts cutover (completed 2026-08-04)
 
 User accounts (username+password sign-in, email password-reset, portrait
-picker — accounts plan, 2026-08-03) ship dark: all endpoints deploy live,
-but `ENABLE_ACCOUNTS` stays `"false"` in `render.yaml`, which keeps the
-guest + recovery-code flow byte-for-byte. The cutover is an env change,
-not a deploy:
+picker) shipped dark on 2026-08-04, were cut over the same day (SMTP
+configured in the dashboard, a real reset email verified, then
+`ENABLE_ACCOUNTS` flipped on), and Phase F then retired the legacy system
+entirely: migration 0024 purged all remaining passwordless identities and
+their games (explicit user decision), and the guest/recovery endpoints,
+the web legacy branch, and the `ENABLE_ACCOUNTS` flag itself were
+removed. The flag no longer exists in `render.yaml` or the code; a
+leftover `ENABLE_ACCOUNTS` var in the Render dashboard is ignored and can
+be deleted.
 
-1. **Deploy the code with the flag off.** Migrations 0022/0023 run
-   pre-traffic via the existing `preDeployCommand`; nothing user-visible
-   changes. Verify `/build-info.json` and `/api/config` →
-   `{"accountsRequired":false}`.
-2. **Configure email in the dashboard**: `SMTP_HOST`, `SMTP_PORT`,
-   `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` (any SMTP provider), and check
-   `APP_BASE_URL` is the real public origin. The reset endpoint answers a
-   generic 200 whether or not SMTP works, so this must be verified
-   actively, not assumed.
-3. **Verify a real reset email** while the flag is still off: register a
-   throwaway account via curl against `/api/account/register`, request a
-   reset via `/api/account/reset/request`, and confirm the email arrives
-   and its link works. (The endpoints are deliberately live with the flag
-   off — only guest minting is gated.)
-4. **Flip `ENABLE_ACCOUNTS` to `"true"`** in the dashboard (env change =
-   restart, no build). Verify `/api/config` → `{"accountsRequired":true}`,
-   a fresh browser lands on `/login`, registration works, and a legacy
-   identity's recovery code redeems into the finish-setup screen.
-5. **Announce to existing players**: their recovery code is now redeemed
-   on the login page ("Use your recovery code") and upgrades them in
-   place — same username, same games.
+The email vars remain live and required for password resets: `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, plus `APP_BASE_URL`
+for the links. The reset endpoint answers a generic 200 whether or not
+SMTP works, so after changing any of them, verify actively: request a
+reset via `/api/account/reset/request` and confirm the email arrives and
+its link works.
 
-**Rollback** is flipping the flag back to `"false"`. Known wart (accepted
-in the plan): accounts registered during the ON window have no recovery
-code, so in legacy mode those browsers mint fresh guest identities; the
-accounts themselves keep their data and work again when the flag is
-re-enabled.
+Rollback of migration 0024's data deletion is impossible by design
+(forward-only policy, D-MIGRATE) — only the provider's PITR window could
+restore the purged legacy rows, and they were explicitly unwanted.

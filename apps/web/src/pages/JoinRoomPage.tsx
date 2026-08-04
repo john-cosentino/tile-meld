@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { RoomNameSchema } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { addRecentRoom } from "../state/recentRooms.js";
@@ -42,10 +42,7 @@ export function JoinRoomPage() {
     return (
       <div className="stack arcade-panel">
         <h1 className="page-title">Join Room by Name</h1>
-        <p>
-          You need a username before joining a room. <Link to="/recovery">Claim a username</Link> to
-          continue.
-        </p>
+        <p>You need to be signed in to join a room.</p>
       </div>
     );
   }

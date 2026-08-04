@@ -19,7 +19,6 @@ import type { AppInstance } from "./http/types.js";
 import { createMailer, type Mailer } from "./email/mailer.js";
 import { registerHealthRoutes } from "./http/routes/health.js";
 import { registerAccountRoutes } from "./http/routes/account.js";
-import { registerIdentityRoutes } from "./http/routes/identity.js";
 import { registerRoomRoutes } from "./http/routes/rooms.js";
 import { registerGameRoutes } from "./http/routes/games.js";
 import { registerChatRoutes } from "./http/routes/chat.js";
@@ -42,7 +41,7 @@ export type BuildAppOptions = {
 // §12.4: "structured JSON logs, secret-redacted") against a *future*
 // change that starts logging more of the request (a custom serializer, a
 // debug log of `request.headers` or `request.body` while chasing a bug)
-// silently starting to leak the session cookie or a recovery secret into
+// silently starting to leak the session cookie or a credential into
 // production logs. Redact paths are checked against the object being
 // logged, not the raw request -- if a field never appears there in the
 // first place, the corresponding path is simply a no-op, not dead
@@ -52,10 +51,8 @@ const REDACT_PATHS = [
   "req.headers.authorization",
   'req.headers["set-cookie"]',
   'res.headers["set-cookie"]',
-  "req.body.recoverySecret",
-  "res.body.recoverySecret",
-  // Account credentials (accounts plan, Phase B): passwords and the
-  // password-reset token are exactly as sensitive as a recovery secret.
+  // Account credentials: passwords and the password-reset token are
+  // exactly as sensitive as the session cookie.
   "req.body.password",
   "req.body.newPassword",
   "req.body.currentPassword",
@@ -84,7 +81,7 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
   // No global limit -- each route class gets its own config (see
   // http/rateLimits.ts), matching docs/opus-implementation-plan.md §9.2
   // ("Rate limiting for room creation, public lobby queries, joins,
-  // recovery attempts (strict), chat, and game actions").
+  // credential attempts (strict), chat, and game actions").
   //
   // MUST be awaited before any route that uses `config.rateLimit` is
   // declared: the plugin wires per-route limits via an internal
@@ -101,8 +98,8 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
   // whole app behaves identically to production except for per-IP
   // throttling. This is deliberately an all-or-nothing registration
   // decision, not a per-route env check -- an E2E run's own setup
-  // (creating multiple identities/rooms per test, reconnecting,
-  // recovering sessions) legitimately bursts every one of these buckets
+  // (registering multiple accounts/rooms per test, reconnecting,
+  // logging back in) legitimately bursts every one of these buckets
   // from one shared local IP across a long run, not just one of them.
   // Gated on NODE_ENV !== "production" inside that function, so a
   // mistakenly production-configured process can never end up with rate
@@ -116,7 +113,6 @@ export async function buildApp(options: BuildAppOptions): Promise<AppInstance> {
   }
 
   registerHealthRoutes(app);
-  registerIdentityRoutes(app);
   registerAccountRoutes(app);
   registerRoomRoutes(app);
   registerGameRoutes(app);

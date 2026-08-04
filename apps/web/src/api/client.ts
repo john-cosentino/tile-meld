@@ -1,12 +1,7 @@
 import {
   AuthSessionResponseSchema,
-  ClaimUsernameResponseSchema,
-  ConfigResponseSchema,
-  CreateIdentityResponseSchema,
   MeResponseSchema,
-  RecoverSessionResponseSchema,
   ResetRequestResponseSchema,
-  RotateRecoveryResponseSchema,
   SetPortraitRequestSchema,
   CreateRoomResponseSchema,
   JoinRoomResponseSchema,
@@ -81,9 +76,7 @@ async function request<T>(
 }
 
 export const api = {
-  // Accounts (accounts plan, Phase D).
-  getConfig: () => request("GET", "/config", ConfigResponseSchema),
-
+  // Accounts.
   me: () => request("GET", "/identity/me", MeResponseSchema),
 
   register: (username: string, email: string, password: string) =>
@@ -106,21 +99,8 @@ export const api = {
   resetConfirm: (token: string, newPassword: string) =>
     request("POST", "/account/reset/confirm", AuthSessionResponseSchema, { token, newPassword }),
 
-  upgradeAccount: (email: string, password: string) =>
-    request("POST", "/account/upgrade", AuthSessionResponseSchema, { email, password }),
-
   setPortrait: (portraitId: number | null) =>
     request("POST", "/account/portrait", SetPortraitRequestSchema, { portraitId }),
-
-  createIdentity: () => request("POST", "/identity", CreateIdentityResponseSchema),
-
-  recoverSession: (playerId: string, recoverySecret: string) =>
-    request("POST", "/session/recover", RecoverSessionResponseSchema, { playerId, recoverySecret }),
-
-  rotateRecovery: () => request("POST", "/session/rotate-recovery", RotateRecoveryResponseSchema),
-
-  claimUsername: (username: string) =>
-    request("POST", "/identity/username", ClaimUsernameResponseSchema, { username }),
 
   createRoom: (body: CreateRoomRequest) =>
     request("POST", "/rooms", CreateRoomResponseSchema, body),

@@ -1,25 +1,5 @@
 import { z } from "zod";
 
-export const CreateIdentityResponseSchema = z.object({
-  playerId: z.string(),
-  recoverySecret: z.string(),
-  username: z.string().nullable(),
-});
-
-export const RecoverSessionRequestSchema = z.object({
-  playerId: z.string(),
-  recoverySecret: z.string(),
-});
-
-export const RecoverSessionResponseSchema = z.object({
-  playerId: z.string(),
-  username: z.string().nullable(),
-});
-
-export const RotateRecoveryResponseSchema = z.object({
-  recoverySecret: z.string(),
-});
-
 // Global human-username identity (Phase 1: docs/next-changes-implementation-
 // plan.md). This schema is shared so the client can give useful early
 // feedback, but the server re-validates every rule, and the database's
@@ -67,18 +47,3 @@ export function isReservedUsername(canonicalUsername: string): boolean {
     RESERVED_USERNAME_PREFIXES.some((prefix) => canonicalUsername.startsWith(prefix))
   );
 }
-
-export const ClaimUsernameRequestSchema = z.object({
-  username: UsernameSchema,
-});
-
-export const ClaimUsernameResponseSchema = z.object({
-  username: z.string(),
-});
-
-export type CreateIdentityResponse = z.infer<typeof CreateIdentityResponseSchema>;
-export type RecoverSessionRequest = z.infer<typeof RecoverSessionRequestSchema>;
-export type RecoverSessionResponse = z.infer<typeof RecoverSessionResponseSchema>;
-export type RotateRecoveryResponse = z.infer<typeof RotateRecoveryResponseSchema>;
-export type ClaimUsernameRequest = z.infer<typeof ClaimUsernameRequestSchema>;
-export type ClaimUsernameResponse = z.infer<typeof ClaimUsernameResponseSchema>;

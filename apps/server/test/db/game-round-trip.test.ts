@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { applyDraw, checkConservation } from "@tile-meld/engine";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
 import { catalog } from "../../src/db/catalog.js";
-import { createPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { createRoom } from "../../src/db/repositories/rooms.js";
 import { addRoomMember } from "../../src/db/repositories/roomMembers.js";
 import {
@@ -16,7 +16,7 @@ import {
 const TURN_LIMIT_HOURS = 4;
 
 async function seedRoomWithMembers(db: Awaited<ReturnType<typeof getTestDb>>, count: number) {
-  const hostPlayer = await createPlayer(db, "host-recovery-secret");
+  const hostPlayer = await createTestAccount(db);
   const { room, hostRoomMemberId } = await createRoom(db, {
     creatorPlayerId: hostPlayer.id,
     creatorUsername: "Host",
@@ -34,7 +34,7 @@ async function seedRoomWithMembers(db: Awaited<ReturnType<typeof getTestDb>>, co
     },
   ];
   for (let i = 1; i < count; i++) {
-    const player = await createPlayer(db, `player-${i}-recovery-secret`);
+    const player = await createTestAccount(db);
     const member = await addRoomMember(db, room.id, player.id, `Player ${i}`);
     members.push({
       roomMemberId: member.id,

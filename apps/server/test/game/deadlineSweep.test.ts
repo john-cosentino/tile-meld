@@ -9,7 +9,7 @@ import {
   startBackgroundSweeps,
 } from "../../src/game/deadlineSweep.js";
 import { catchUpAndLoad } from "../../src/game/turnActions.js";
-import { createPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { createRoom } from "../../src/db/repositories/rooms.js";
 import { joinRoomAndMaybeAutoStart } from "../../src/game/roomStart.js";
 import { RETENTION_WINDOW_MS, type RetentionSweepResult } from "../../src/game/retentionSweep.js";
@@ -162,7 +162,7 @@ describe("game/deadlineSweep", () => {
 // retentionSweep.test.ts) purely to observe whether the timer fires at
 // all.
 async function createExpiredEligibleGame(app: AppInstance): Promise<string> {
-  const host = await createPlayer(app.db, `sweep-host-${Math.random()}`);
+  const host = await createTestAccount(app.db);
   const { room } = await createRoom(app.db, {
     creatorPlayerId: host.id,
     creatorUsername: `SweepWiring${Math.random().toString(36).slice(2, 8)}`,
@@ -170,7 +170,7 @@ async function createExpiredEligibleGame(app: AppInstance): Promise<string> {
     visibility: "private",
     turnLimitHours: 4,
   });
-  const guest = await createPlayer(app.db, `sweep-guest-${Math.random()}`);
+  const guest = await createTestAccount(app.db);
   const outcome = await joinRoomAndMaybeAutoStart(app.db, room.id, guest.id, "Guest");
   if (outcome.kind !== "joined" || !outcome.gameId) throw new Error("unreachable");
   await app.db

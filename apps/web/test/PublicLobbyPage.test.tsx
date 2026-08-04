@@ -180,12 +180,12 @@ describe("PublicLobbyPage -- joining uses the claimed username, not a free-text 
     expect(navigateMock).toHaveBeenCalledWith("/rooms/room-3");
   });
 
-  it("prompts to claim a username and disables joining when none is set", async () => {
+  it("disables joining when no username is available", async () => {
     mockUsername = null;
     publicRooms.mockResolvedValue({ rooms: [roomWithName] });
     renderPage();
 
-    expect(await screen.findByText(/claim a username/i)).toBeInTheDocument();
+    expect(await screen.findByText(/signed in to join/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Quick Join" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Join" })).toBeDisabled();
   });

@@ -79,13 +79,6 @@ const EnvSchema = z.object({
   // other deployment config, and never set by ordinary unit/integration
   // tests, which must keep exercising the real limiter).
   E2E_DISABLE_RATE_LIMITS: z.enum(["true", "false"]).optional(),
-  // User-accounts cutover flag (accounts plan, D1). OFF unless explicitly
-  // "true" (same polarity as ENABLE_RETENTION_SWEEP: it's the breaking
-  // change). Gates only the cutover surface -- guest minting returns 403
-  // and GET /api/config reports accountsRequired -- while the account
-  // endpoints themselves are always registered (additive, harmless with
-  // the flag off). Interpret via isAccountsEnabled().
-  ENABLE_ACCOUNTS: z.enum(["true", "false"]).optional(),
   // Password-reset email delivery (accounts plan). All optional: with SMTP
   // unconfigured, non-production logs the reset link instead of sending,
   // and production logs an error while the endpoint stays a generic 200.
@@ -123,14 +116,6 @@ export function isRetentionSweepEnabled(env: Env): boolean {
  * schema comment for where this is (and is never) set. */
 export function isE2ERateLimitBypassEnabled(env: Env): boolean {
   return env.E2E_DISABLE_RATE_LIMITS === "true" && env.NODE_ENV !== "production";
-}
-
-/** Whether accounts are required (guest minting disabled, client shows
- * login/register gates). Disabled by default; only an explicit
- * ENABLE_ACCOUNTS="true" turns it on. Ship OFF, verify, then flip -- the
- * cutover runbook lives in docs/deploy-render.md. */
-export function isAccountsEnabled(env: Env): boolean {
-  return env.ENABLE_ACCOUNTS === "true";
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {

@@ -1,7 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { sql } from "kysely";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { createPlayer, ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { createRoom } from "../../src/db/repositories/rooms.js";
 import {
   addRoomMember,
@@ -34,7 +35,7 @@ describe("computer-opponent domain model", () => {
     const first = await ensureComputerPlayer(db);
     expect(first.id).toBe(COMPUTER_PLAYER_ID);
     expect(first.kind).toBe("computer");
-    expect(first.recovery_hash).toBeNull();
+    expect(first.password_hash).toBeNull();
     expect(first.display_name_default).toBe(COMPUTER_DISPLAY_NAME);
 
     // Idempotent: a second call neither throws nor creates a duplicate.
@@ -49,27 +50,33 @@ describe("computer-opponent domain model", () => {
     expect(Number(count.n)).toBe(1);
   });
 
-  it("regular players are created as humans with a recovery hash", async () => {
+  it("regular players are created as humans with a password credential", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "some-recovery-secret");
+    const player = await createTestAccount(db);
     expect(player.kind).toBe("human");
-    expect(player.recovery_hash).not.toBeNull();
+    expect(player.password_hash).not.toBeNull();
   });
 
   it("ensureComputerPlayer refuses the fixed id when it is occupied by an incompatible row", async () => {
     const db = await getTestDb();
     // Occupy the fixed id with a human player (allowed by the CHECK: human +
-    // hash). ensureComputerPlayer must NOT silently adopt it as the bot.
+    // password). ensureComputerPlayer must NOT silently adopt it as the bot.
     await db
       .insertInto("players")
-      .values({ id: COMPUTER_PLAYER_ID, kind: "human", recovery_hash: "a-real-hash" })
+      .values({
+        id: COMPUTER_PLAYER_ID,
+        kind: "human",
+        username: "squatter",
+        username_canonical: "squatter",
+        password_hash: "a-real-hash",
+      })
       .execute();
     await expect(ensureComputerPlayer(db)).rejects.toThrow(/incompatible row/);
   });
 
   it("addRoomMember derives controller_type from the authoritative players.kind, not the caller", async () => {
     const db = await getTestDb();
-    const human = await createPlayer(db, "human-secret");
+    const human = await createTestAccount(db);
     await ensureComputerPlayer(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: human.id,
@@ -81,7 +88,7 @@ describe("computer-opponent domain model", () => {
 
     // A human player yields controller_type='human' (not ready by default);
     // the computer player yields controller_type='computer' (ready).
-    const anotherHuman = await createPlayer(db, "human2-secret");
+    const anotherHuman = await createTestAccount(db);
     const humanMember = await addRoomMember(db, room.id, anotherHuman.id, "Guest");
     expect(humanMember.controller_type).toBe("human");
     expect(humanMember.is_ready).toBe(false);
@@ -92,7 +99,7 @@ describe("computer-opponent domain model", () => {
 
   it("the composite FK forbids storing a controller_type that disagrees with players.kind", async () => {
     const db = await getTestDb();
-    const human = await createPlayer(db, "human-secret");
+    const human = await createTestAccount(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: human.id,
       creatorUsername: "Host",
@@ -117,7 +124,7 @@ describe("computer-opponent domain model", () => {
 
   it("game_seats CHECK ties bot_kind to controller_type (both invalid combinations rejected)", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "host-secret");
+    const host = await createTestAccount(db);
     await ensureComputerPlayer(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: host.id,
@@ -175,14 +182,14 @@ describe("computer-opponent domain model", () => {
   it("the CHECK constraint forbids a human without a hash and a computer with one", async () => {
     const db = await getTestDb();
 
-    // Human must have a recovery_hash.
+    // Human must have a password_hash (migration 0024).
     await expect(
-      db.insertInto("players").values({ kind: "human", recovery_hash: null }).execute(),
+      db.insertInto("players").values({ kind: "human", password_hash: null }).execute(),
     ).rejects.toThrow();
 
-    // Computer must NOT have a recovery_hash (no fake credential).
+    // Computer must NOT have a password_hash (no fake credential).
     await expect(
-      db.insertInto("players").values({ kind: "computer", recovery_hash: "some-hash" }).execute(),
+      db.insertInto("players").values({ kind: "computer", password_hash: "some-hash" }).execute(),
     ).rejects.toThrow();
   });
 
@@ -192,7 +199,7 @@ describe("computer-opponent domain model", () => {
     // (game_seats controller_type is covered by the deal-time snapshot test
     // below, which asserts both a human and a computer seat.)
     const db = await getTestDb();
-    const host = await createPlayer(db, "host-secret");
+    const host = await createTestAccount(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: host.id,
       creatorUsername: "Host",
@@ -207,7 +214,7 @@ describe("computer-opponent domain model", () => {
 
   it("dealNewGame snapshots controller_type and bot_kind onto game_seats from the authoritative members", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "host-secret");
+    const host = await createTestAccount(db);
     await ensureComputerPlayer(db);
 
     const { room } = await createRoom(db, {
@@ -250,7 +257,7 @@ describe("computer-opponent domain model", () => {
 
   it("rollback guard (Amendment 1): dependent bot data blocks removing the computer player", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "host-secret");
+    const host = await createTestAccount(db);
     await ensureComputerPlayer(db);
 
     const { room } = await createRoom(db, {
@@ -273,7 +280,7 @@ describe("computer-opponent domain model", () => {
       .execute((trx) => dealNewGame(trx, room.id, 1, readyMembers, 4, identityRandomInt));
 
     // Migration 0018's down() begins by deleting computer players so it can
-    // restore recovery_hash NOT NULL. Once a game_seat references the bot
+    // restore the pre-0018 credential CHECK. Once a game_seat references the bot
     // player, that delete FK-fails -- which is exactly what makes the whole
     // down() transaction roll back rather than destroy historical bot data.
     // Production rollback therefore uses the feature flag + a forward
@@ -293,7 +300,7 @@ describe("computer-opponent domain model", () => {
 
   it("resetReadiness clears human readiness but leaves the computer member ready (rematch support)", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "host-secret");
+    const host = await createTestAccount(db);
     await ensureComputerPlayer(db);
 
     const { room } = await createRoom(db, {

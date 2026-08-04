@@ -1,7 +1,6 @@
 import {
   AuthSessionResponseSchema,
   ChangePasswordRequestSchema,
-  ConfigResponseSchema,
   LoginRequestSchema,
   MeResponseSchema,
   RegisterRequestSchema,
@@ -9,7 +8,6 @@ import {
   ResetRequestRequestSchema,
   ResetRequestResponseSchema,
   SetPortraitRequestSchema,
-  UpgradeAccountRequestSchema,
   canonicalizeUsername,
   isReservedUsername,
 } from "@tile-meld/shared";
@@ -25,7 +23,6 @@ import {
   findPlayerById,
   setPassword,
   setPortrait,
-  upgradeLegacyAccount,
   type PlayerRow,
 } from "../../db/repositories/players.js";
 import {
@@ -35,11 +32,9 @@ import {
 } from "../../db/repositories/sessions.js";
 import { consumeResetToken, createResetToken } from "../../db/repositories/passwordResetTokens.js";
 import { appBaseUrl } from "../../email/mailer.js";
-import { isAccountsEnabled } from "../../env.js";
 import {
   accountMutationLimit,
   loginLimit,
-  publicLobbyLimit,
   registerLimit,
   resetConfirmLimit,
   resetRequestLimit,
@@ -65,17 +60,6 @@ export function registerAccountRoutes(app: AppInstance): void {
     setSessionCookie(reply, token, secure);
     return { playerId: player.id, username: player.username, portraitId: player.portrait_id };
   }
-
-  app.get(
-    "/api/config",
-    {
-      schema: { response: { 200: ConfigResponseSchema } },
-      config: { rateLimit: publicLobbyLimit },
-    },
-    async (_request, reply) => {
-      reply.code(200).send({ accountsRequired: isAccountsEnabled(app.env) });
-    },
-  );
 
   app.post(
     "/api/account/register",
@@ -111,9 +95,8 @@ export function registerAccountRoutes(app: AppInstance): void {
     async (request, reply) => {
       const { username, password } = request.body;
       const player = await findPlayerByCanonicalUsername(app.db, canonicalizeUsername(username));
-      // One generic failure for unknown username, passwordless (legacy or
-      // computer) identity, and wrong password alike -- no oracle beyond
-      // what register's "taken" already reveals.
+      // One generic failure for unknown username and wrong password alike
+      // -- no oracle beyond what register's "taken" already reveals.
       if (!player || player.password_hash === null) {
         await dummyVerify(password);
         sendError(reply, "unauthorized", "invalid username or password");
@@ -157,7 +140,6 @@ export function registerAccountRoutes(app: AppInstance): void {
         username: player.username,
         email: player.email,
         portraitId: player.portrait_id,
-        hasPassword: player.password_hash !== null,
       });
     },
   );
@@ -172,7 +154,9 @@ export function registerAccountRoutes(app: AppInstance): void {
     async (request, reply) => {
       const player = await findPlayerById(app.db, request.player!.id);
       if (!player || player.password_hash === null) {
-        sendError(reply, "conflict", "this identity has no password yet -- finish account setup");
+        // Unreachable since migration 0024 (every human has a password);
+        // kept as defense-in-depth.
+        sendError(reply, "conflict", "this identity has no password");
         return;
       }
       if (!(await verifyPassword(player.password_hash, request.body.currentPassword))) {
@@ -244,34 +228,6 @@ export function registerAccountRoutes(app: AppInstance): void {
       // fresh and cut off any session an attacker (or old device) held.
       await revokeAllSessionsForPlayer(app.db, playerId);
       reply.code(200).send(await startSession(reply, updated, request.protocol === "https"));
-    },
-  );
-
-  app.post(
-    "/api/account/upgrade",
-    {
-      schema: { body: UpgradeAccountRequestSchema, response: { 200: AuthSessionResponseSchema } },
-      preValidation: requireSession,
-      config: { rateLimit: accountMutationLimit },
-    },
-    async (request, reply) => {
-      const outcome = await upgradeLegacyAccount(app.db, request.player!.id, {
-        email: request.body.email,
-        passwordHash: await hashPassword(request.body.password),
-      });
-      if (outcome.kind === "already_upgraded") {
-        sendError(reply, "conflict", "this account already has a password");
-        return;
-      }
-      if (outcome.kind === "not_eligible") {
-        sendError(reply, "forbidden", "this identity cannot be upgraded");
-        return;
-      }
-      // The recovery code that authenticated this session is now retired;
-      // any other session it minted goes with it, and this browser gets a
-      // fresh password-era session.
-      await revokeAllSessionsForPlayer(app.db, outcome.player.id);
-      reply.code(200).send(await startSession(reply, outcome.player, request.protocol === "https"));
     },
   );
 

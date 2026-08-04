@@ -9,7 +9,7 @@ import type { ColumnType, Generated } from "kysely";
 //    result payload, not a hash.
 //  - sessions.token_hash is a deterministic keyed HMAC (computed by the
 //    application), NOT Argon2id -- Argon2id is reserved for
-//    players.recovery_hash, where deterministic indexed lookup is not
+//    players.password_hash, where deterministic indexed lookup is not
 //    required.
 
 type Timestamp = ColumnType<Date, Date | string, Date | string>;
@@ -45,11 +45,6 @@ export type TurnStatus =
 export interface PlayersTable {
   id: Generated<string>;
   created_at: ColumnType<Date, Date | string | undefined, never>;
-  // Nullable since migration 0018: a computer player has no recovery secret.
-  // Since migration 0022 a human needs recovery_hash OR password_hash (one
-  // long-term credential); computers have neither.
-  recovery_hash: string | null;
-  recovery_rotated_at: Timestamp | null;
   display_name_default: string | null;
   kind: Generated<PlayerKind>;
   // Globally unique among kind='human' rows (migration 0019). `username`
@@ -58,10 +53,11 @@ export interface PlayersTable {
   // are NULL until claimed, and NULL forever for kind='computer'.
   username: string | null;
   username_canonical: string | null;
-  // Account credentials + profile (migration 0022). All human-only; the
-  // players_credentials_kind_ck CHECK pins every one of them NULL for the
-  // computer player. email is deliberately non-unique and only ever used to
-  // send password-reset links (never looked up by).
+  // Account credentials + profile (migrations 0022/0024). Human-only; the
+  // players_credentials_kind_ck CHECK requires a password for every human
+  // and pins every credential column NULL for the computer player. email
+  // is deliberately non-unique and only ever used to send password-reset
+  // links (never looked up by).
   password_hash: string | null;
   email: string | null;
   password_updated_at: Timestamp | null;

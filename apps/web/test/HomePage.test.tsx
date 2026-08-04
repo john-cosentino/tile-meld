@@ -40,11 +40,9 @@ vi.mock("../src/state/recentRooms.js", () => ({
 }));
 
 let mockUsername: string | null = "Alice";
-let mockAccountsRequired = false;
 vi.mock("../src/auth/AuthProvider.js", () => ({
   useAuth: () => ({
     state: { status: "ready", playerId: "p1", username: mockUsername, portraitId: null },
-    accountsRequired: mockAccountsRequired,
   }),
 }));
 
@@ -82,7 +80,6 @@ function roomFixture(overrides: Partial<GetRoomResponse> = {}): GetRoomResponse 
 }
 
 beforeEach(() => {
-  mockAccountsRequired = false;
   navigateMock.mockReset();
   createVsComputer.mockReset();
   getRoom.mockReset();
@@ -385,35 +382,27 @@ describe("HomePage -- Play vs Computer", () => {
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("disables Play vs Computer and prompts to claim a username when none is set", async () => {
+  it("disables Play vs Computer when no username is set", async () => {
     mockUsername = null;
     renderHome();
 
     expect(await screen.findByRole("button", { name: /play vs computer/i })).toBeDisabled();
-    expect(screen.getByText(/claim a username/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /play vs computer/i }));
     expect(createVsComputer).not.toHaveBeenCalled();
   });
 });
 
-// Accounts-era home rearrangement (user decision 2026-08-04): the
-// recovery surfaces and signed-in badge are gone, the profile panel holds
-// the top slot, and New Game wears the retired Recovery plate's chrome.
-describe("accounts-mode layout", () => {
-  it("drops both recovery surfaces and the signed-in badge; the profile panel remains", async () => {
-    mockAccountsRequired = true;
+// Accounts-era home rearrangement (user decision 2026-08-04, made
+// unconditional by Phase F): the recovery surfaces and signed-in badge are
+// gone, the profile panel holds the top slot, and New Game wears the
+// retired Recovery plate's chrome.
+describe("home layout", () => {
+  it("has no recovery surfaces or signed-in badge; the profile panel remains", async () => {
     renderHome();
     expect(screen.queryByRole("link", { name: /recovery/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Recovery Access" })).not.toBeInTheDocument();
     expect(screen.queryByText("Signed in")).not.toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Your Profile" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /new game/i })).toBeInTheDocument();
-  });
-
-  it("keeps every legacy surface when accounts are off", async () => {
-    renderHome();
-    expect(await screen.findByRole("heading", { name: "Recovery Access" })).toBeInTheDocument();
-    expect(screen.getByText("Signed in")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /recovery/i }).length).toBeGreaterThan(0);
   });
 });

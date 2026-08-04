@@ -45,9 +45,9 @@ async function describePageState(page: Page): Promise<string> {
 
 /** Retries `attempt` (a navigation, reload, or click that may land on the
  * app's own transient-rate-limit UI) until `target` becomes visible.
- * Several of this app's endpoints -- identity creation, session recovery
- * (the tightest: 5 req/min, see apps/server/src/http/rateLimits.ts,
- * deliberately strict as recovery-secret brute-force protection) -- are
+ * Several of this app's endpoints -- registration (5 req/min) and login
+ * (10 req/min, see apps/server/src/http/rateLimits.ts, deliberately
+ * strict as credential brute-force protection) -- are
  * real per-IP token buckets (an intentional anti-abuse decision, not
  * something this suite should weaken -- see e2e/playwright.config.ts). In
  * CI and local runs, E2E_DISABLE_RATE_LIMITS (apps/server/src/env.ts) means
@@ -56,8 +56,8 @@ async function describePageState(page: Page): Promise<string> {
  * if that bypass were ever misconfigured or absent (a stale server
  * process, a manual run against a real deployment), so it stays a real,
  * hardened retry loop rather than a thin wrapper that assumes the bypass
- * is always active. Both RootLayout's full-page error view and
- * RecoveryPage's own inline error banner render the exact same "Rate limit
+ * is always active. Both RootLayout's full-page error view and the auth
+ * pages' inline error banners render the exact same "Rate limit
  * exceeded, retry in N seconds" text for this; this waits out the
  * indicated backoff and repeats `attempt`, mirroring what a real user
  * clicking the app's own "Retry" affordance would do, instead of treating
@@ -176,9 +176,8 @@ function uniqueUsername(base: string): string {
  * reconnect-recovery) share it rather than repeating a literal. */
 export const E2E_PASSWORD = "e2e-password-123";
 
-/** Registers a fresh account for `page`'s context (accounts plan, Phase E:
- * the suite runs with ENABLE_ACCOUNTS=true, so registration replaced the
- * old guest-mint + claim-username two-step). Self-contained: navigates to
+/** Registers a fresh account for `page`'s context (accounts are the only
+ * identity system since Phase F). Self-contained: navigates to
  * /register itself (a fresh context resolves to "unauthenticated" and
  * RequireAnon renders the form; the username `<input>` does not exist in
  * the DOM until the bootstrap resolves, so waiting for it via
@@ -218,15 +217,15 @@ export async function readRoomCode(page: Page): Promise<string> {
 
 /** Reloads `page` and waits for `target`, tolerating a transient rate
  * limit (see retryOnRateLimit) -- e.g. a mid-game reload re-runs the
- * identity bootstrap (session recovery) against the same tight token
- * bucket used by RecoveryPage's explicit recovery form. */
+ * identity bootstrap (GET /api/identity/me) and may share the page's
+ * other rate-limited traffic. */
 export async function reloadUntilReady(page: Page, target: Locator): Promise<void> {
   await retryOnRateLimit(page, () => page.reload(), target);
 }
 
 /** Clicks `submit`, tolerating a transient rate limit (see
- * retryOnRateLimit) -- e.g. RecoveryPage's "Recover session" button hits
- * the recovery endpoint's especially tight 5 req/min bucket directly.
+ * retryOnRateLimit) -- e.g. LoginPage's "Log in" button hits the login
+ * endpoint's tight 10 req/min bucket directly.
  *
  * Only for a `submit` that is already known to exist on the current page
  * (e.g. a button in a form the caller just navigated to and confirmed is
@@ -265,7 +264,7 @@ export async function clickUntilSettled(
  * Never relies on the nav bar's own link being already rendered and
  * clickable (same reasoning as registerAccount's direct "/register"
  * navigation). `page.goto` here is itself a full page reload -- it
- * re-runs identity bootstrap via session recovery -- so waiting on the
+ * re-runs identity bootstrap via the session cookie -- so waiting on the
  * form fields specifically (not just the heading) is what actually
  * distinguishes "still bootstrapping" and "bootstrapped but no username"
  * from "genuinely ready," rather than racing into a fill/click against a

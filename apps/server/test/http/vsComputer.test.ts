@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app.js";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { SESSION_COOKIE_NAME } from "../../src/security/session.js";
+import { createSessionPlayer, createUsernamelessSession } from "../setup/test-account.js";
 import { COMPUTER_PLAYER_ID } from "../../src/db/botIdentity.js";
 import type { AppInstance } from "../../src/http/types.js";
 
@@ -21,19 +21,15 @@ function nextTestUsername(): string {
 /** Room creation (including Play vs Computer, Phase 2) requires a claimed
  * username, so every test player claims one automatically. */
 async function newPlayer(
-  app: AppInstance,
+  _app: AppInstance,
   username: string = nextTestUsername(),
 ): Promise<{ playerId: string; cookie: string; username: string }> {
-  const response = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-  const cookie = response.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-  const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
-  await app.inject({
-    method: "POST",
-    url: "/api/identity/username",
-    headers: { cookie: cookieHeader },
-    payload: { username },
-  });
-  return { playerId: response.json().playerId, cookie: cookieHeader, username };
+  const session = await createSessionPlayer(
+    await getTestDb(),
+    TEST_ENV.SESSION_TOKEN_HMAC_SECRET,
+    username,
+  );
+  return { playerId: session.playerId, cookie: session.cookie, username };
 }
 
 async function createVsComputer(app: AppInstance, cookie: string, displayName = "Solo") {
@@ -183,9 +179,10 @@ describe("Play vs Computer -- room creation and lifecycle", () => {
   it("rejects creation when the identity has no claimed username, without creating a room", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV, logger: false });
-    const identity = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-    const cookie = identity.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-    const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+    const { cookie: cookieHeader } = await createUsernamelessSession(
+      db,
+      TEST_ENV.SESSION_TOKEN_HMAC_SECRET,
+    );
 
     const response = await createVsComputer(app, cookieHeader);
     expect(response.statusCode).toBe(409);

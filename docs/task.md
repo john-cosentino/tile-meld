@@ -20,10 +20,18 @@ flipped `ENABLE_ACCOUNTS=true`. Post-flip verification against
 production: `/api/config` = `{"accountsRequired":true}`, guest minting
 403, a fresh browser lands on the login gate with the recovery-redemption
 entry present, the reset page renders and rejects a bogus token cleanly,
-and a live registration reached the rearranged home. Remaining before
-Phase F (retiring the legacy code paths): wait for existing legacy
-players to redeem their recovery codes and upgrade — the redemption and
-upgrade paths must survive until then.
+and a live registration reached the rearranged home.
+
+**Phase F completed 2026-08-04** (user decision: "I don't care about
+recovery codes… removing old usernames/games is fine"): migration 0024
+purges every legacy identity (human rows without a password) together
+with their rooms and game subtrees, drops the `recovery_hash`/
+`recovery_rotated_at` columns, and tightens the credential CHECK so every
+human must carry a password. The guest-mint/recover/rotate/claim routes,
+`GET /api/config`, `POST /api/account/upgrade`, the `ENABLE_ACCOUNTS`
+flag, the web legacy branch (localStorage identity, RecoveryPage,
+UpgradeAccountPage, dual-mode AuthProvider/guards), and the legacy home
+layout are all removed — accounts are the only identity system.
 
 - **A** — schema (migrations 0022/0023: password/email/portrait columns,
   relaxed credential CHECK, HMAC-hashed single-use reset tokens),
@@ -44,9 +52,9 @@ upgrade paths must survive until then.
   `.env.example`/`render.yaml`, and the staged cutover runbook in
   `docs/deploy-render.md` §11. Production ships with the flag OFF.
 
-Deferred (Phase F, explicitly not scheduled): removing the legacy
-guest/recovery code paths and the flag once all production identities are
-upgraded.
+- **F** — legacy retirement (2026-08-04): destructive migration 0024,
+  route/flag/web-branch removal as above; suites and e2e rewritten
+  accounts-only.
 
 ---
 

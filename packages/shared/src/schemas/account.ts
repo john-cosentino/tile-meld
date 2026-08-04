@@ -52,9 +52,6 @@ export const MeResponseSchema = z.object({
   username: z.string().nullable(),
   email: z.string().nullable(),
   portraitId: PortraitIdSchema,
-  /** false only for a legacy recovery-code identity that has not yet set a
-   * password -- the client's finish-setup gate keys off this. */
-  hasPassword: z.boolean(),
 });
 
 export const ChangePasswordRequestSchema = z.object({
@@ -75,17 +72,8 @@ export const ResetConfirmRequestSchema = z.object({
   newPassword: PasswordSchema,
 });
 
-export const UpgradeAccountRequestSchema = z.object({
-  email: EmailSchema,
-  password: PasswordSchema,
-});
-
 export const SetPortraitRequestSchema = z.object({
   portraitId: PortraitIdSchema,
-});
-
-export const ConfigResponseSchema = z.object({
-  accountsRequired: z.boolean(),
 });
 
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
@@ -95,6 +83,4 @@ export type MeResponse = z.infer<typeof MeResponseSchema>;
 export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;
 export type ResetRequestRequest = z.infer<typeof ResetRequestRequestSchema>;
 export type ResetConfirmRequest = z.infer<typeof ResetConfirmRequestSchema>;
-export type UpgradeAccountRequest = z.infer<typeof UpgradeAccountRequestSchema>;
 export type SetPortraitRequest = z.infer<typeof SetPortraitRequestSchema>;
-export type ConfigResponse = z.infer<typeof ConfigResponseSchema>;

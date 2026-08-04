@@ -3,27 +3,20 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 
-// Accounts plan, Phase D: the new auth pages and route guards, with
+// The auth pages and route guards (accounts-only since Phase F), with
 // useAuth mocked per the repo's page-test pattern.
 
 const mockAuth = {
   state: { status: "ready" } as Record<string, unknown>,
-  accountsRequired: true,
   login: vi.fn(),
   register: vi.fn(),
   logout: vi.fn(),
   changePassword: vi.fn(),
-  upgradeAccount: vi.fn(),
   setPortrait: vi.fn(),
-  redeemRecovery: vi.fn(),
-  acknowledgeRecoverySecret: vi.fn(),
-  rotateRecovery: vi.fn(),
-  claimUsername: vi.fn(),
 };
 
 vi.mock("../src/auth/AuthProvider.js", () => ({
   useAuth: () => mockAuth,
-  IDENTITY_STORAGE_KEY: "tilemeld.identity",
 }));
 
 const resetRequest = vi.fn();
@@ -43,7 +36,6 @@ vi.mock("../src/api/client.js", () => ({
 import { LoginPage } from "../src/pages/LoginPage.js";
 import { RegisterPage } from "../src/pages/RegisterPage.js";
 import { AccountPage } from "../src/pages/AccountPage.js";
-import { UpgradeAccountPage } from "../src/pages/UpgradeAccountPage.js";
 import { ResetRequestPage } from "../src/pages/ResetRequestPage.js";
 import { RequireAuth } from "../src/auth/guards.js";
 
@@ -54,8 +46,6 @@ function readyState(overrides: Record<string, unknown> = {}) {
     username: "Alice",
     email: "a@example.com",
     portraitId: null,
-    hasPassword: true,
-    newRecoverySecret: null,
     ...overrides,
   };
 }
@@ -63,7 +53,6 @@ function readyState(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockAuth.state = readyState();
-  mockAuth.accountsRequired = true;
 });
 
 describe("LoginPage", () => {
@@ -98,23 +87,6 @@ describe("LoginPage", () => {
     await userEvent.type(screen.getByLabelText("Password"), "secret-password");
     await userEvent.click(screen.getByRole("button", { name: "Log in" }));
     await screen.findByText("home page");
-  });
-
-  it("redeems a recovery code and routes to the finish-setup screen", async () => {
-    mockAuth.redeemRecovery.mockResolvedValue(undefined);
-    render(
-      <MemoryRouter initialEntries={["/login"]}>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/account/upgrade" element={<p>upgrade page</p>} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    await userEvent.click(screen.getByRole("button", { name: "Use your recovery code" }));
-    await userEvent.type(screen.getByLabelText("Recovery code"), "player-1:top-secret");
-    await userEvent.click(screen.getByRole("button", { name: "Redeem recovery code" }));
-    expect(mockAuth.redeemRecovery).toHaveBeenCalledWith("player-1", "top-secret");
-    await screen.findByText("upgrade page");
   });
 });
 
@@ -187,50 +159,6 @@ describe("AccountPage", () => {
     expect(screen.getByRole("heading", { name: "Change password" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
   });
-
-  it("shows the legacy recovery-code section instead when accounts are off", () => {
-    mockAuth.state = readyState({ hasPassword: false });
-    mockAuth.accountsRequired = false;
-    render(
-      <MemoryRouter>
-        <AccountPage />
-      </MemoryRouter>,
-    );
-    expect(screen.getByText(/uses a recovery code/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Log out" })).not.toBeInTheDocument();
-  });
-});
-
-describe("UpgradeAccountPage", () => {
-  it("upgrades and navigates home", async () => {
-    mockAuth.state = readyState({ hasPassword: false });
-    mockAuth.upgradeAccount.mockResolvedValue(undefined);
-    render(
-      <MemoryRouter initialEntries={["/account/upgrade"]}>
-        <Routes>
-          <Route path="/account/upgrade" element={<UpgradeAccountPage />} />
-          <Route path="/" element={<p>home page</p>} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    await userEvent.type(screen.getByLabelText("Email"), "up@example.com");
-    await userEvent.type(screen.getByLabelText("Password"), "upgrade-password");
-    await userEvent.click(screen.getByRole("button", { name: "Finish setup" }));
-    expect(mockAuth.upgradeAccount).toHaveBeenCalledWith("up@example.com", "upgrade-password");
-    await screen.findByText("home page");
-  });
-
-  it("bounces an already-upgraded account home", async () => {
-    render(
-      <MemoryRouter initialEntries={["/account/upgrade"]}>
-        <Routes>
-          <Route path="/account/upgrade" element={<UpgradeAccountPage />} />
-          <Route path="/" element={<p>home page</p>} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    await screen.findByText("home page");
-  });
 });
 
 describe("ResetRequestPage", () => {
@@ -257,7 +185,6 @@ describe("RequireAuth", () => {
             <Route path="/" element={<p>home page</p>} />
           </Route>
           <Route path="/login" element={<p>login page</p>} />
-          <Route path="/account/upgrade" element={<p>upgrade page</p>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -269,15 +196,7 @@ describe("RequireAuth", () => {
     await screen.findByText("login page");
   });
 
-  it("holds a passwordless legacy identity at the finish-setup screen in accounts mode", async () => {
-    mockAuth.state = readyState({ hasPassword: false });
-    renderGuarded("/");
-    await screen.findByText("upgrade page");
-  });
-
-  it("is inert in legacy mode: a passwordless identity plays as before", async () => {
-    mockAuth.state = readyState({ hasPassword: false });
-    mockAuth.accountsRequired = false;
+  it("lets a signed-in account straight through", async () => {
     renderGuarded("/");
     await screen.findByText("home page");
   });

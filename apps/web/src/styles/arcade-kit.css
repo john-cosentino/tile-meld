@@ -385,35 +385,23 @@
   width: 40.755%;
   height: 15.625%;
 }
-.home-region--signed-in {
+.home-region--profile {
   left: 73.828%;
   top: 0.781%;
   width: 24.74%;
-  height: 9.766%;
-}
-.home-region--profile {
-  left: 75.13%;
-  top: 12.305%;
-  width: 23.568%;
-  height: 25.977%;
-}
-.home-region--recovery {
-  left: 75.13%;
-  top: 39.062%;
-  width: 23.568%;
-  height: 13.281%;
+  height: 24.414%;
 }
 .home-region--activity {
   left: 74.74%;
-  top: 53.32%;
+  top: 29.297%;
   width: 23.958%;
-  height: 19.531%;
+  height: 25.391%;
 }
 .home-region--rail-extra {
   left: 74.74%;
-  top: 73.828%;
+  top: 58.594%;
   width: 23.958%;
-  height: 15.625%;
+  height: 30.859%;
 }
 .home-region--tip-strip {
   left: 0.651%;
@@ -422,33 +410,11 @@
   height: 6.055%;
 }
 
-/* Accounts-mode home rearrangement (user decision 2026-08-04): the
-   signed-in badge and both recovery surfaces are gone, the profile panel
-   takes the badge's top-right slot, and the remaining right-rail panels
-   spread over the freed space. Rects mirror the accounts-era regions in
+/* Home rearrangement (user decision 2026-08-04, made the only layout by
+   Phase F): the profile panel holds the top-right slot and the remaining
+   right-rail panels spread beneath it. Rects mirror
    docs/design-reference/region-maps/home-desktop.json -- change the map,
-   then these values, never just one side. The base rects above remain
-   the legacy-mode layout until Phase F retires it. */
-@media (min-width: 901px) {
-  .home-arcade--accounts .home-region--profile {
-    left: 73.828%;
-    top: 0.781%;
-    width: 24.74%;
-    height: 24.414%;
-  }
-  .home-arcade--accounts .home-region--activity {
-    left: 74.74%;
-    top: 29.297%;
-    width: 23.958%;
-    height: 25.391%;
-  }
-  .home-arcade--accounts .home-region--rail-extra {
-    left: 74.74%;
-    top: 58.594%;
-    width: 23.958%;
-    height: 30.859%;
-  }
-}
+   then these values, never just one side. */
 
 .home-masthead-heading {
   margin: 0;
@@ -488,12 +454,6 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 0.5%;
-}
-
-.home-claim-note {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-muted);
 }
 
 .home-menu-plate {
@@ -573,29 +533,6 @@
   font-size: 1.25rem;
 }
 
-.home-signed-in {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0.4rem 1.4rem;
-  gap: 2px;
-}
-
-.home-signed-in-eyebrow {
-  font-size: 0.95rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--neon-gold);
-}
-
-.home-signed-in-name {
-  font-size: 1.3rem;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .home-profile-body {
   display: flex;
   gap: 0.75rem;
@@ -639,12 +576,6 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-}
-
-.home-recovery-text {
-  margin: 0;
-  font-size: 1.02rem;
-  line-height: 1.25;
 }
 
 .home-activity-list {
@@ -724,7 +655,6 @@
 }
 
 /* Panels' interior scroll: composition height is fixed, content is real. */
-.home-recovery .arcade-kit-panel-body,
 .home-activity .arcade-kit-panel-body,
 .home-howto .arcade-kit-panel-body,
 .home-profile .arcade-kit-panel-body {
@@ -756,9 +686,6 @@
     height: clamp(120px, 24vw, 180px);
   }
 
-  .home-region--signed-in {
-    order: 1;
-  }
   .home-region--menu-rail {
     order: 2;
     gap: 0.6rem;
@@ -774,10 +701,7 @@
     order: 4;
   }
   .home-region--profile {
-    order: 5;
-  }
-  .home-region--recovery {
-    order: 6;
+    order: 1;
   }
   .home-region--activity {
     order: 7;
@@ -794,19 +718,6 @@
   .home-region--info-badge {
     display: none;
   }
-
-  /* Accounts mode: the profile panel opens the page where the signed-in
-     badge used to sit. */
-  .home-arcade--accounts .home-region--profile {
-    order: 1;
-  }
-}
-
-.home-recovery-alert {
-  margin: 0 0 0.35rem;
-  font-size: 1.02rem;
-  line-height: 1.25;
-  color: var(--neon-gold);
 }
 
 /* Concept menu plates wrap their labels over two lines; single-line
@@ -851,19 +762,6 @@
    the page's CSS grid/glow. */
 .home-wordmark {
   object-fit: fill;
-}
-
-.home-signed-in {
-  padding: 0.15rem 1.3rem;
-  gap: 0;
-}
-
-.home-signed-in-eyebrow {
-  font-size: 0.85rem;
-}
-
-.home-signed-in-name {
-  font-size: 1.15rem;
 }
 
 .home-notice-list {
@@ -2385,7 +2283,6 @@ button.danger:disabled {
    (!important: the sliced chrome comes from frameStyle's inline style.) */
 @media (max-width: 900px) {
   .home-menu-plate,
-  .home-signed-in,
   .tabletop-actions-primary .tt-plate {
     border: 0 !important;
     border-image: none !important;
@@ -2397,7 +2294,6 @@ button.danger:disabled {
      designer's phone comps at 1080px -- downscaled here, so smooth
      sampling, not pixelated (which drops rows from the thin bevels). */
   .home-menu-plate,
-  .home-signed-in,
   .competitor-card {
     image-rendering: auto;
   }
@@ -2405,12 +2301,6 @@ button.danger:disabled {
   .home-menu-plate {
     min-height: 96px;
     padding: 0.5rem 3rem;
-  }
-
-  .home-signed-in {
-    min-height: 76px;
-    padding: 0.4rem 2.6rem;
-    background-image: url("../assets/arcade/frame/badge-phone-signed-in.png");
   }
 
   .home-menu-plate[data-plate="plate-menu-cyan"] {
@@ -2498,7 +2388,6 @@ button.danger:disabled {
     border-width: 36px !important;
   }
   .arcade-kit-panel[data-frame="panel-profile"],
-  .arcade-kit-panel[data-frame="panel-recovery"],
   .arcade-kit-panel[data-frame="panel-activity"] {
     border-width: 32px !important;
   }
@@ -2535,20 +2424,7 @@ button.danger:disabled {
 
 /* --------------------------- accounts (Phase D) */
 
-/* Inline "act like a link" button (the login page's recovery-code
-   discloser) -- a real button for keyboard/AT semantics, styled to sit in
-   running text. */
-.link-button {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--neon-cyan);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-/* Portrait picker: the 8 roster portraits plus a "Default" tile, as an
+/* Portrait picker: the roster portraits plus a "Default" tile, as an
    accessible radiogroup of buttons. */
 .portrait-picker {
   display: flex;

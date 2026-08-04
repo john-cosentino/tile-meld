@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import type { PublicRoomSummary } from "@tile-meld/shared";
 import { api, ApiError } from "../api/client.js";
 import { addRecentRoom } from "../state/recentRooms.js";
@@ -55,10 +55,7 @@ export function PublicLobbyPage() {
 
       {!username && (
         <div className="arcade-panel stack" role="status">
-          <p>
-            You need a username before joining games. <Link to="/recovery">Claim a username</Link>{" "}
-            to get started.
-          </p>
+          <p>You need to be signed in to join games.</p>
         </div>
       )}
 

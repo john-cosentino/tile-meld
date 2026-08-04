@@ -1,16 +1,15 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { PASSWORD_MIN_LENGTH, PORTRAIT_COUNT } from "@tile-meld/shared";
 import { ApiError } from "../api/client.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { PORTRAIT_ROSTER, portraitForPlayer } from "../branding/portraits.js";
 
-/** Profile management: portrait picker for everyone; email/password
- * management and logout for password accounts. A legacy identity sees an
- * upgrade prompt instead of credential forms. */
+/** Profile management: portrait picker, password change, and logout.
+ * Every signed-in identity is a password account (Phase F). */
 export function AccountPage() {
   const navigate = useNavigate();
-  const { state, accountsRequired, setPortrait, changePassword, logout } = useAuth();
+  const { state, setPortrait, changePassword, logout } = useAuth();
   const [portraitError, setPortraitError] = useState<string | undefined>(undefined);
   const [portraitStatus, setPortraitStatus] = useState<string | undefined>(undefined);
   // undefined = no unsaved selection; a value (including null = Default)
@@ -138,67 +137,48 @@ export function AccountPage() {
         </button>
       </section>
 
-      {state.hasPassword ? (
-        <section className="stack" aria-labelledby="password-heading">
-          <h2 id="password-heading">Change password</h2>
-          {passwordError && (
-            <div className="error-banner" role="alert">
-              {passwordError}
-            </div>
-          )}
-          {passwordStatus && <p role="status">{passwordStatus}</p>}
-          <form className="stack" onSubmit={(e) => void onChangePassword(e)}>
-            <label>
-              Current password
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </label>
-            <label>
-              New password
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-                minLength={PASSWORD_MIN_LENGTH}
-                required
-              />
-            </label>
-            <button type="submit" className="primary" disabled={submitting}>
-              {submitting ? "Changing…" : "Change password"}
-            </button>
-          </form>
-        </section>
-      ) : accountsRequired ? (
-        <section className="stack">
-          <h2>Finish account setup</h2>
-          <p>
-            Set an email and password to secure this identity.{" "}
-            <Link to="/account/upgrade">Finish setup</Link>
-          </p>
-        </section>
-      ) : (
-        <section className="stack">
-          <h2>Identity</h2>
-          <p className="muted">
-            This identity uses a recovery code. <Link to="/recovery">Manage recovery code</Link>
-          </p>
-        </section>
-      )}
-
-      {state.hasPassword && (
-        <section className="stack">
-          <h2>Session</h2>
-          <button type="button" className="danger" onClick={() => void onLogout()}>
-            Log out
+      <section className="stack" aria-labelledby="password-heading">
+        <h2 id="password-heading">Change password</h2>
+        {passwordError && (
+          <div className="error-banner" role="alert">
+            {passwordError}
+          </div>
+        )}
+        {passwordStatus && <p role="status">{passwordStatus}</p>}
+        <form className="stack" onSubmit={(e) => void onChangePassword(e)}>
+          <label>
+            Current password
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
+          <label>
+            New password
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={PASSWORD_MIN_LENGTH}
+              required
+            />
+          </label>
+          <button type="submit" className="primary" disabled={submitting}>
+            {submitting ? "Changing…" : "Change password"}
           </button>
-        </section>
-      )}
+        </form>
+      </section>
+
+      <section className="stack">
+        <h2>Session</h2>
+        <button type="button" className="danger" onClick={() => void onLogout()}>
+          Log out
+        </button>
+      </section>
     </div>
   );
 }

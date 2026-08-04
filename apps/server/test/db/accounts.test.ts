@@ -3,14 +3,13 @@ import { sql } from "kysely";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
 import {
   createAccount,
-  createPlayer,
   ensureComputerPlayer,
   findPlayerByCanonicalUsername,
   setEmail,
   setPassword,
   setPortrait,
-  upgradeLegacyAccount,
 } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import {
   RESET_TOKEN_TTL_MS,
   createResetToken,
@@ -21,9 +20,9 @@ import { createMailer } from "../../src/email/mailer.js";
 import { loadEnv } from "../../src/env.js";
 import type { FastifyBaseLogger } from "fastify";
 
-// User-accounts plan, Phase A: schema + repository foundation. No routes
-// yet -- these tests pin the migration 0022/0023 invariants and the new
-// repository semantics the account endpoints (Phase B) will build on.
+// User-accounts schema + repository foundation (migrations 0022/0023,
+// tightened by 0024: every human carries a password). Route-level coverage
+// lives in test/http/account.test.ts.
 
 const HMAC = "test-hmac-secret-at-least-32-characters-long";
 
@@ -36,7 +35,7 @@ describe("account credentials schema (migrations 0022/0023)", () => {
     await truncateAll(await getTestDb());
   });
 
-  it("accepts a human with only a password credential (no recovery hash)", async () => {
+  it("accepts a human with a password credential", async () => {
     const db = await getTestDb();
     const outcome = await createAccount(db, {
       username: "Alice",
@@ -45,7 +44,6 @@ describe("account credentials schema (migrations 0022/0023)", () => {
     });
     expect(outcome.kind).toBe("created");
     if (outcome.kind !== "created") return;
-    expect(outcome.player.recovery_hash).toBeNull();
     expect(outcome.player.password_hash).not.toBeNull();
     expect(outcome.player.username).toBe("Alice");
     expect(outcome.player.username_canonical).toBe("alice");
@@ -73,7 +71,7 @@ describe("account credentials schema (migrations 0022/0023)", () => {
 
   it("rejects a negative portrait id but accepts any non-negative one", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "legacy-secret");
+    const player = await createTestAccount(db);
     await expect(setPortrait(db, player.id, -1)).rejects.toMatchObject({
       constraint: "players_portrait_id_ck",
     });
@@ -114,48 +112,24 @@ describe("account credentials schema (migrations 0022/0023)", () => {
     expect(await findPlayerByCanonicalUsername(db, "nobody")).toBeUndefined();
   });
 
-  it("setPassword retires the recovery credential (one credential system per account)", async () => {
+  it("setPassword replaces the credential and stamps password_updated_at", async () => {
     const db = await getTestDb();
-    const legacy = await createPlayer(db, "legacy-secret");
-    expect(legacy.recovery_hash).not.toBeNull();
-    const updated = await setPassword(db, legacy.id, await hashPassword("new-password-1"));
-    expect(updated.recovery_hash).toBeNull();
-    expect(updated.password_hash).not.toBeNull();
+    const player = await createTestAccount(db);
+    const updated = await setPassword(db, player.id, await hashPassword("new-password-1"));
+    expect(updated.password_hash).not.toBe(player.password_hash);
     expect(updated.password_updated_at).not.toBeNull();
     expect(await verifyPassword(updated.password_hash!, "new-password-1")).toBe(true);
   });
 
-  it("upgradeLegacyAccount upgrades exactly once and reports precisely afterwards", async () => {
+  it("setPassword never touches the computer player", async () => {
     const db = await getTestDb();
-    const legacy = await createPlayer(db, "legacy-secret");
-    const passwordHash = await hashPassword("upgrade-password");
-
-    const first = await upgradeLegacyAccount(db, legacy.id, {
-      email: "dan@example.com",
-      passwordHash,
-    });
-    expect(first.kind).toBe("upgraded");
-    if (first.kind !== "upgraded") return;
-    expect(first.player.email).toBe("dan@example.com");
-    expect(first.player.recovery_hash).toBeNull();
-
-    const again = await upgradeLegacyAccount(db, legacy.id, {
-      email: "dan@example.com",
-      passwordHash,
-    });
-    expect(again.kind).toBe("already_upgraded");
-
     const computer = await ensureComputerPlayer(db);
-    const bot = await upgradeLegacyAccount(db, computer.id, {
-      email: "bot@example.com",
-      passwordHash,
-    });
-    expect(bot.kind).toBe("not_eligible");
+    await expect(setPassword(db, computer.id, "any-hash")).rejects.toThrow();
   });
 
   it("setEmail updates a human and never a computer", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "legacy-secret");
+    const player = await createTestAccount(db);
     const updated = await setEmail(db, player.id, "eve@example.com");
     expect(updated.email).toBe("eve@example.com");
     const computer = await ensureComputerPlayer(db);
@@ -174,7 +148,7 @@ describe("password reset tokens", () => {
 
   it("a minted token consumes exactly once", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "legacy-secret");
+    const player = await createTestAccount(db);
     const { token, row } = await createResetToken(db, player.id, HMAC);
     expect(row.token_hash).not.toContain(token);
     expect(row.expires_at.getTime()).toBeGreaterThan(Date.now());
@@ -186,7 +160,7 @@ describe("password reset tokens", () => {
 
   it("an unknown or expired token does not consume", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "legacy-secret");
+    const player = await createTestAccount(db);
     expect(await consumeResetToken(db, "no-such-token", HMAC)).toBeUndefined();
 
     const { token } = await createResetToken(db, player.id, HMAC);
@@ -198,7 +172,7 @@ describe("password reset tokens", () => {
 
   it("a new request supersedes the previous outstanding token", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "legacy-secret");
+    const player = await createTestAccount(db);
     const first = await createResetToken(db, player.id, HMAC);
     const second = await createResetToken(db, player.id, HMAC);
     expect(await consumeResetToken(db, first.token, HMAC)).toBeUndefined();

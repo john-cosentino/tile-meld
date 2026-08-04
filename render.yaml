@@ -91,15 +91,6 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
-      # THE ACCOUNTS CUTOVER FLAG, EXPLICITLY OFF (accounts plan, Phase E).
-      # "false" = today's guest + recovery-code flow, byte-for-byte. Flip
-      # to "true" in the Render dashboard only after the SMTP vars below
-      # are configured and a real reset email was verified -- runbook in
-      # docs/deploy-render.md's "Accounts cutover" section. Rollback is
-      # flipping this back to "false" (accounts registered while ON keep
-      # their data and work again when re-enabled).
-      - key: ENABLE_ACCOUNTS
-        value: "false"
       # Password-reset email delivery (the only email the app sends).
       # Blank disables sending: the reset endpoint still answers its
       # generic 200 and production logs an error so the misconfiguration

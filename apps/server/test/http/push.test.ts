@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app.js";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { SESSION_COOKIE_NAME } from "../../src/security/session.js";
+import { createSessionPlayer } from "../setup/test-account.js";
 import type { AppInstance } from "../../src/http/types.js";
 
 const TEST_ENV = {
@@ -11,10 +11,9 @@ const TEST_ENV = {
   SESSION_TOKEN_HMAC_SECRET: "test-hmac-secret-at-least-32-characters-long",
 };
 
-async function newPlayer(app: AppInstance): Promise<{ playerId: string; cookie: string }> {
-  const response = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-  const cookie = response.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-  return { playerId: response.json().playerId, cookie: `${SESSION_COOKIE_NAME}=${cookie.value}` };
+async function newPlayer(_app: AppInstance): Promise<{ playerId: string; cookie: string }> {
+  const session = await createSessionPlayer(await getTestDb(), TEST_ENV.SESSION_TOKEN_HMAC_SECRET);
+  return { playerId: session.playerId, cookie: session.cookie };
 }
 
 const SUBSCRIPTION = {

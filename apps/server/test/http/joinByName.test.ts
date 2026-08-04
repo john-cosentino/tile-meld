@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app.js";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { SESSION_COOKIE_NAME } from "../../src/security/session.js";
+import { createSessionPlayer, createUsernamelessSession } from "../setup/test-account.js";
 import { COMPUTER_PLAYER_ID } from "../../src/db/botIdentity.js";
 import type { AppInstance } from "../../src/http/types.js";
 
@@ -19,19 +19,15 @@ function nextTestUsername(): string {
 }
 
 async function newPlayer(
-  app: AppInstance,
+  _app: AppInstance,
   username: string = nextTestUsername(),
 ): Promise<{ playerId: string; cookie: string; username: string }> {
-  const response = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-  const cookie = response.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-  const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
-  await app.inject({
-    method: "POST",
-    url: "/api/identity/username",
-    headers: { cookie: cookieHeader },
-    payload: { username },
-  });
-  return { playerId: response.json().playerId, cookie: cookieHeader, username };
+  const session = await createSessionPlayer(
+    await getTestDb(),
+    TEST_ENV.SESSION_TOKEN_HMAC_SECRET,
+    username,
+  );
+  return { playerId: session.playerId, cookie: session.cookie, username };
 }
 
 async function createRoom(
@@ -236,9 +232,10 @@ describe("POST /api/rooms/join-by-name", () => {
     const host = await newPlayer(app, "NoUserHost");
     const { name } = await createRoom(app, host.cookie);
 
-    const identity = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-    const cookie = identity.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-    const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+    const { cookie: cookieHeader } = await createUsernamelessSession(
+      db,
+      TEST_ENV.SESSION_TOKEN_HMAC_SECRET,
+    );
 
     const response = await joinByName(app, cookieHeader, name);
     expect(response.statusCode).toBe(409);
@@ -432,9 +429,10 @@ describe("Quick Join uses the stored username (Phase 3)", () => {
     const host = await newPlayer(app, "QuickHost2");
     await createRoom(app, host.cookie, { visibility: "public", capacity: 3 });
 
-    const identity = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-    const cookie = identity.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!;
-    const cookieHeader = `${SESSION_COOKIE_NAME}=${cookie.value}`;
+    const { cookie: cookieHeader } = await createUsernamelessSession(
+      db,
+      TEST_ENV.SESSION_TOKEN_HMAC_SECRET,
+    );
 
     const response = await app.inject({
       method: "POST",

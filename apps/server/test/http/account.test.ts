@@ -4,9 +4,8 @@ import type { Mailer } from "../../src/email/mailer.js";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
 import { SESSION_COOKIE_NAME } from "../../src/security/session.js";
 
-// User-accounts plan, Phase B: the account endpoints. All inert with
-// ENABLE_ACCOUNTS unset except where a test opts in -- the flag only gates
-// guest minting and /api/config's report.
+// The account endpoints -- the only identity surface since Phase F
+// retired guest minting and recovery codes.
 
 const TEST_ENV = {
   NODE_ENV: "test" as const,
@@ -76,7 +75,6 @@ describe("account routes", () => {
       username: "PlayerOne",
       email: "one@example.com",
       portraitId: null,
-      hasPassword: true,
     });
     await app.close();
   });
@@ -125,25 +123,6 @@ describe("account routes", () => {
     expect(unknownUser.statusCode).toBe(401);
     // Indistinguishable bodies: no username-existence oracle.
     expect(wrongPassword.json()).toEqual(unknownUser.json());
-    await app.close();
-  });
-
-  it("a legacy recovery-code identity cannot log in with a password", async () => {
-    const app = await makeApp();
-    const legacy = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-    const claimCookie = extractSessionCookie(legacy);
-    await app.inject({
-      method: "POST",
-      url: "/api/identity/username",
-      headers: { cookie: claimCookie },
-      payload: { username: "LegacyPlayer" },
-    });
-    const login = await app.inject({
-      method: "POST",
-      url: "/api/account/login",
-      payload: { username: "LegacyPlayer", password: "any-password-at-all" },
-    });
-    expect(login.statusCode).toBe(401);
     await app.close();
   });
 
@@ -325,68 +304,6 @@ describe("account routes", () => {
     await app.close();
   });
 
-  it("a legacy identity upgrades in place: password set, recovery retired, games kept", async () => {
-    const app = await makeApp();
-    const legacy = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-    const { playerId, recoverySecret } = legacy.json();
-    const cookie = extractSessionCookie(legacy);
-    await app.inject({
-      method: "POST",
-      url: "/api/identity/username",
-      headers: { cookie },
-      payload: { username: "OldTimer" },
-    });
-
-    const meBefore = await app.inject({
-      method: "GET",
-      url: "/api/identity/me",
-      headers: { cookie },
-    });
-    expect(meBefore.json().hasPassword).toBe(false);
-
-    const upgraded = await app.inject({
-      method: "POST",
-      url: "/api/account/upgrade",
-      headers: { cookie },
-      payload: { email: "oldtimer@example.com", password: "upgraded-password" },
-    });
-    expect(upgraded.statusCode).toBe(200);
-    expect(upgraded.json().playerId).toBe(playerId);
-    const newCookie = extractSessionCookie(upgraded);
-
-    // The recovery credential is retired...
-    const recover = await app.inject({
-      method: "POST",
-      url: "/api/session/recover",
-      payload: { playerId, recoverySecret },
-    });
-    expect(recover.statusCode).toBe(401);
-    // ...rotate-recovery refuses to resurrect it...
-    const rotate = await app.inject({
-      method: "POST",
-      url: "/api/session/rotate-recovery",
-      headers: { cookie: newCookie },
-    });
-    expect(rotate.statusCode).toBe(409);
-    // ...and the same playerId (same username, same games) logs in by password.
-    const login = await app.inject({
-      method: "POST",
-      url: "/api/account/login",
-      payload: { username: "OldTimer", password: "upgraded-password" },
-    });
-    expect(login.statusCode).toBe(200);
-    expect(login.json().playerId).toBe(playerId);
-
-    const again = await app.inject({
-      method: "POST",
-      url: "/api/account/upgrade",
-      headers: { cookie: extractSessionCookie(login) },
-      payload: { email: "oldtimer@example.com", password: "upgraded-password" },
-    });
-    expect(again.statusCode).toBe(409);
-    await app.close();
-  });
-
   it("portrait set/clear round-trips and rejects an out-of-roster id", async () => {
     const app = await makeApp();
     const register = await app.inject({
@@ -486,29 +403,12 @@ describe("account routes", () => {
     await app.close();
   });
 
-  it("ENABLE_ACCOUNTS=true blocks guest minting and is reported by /api/config", async () => {
-    const app = await makeApp({ ENABLE_ACCOUNTS: "true" });
-    const config = await app.inject({ method: "GET", url: "/api/config" });
-    expect(config.json()).toEqual({ accountsRequired: true });
-    const mint = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-    expect(mint.statusCode).toBe(403);
-    // Registration and login remain available -- the flag gates only the
-    // guest path.
-    const register = await app.inject({
-      method: "POST",
-      url: "/api/account/register",
-      payload: GOOD_REGISTRATION,
-    });
-    expect(register.statusCode).toBe(200);
-    await app.close();
-  });
-
-  it("with the flag off, /api/config reports accountsRequired=false and guests still mint", async () => {
+  it("the retired guest-mint and config endpoints are gone", async () => {
     const app = await makeApp();
-    const config = await app.inject({ method: "GET", url: "/api/config" });
-    expect(config.json()).toEqual({ accountsRequired: false });
     const mint = await app.inject({ method: "POST", url: "/api/identity", payload: {} });
-    expect(mint.statusCode).toBe(200);
+    expect(mint.statusCode).toBe(404);
+    const config = await app.inject({ method: "GET", url: "/api/config" });
+    expect(config.statusCode).toBe(404);
     await app.close();
   });
 });

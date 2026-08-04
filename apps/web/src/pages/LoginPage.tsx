@@ -13,13 +13,11 @@ function safeReturnTo(raw: string | null): string {
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, redeemRecovery } = useAuth();
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
-  const [showRecovery, setShowRecovery] = useState(false);
-  const [recoveryCode, setRecoveryCode] = useState("");
 
   const returnTo = safeReturnTo(searchParams.get("returnTo"));
 
@@ -32,28 +30,6 @@ export function LoginPage() {
       navigate(returnTo);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not log in. Please retry.");
-      setSubmitting(false);
-    }
-  }
-
-  async function onRedeemRecovery(e: FormEvent): Promise<void> {
-    e.preventDefault();
-    setError(undefined);
-    const [playerId, ...rest] = recoveryCode.trim().split(":");
-    const secret = rest.join(":");
-    if (!playerId || !secret) {
-      setError("A recovery code looks like: player-id:secret");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await redeemRecovery(playerId, secret);
-      // A recovered legacy identity has no password yet -- the finish-setup
-      // gate (RequireAuth) holds every game route until /account/upgrade is
-      // done, so send them straight there.
-      navigate("/account/upgrade");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not redeem the recovery code.");
       setSubmitting(false);
     }
   }
@@ -96,30 +72,6 @@ export function LoginPage() {
         {" · "}
         <Link to="/reset">Forgot password?</Link>
       </p>
-      {!showRecovery ? (
-        <p className="muted">
-          Played before accounts existed?{" "}
-          <button type="button" className="link-button" onClick={() => setShowRecovery(true)}>
-            Use your recovery code
-          </button>
-        </p>
-      ) : (
-        <form className="stack" onSubmit={(e) => void onRedeemRecovery(e)}>
-          <label>
-            Recovery code
-            <input
-              type="text"
-              value={recoveryCode}
-              onChange={(e) => setRecoveryCode(e.target.value)}
-              placeholder="player-id:secret"
-              required
-            />
-          </label>
-          <button type="submit" className="accent-cyan" disabled={submitting}>
-            Redeem recovery code
-          </button>
-        </form>
-      )}
     </div>
   );
 }

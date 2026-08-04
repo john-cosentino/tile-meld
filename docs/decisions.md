@@ -128,3 +128,29 @@ warning. The local connection string lives in the uncommitted
 `CLAUDE.local.md`.
 
 **Date:** 2026-07-25.
+
+---
+
+### 2026-08-04 — Phase F: legacy identities retired destructively
+
+**Decided:** with accounts live, the legacy guest + recovery-code system was
+removed entirely rather than kept for a migration window. Migration 0024
+deletes every passwordless human identity along with their rooms and game
+subtrees, drops `players.recovery_hash`/`recovery_rotated_at`, and tightens
+the credential CHECK so every human row must carry a password. The
+guest-mint/recover/rotate/claim routes, `GET /api/config`,
+`POST /api/account/upgrade`, the `ENABLE_ACCOUNTS` flag, and the web legacy
+branch were deleted with it.
+
+**Why:** the user's explicit call: "I don't care about recovery codes. I am
+the only one who really used the app thus far. Removing old usernames/games is
+fine." Carrying a dual-mode identity system indefinitely for zero real legacy
+users was pure maintenance cost.
+
+**Consequences:** the purge is unrecoverable by design (forward-only policy,
+D-MIGRATE); freed legacy usernames can be re-registered. Tests create players
+through `apps/server/test/setup/test-account.ts` (fake password hashes — no
+argon2 cost, no register-route rate limit). The Render dashboard's leftover
+`ENABLE_ACCOUNTS` var is ignored and can be deleted.
+
+**Date:** 2026-08-04.

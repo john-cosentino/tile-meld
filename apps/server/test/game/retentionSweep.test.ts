@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { createPlayer, ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { createComputerRoom, createRoom, findRoomById } from "../../src/db/repositories/rooms.js";
 import { setRoomMemberReady, listRoomMembers } from "../../src/db/repositories/roomMembers.js";
 import { createSession } from "../../src/db/repositories/sessions.js";
@@ -75,9 +76,9 @@ describe("runRetentionSweepOnce -- eligibility boundary", () => {
 
   it("preserves an active game older than 48 hours (never completed)", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "ActiveOld");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const outcome = await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     if (outcome.kind !== "joined" || !outcome.gameId) throw new Error("unreachable");
     // status stays "active", completed_at stays null -- ineligible
@@ -98,9 +99,9 @@ describe("runRetentionSweepOnce -- eligibility boundary", () => {
 
   it("preserves a completed game with a null completed_at", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "NullCompletedAt");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const outcome = await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     if (outcome.kind !== "joined" || !outcome.gameId) throw new Error("unreachable");
     await db
@@ -115,9 +116,9 @@ describe("runRetentionSweepOnce -- eligibility boundary", () => {
 
   it("preserves a game completed exactly 1 second short of 48 hours", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "JustUnder48h");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS + 1000);
     const gameId = await dealAndCompleteGame(db, room.id, guest.id, completedAt);
 
@@ -133,9 +134,9 @@ describe("runRetentionSweepOnce -- eligibility boundary", () => {
 
   it("deletes a game completed at exactly 48 hours (inclusive boundary)", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "Exactly48h");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS);
     const gameId = await dealAndCompleteGame(db, room.id, guest.id, completedAt);
 
@@ -145,9 +146,9 @@ describe("runRetentionSweepOnce -- eligibility boundary", () => {
 
   it("deletes a game completed well past 48 hours", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "WayPast48h");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS - 10 * HOUR_MS);
     const gameId = await dealAndCompleteGame(db, room.id, guest.id, completedAt);
 
@@ -166,9 +167,9 @@ describe("runRetentionSweepOnce -- complete subtree deletion", () => {
 
   it("deletes every row in every game-owned table, leaving no orphans", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "FullSubtree");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS - HOUR_MS);
     const gameId = await dealAndCompleteGame(db, room.id, guest.id, completedAt);
 
@@ -221,9 +222,9 @@ describe("runRetentionSweepOnce -- complete subtree deletion", () => {
 
   it("clears games.current_turn_id before deleting turns, so the delete never violates that reverse FK", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "CurrentTurnFk");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS - HOUR_MS);
     const gameId = await dealAndCompleteGame(db, room.id, guest.id, completedAt);
 
@@ -241,9 +242,9 @@ describe("runRetentionSweepOnce -- complete subtree deletion", () => {
 
   it("transaction rollback preserves the entire subtree if deletion fails mid-way", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "RollbackSafety");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS - HOUR_MS);
     const gameId = await dealAndCompleteGame(db, room.id, guest.id, completedAt);
 
@@ -279,9 +280,9 @@ describe("runRetentionSweepOnce -- room lifecycle", () => {
 
   it("deletes the room, its members, and its scores when its only game expires", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "SoleGameRoom");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS - HOUR_MS);
     await dealAndCompleteGame(db, room.id, guest.id, completedAt);
     await recordGameResult(db, room.id, [
@@ -309,9 +310,9 @@ describe("runRetentionSweepOnce -- room lifecycle", () => {
 
   it("releases the room's friendly name for reuse once the room is deleted", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "NameReuse");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const completedAt = new Date(NOW.getTime() - RETENTION_WINDOW_MS - HOUR_MS);
     await dealAndCompleteGame(db, room.id, guest.id, completedAt);
 
@@ -326,9 +327,9 @@ describe("runRetentionSweepOnce -- room lifecycle", () => {
 
   it("deletes only the expired game when a newer, still-within-window completed game exists", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "NewerCompletedSurvives");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const oldGameId = await dealAndCompleteGame(
       db,
       room.id,
@@ -364,9 +365,9 @@ describe("runRetentionSweepOnce -- room lifecycle", () => {
 
   it("deletes only the expired game when a newer active rematch exists -- the room stays in_game", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "ActiveRematchSurvives");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const oldGameId = await dealAndCompleteGame(
       db,
       room.id,
@@ -393,9 +394,9 @@ describe("runRetentionSweepOnce -- room lifecycle", () => {
 
   it("handles multiple expired games in one room correctly, across bounded batches", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "MultiExpired");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const oldEnough = new Date(NOW.getTime() - RETENTION_WINDOW_MS - HOUR_MS);
     const game1 = await dealAndCompleteGame(db, room.id, guest.id, oldEnough);
     const rematch1 = await manualRematchRoom(db, room.id);
@@ -432,9 +433,9 @@ describe("runRetentionSweepOnce -- room lifecycle", () => {
 
   it("applies identically to a public room", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "PublicRetention", 2, "public");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await dealAndCompleteGame(
       db,
       room.id,
@@ -449,7 +450,7 @@ describe("runRetentionSweepOnce -- room lifecycle", () => {
   it("applies identically to a Play vs Computer room", async () => {
     const db = await getTestDb();
     await ensureComputerPlayer(db);
-    const human = await createPlayer(db, "s1");
+    const human = await createTestAccount(db);
     const { room } = await createComputerRoom(db, {
       humanPlayerId: human.id,
       humanUsername: "Solo",
@@ -499,14 +500,14 @@ describe("runRetentionSweepOnce -- preserved global data", () => {
 
   it("never touches players, usernames, sessions, or push subscriptions", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     await db
       .updateTable("players")
       .set({ username: "Retainee", username_canonical: "retainee" })
       .where("id", "=", host.id)
       .execute();
     const room = await createTestRoom(db, host.id, "GlobalDataSafe");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await dealAndCompleteGame(
       db,
       room.id,
@@ -534,7 +535,7 @@ describe("runRetentionSweepOnce -- preserved global data", () => {
       .executeTakeFirst();
     expect(hostAfter).toBeDefined();
     expect(hostAfter?.username).toBe("Retainee");
-    expect(hostAfter?.recovery_hash).toBe(host.recovery_hash);
+    expect(hostAfter?.password_hash).toBe(host.password_hash);
 
     const guestAfter = await db
       .selectFrom("players")
@@ -570,7 +571,7 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
 
   it("an empty sweep (no eligible games) is a harmless no-op", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     await createTestRoom(db, host.id, "NothingToSweep");
 
     const result = await runRetentionSweepOnce(db, { now: NOW });
@@ -579,9 +580,9 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
 
   it("running the sweep twice in a row is harmless -- the second run finds nothing left to do", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "RunTwice");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await dealAndCompleteGame(
       db,
       room.id,
@@ -599,9 +600,9 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
 
   it("two concurrent sweep invocations never double-delete and never fail", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "ConcurrentSweeps");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const gameId = await dealAndCompleteGame(
       db,
       room.id,
@@ -624,9 +625,9 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
 
   it("SKIP LOCKED: a candidate already locked by another transaction is skipped, not waited on", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "SkipLocked");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const gameId = await dealAndCompleteGame(
       db,
       room.id,
@@ -668,9 +669,9 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
     const db = await getTestDb();
     const oldEnough = new Date(NOW.getTime() - RETENTION_WINDOW_MS - HOUR_MS);
     for (let i = 0; i < 3; i++) {
-      const host = await createPlayer(db, `bounded-${i}`);
+      const host = await createTestAccount(db);
       const room = await createTestRoom(db, host.id, `Bounded${i}`);
-      const guest = await createPlayer(db, `bounded-guest-${i}`);
+      const guest = await createTestAccount(db);
       await dealAndCompleteGame(db, room.id, guest.id, oldEnough);
     }
 
@@ -687,9 +688,9 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
 
   it("a rematch that commits before retention's room check preserves the room and the new game", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "RematchWinsRace");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const oldGameId = await dealAndCompleteGame(
       db,
       room.id,
@@ -710,9 +711,9 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
 
   it("a rematch racing a room retention already deleted fails safely, with no partial state", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "RetentionWinsRace");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await dealAndCompleteGame(
       db,
       room.id,
@@ -738,9 +739,9 @@ describe("runRetentionSweepOnce -- safety and idempotency", () => {
 
   it("re-querying games under the room lock prevents deleting a room a newer game just appeared in", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "RecheckPreventsDeletion");
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const oldGameId = await dealAndCompleteGame(
       db,
       room.id,

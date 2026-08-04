@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { createPlayer, ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { createComputerRoom, createRoom, findRoomById } from "../../src/db/repositories/rooms.js";
 import {
   addRoomMember,
@@ -49,9 +50,9 @@ describe("joinRoomAndMaybeAutoStart -- capacity auto-start", () => {
 
   it("a 2-player room auto-starts when the second player joins", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "Host2", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
 
     const outcome = await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     expect(outcome.kind).toBe("joined");
@@ -71,10 +72,10 @@ describe("joinRoomAndMaybeAutoStart -- capacity auto-start", () => {
 
   it("a 3-player room stays open at two members and auto-starts at three", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "Host3", 3);
-    const p2 = await createPlayer(db, "s2");
-    const p3 = await createPlayer(db, "s3");
+    const p2 = await createTestAccount(db);
+    const p3 = await createTestAccount(db);
 
     const afterSecond = await joinRoomAndMaybeAutoStart(db, room.id, p2.id, "P2");
     expect(afterSecond).toEqual({ kind: "joined", gameId: null });
@@ -96,11 +97,11 @@ describe("joinRoomAndMaybeAutoStart -- capacity auto-start", () => {
 
   it("a 4-player room stays open at two and three members, auto-starts at four", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "Host4", 4);
-    const p2 = await createPlayer(db, "s2");
-    const p3 = await createPlayer(db, "s3");
-    const p4 = await createPlayer(db, "s4");
+    const p2 = await createTestAccount(db);
+    const p3 = await createTestAccount(db);
+    const p4 = await createTestAccount(db);
 
     expect(await joinRoomAndMaybeAutoStart(db, room.id, p2.id, "P2")).toEqual({
       kind: "joined",
@@ -130,9 +131,9 @@ describe("joinRoomAndMaybeAutoStart -- capacity auto-start", () => {
 
   it("auto-start seats every current member regardless of readiness", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "NoReady", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
 
     // Nobody ever called setRoomMemberReady.
     const outcome = await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
@@ -150,9 +151,9 @@ describe("joinRoomAndMaybeAutoStart -- capacity auto-start", () => {
 
   it("creates exactly one game for a 2-player auto-start", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "OneGame", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
 
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
 
@@ -162,12 +163,12 @@ describe("joinRoomAndMaybeAutoStart -- capacity auto-start", () => {
 
   it("does not allow a player to be added after the room has started", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "ClosedAfterStart", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest"); // auto-starts
 
-    const late = await createPlayer(db, "s3");
+    const late = await createTestAccount(db);
     const outcome = await joinRoomAndMaybeAutoStart(db, room.id, late.id, "Late");
     expect(outcome).toEqual({ kind: "not_open" });
 
@@ -177,17 +178,17 @@ describe("joinRoomAndMaybeAutoStart -- capacity auto-start", () => {
 
   it("rejects joining a full room without dealing a second game", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "FullRoom", 3);
-    const p2 = await createPlayer(db, "s2");
+    const p2 = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, p2.id, "P2");
     // Manually fill the third seat without auto-starting logic, to exercise
     // the plain "full" branch (status still open, but at capacity) --
     // reached only if something else raced the count between reads.
-    await addRoomMember(db, room.id, (await createPlayer(db, "s3")).id, "P3");
+    await addRoomMember(db, room.id, (await createTestAccount(db)).id, "P3");
     await db.updateTable("rooms").set({ status: "open" }).where("id", "=", room.id).execute();
 
-    const late = await createPlayer(db, "s4");
+    const late = await createTestAccount(db);
     const outcome = await joinRoomAndMaybeAutoStart(db, room.id, late.id, "Late");
     expect(outcome).toEqual({ kind: "full" });
   });
@@ -204,9 +205,9 @@ describe("manualStartRoom", () => {
 
   it("starts a 3-player room early with only 2 ready, below capacity", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "Early3", 3);
-    const p2 = await createPlayer(db, "s2");
+    const p2 = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, p2.id, "P2"); // 2 of 3 -- stays open
     for (const m of await listRoomMembers(db, room.id)) {
       await setRoomMemberReady(db, m.id, true);
@@ -229,7 +230,7 @@ describe("manualStartRoom", () => {
 
   it("rejects starting with fewer than the minimum ready members", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "TooFewReady", 3);
     const outcome = await manualStartRoom(db, room.id);
     expect(outcome).toEqual({ kind: "insufficient_ready" });
@@ -237,9 +238,9 @@ describe("manualStartRoom", () => {
 
   it("rejects starting a room that is not open", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "AlreadyStarted", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest"); // auto-starts
     const outcome = await manualStartRoom(db, room.id);
     expect(outcome).toEqual({ kind: "not_open" });
@@ -257,10 +258,10 @@ describe("concurrency (Phase 4)", () => {
 
   it("two simultaneous joins for the last seat: one succeeds, one fails safely, exactly one game", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "RaceSeat", 2);
-    const a = await createPlayer(db, "s2");
-    const b = await createPlayer(db, "s3");
+    const a = await createTestAccount(db);
+    const b = await createTestAccount(db);
 
     const [ra, rb] = await Promise.all([
       joinRoomAndMaybeAutoStart(db, room.id, a.id, "A"),
@@ -285,14 +286,14 @@ describe("concurrency (Phase 4)", () => {
 
   it("manual Start racing the final join produces exactly one game, whichever wins", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "RaceStartVsJoin", 3);
-    const p2 = await createPlayer(db, "s2");
+    const p2 = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, p2.id, "P2"); // 2 of 3, stays open
     for (const m of await listRoomMembers(db, room.id)) {
       await setRoomMemberReady(db, m.id, true); // both ready -> manual start eligible
     }
-    const p3 = await createPlayer(db, "s3");
+    const p3 = await createTestAccount(db);
 
     const [startOutcome, joinOutcome] = await Promise.all([
       manualStartRoom(db, room.id),
@@ -322,9 +323,9 @@ describe("concurrency (Phase 4)", () => {
 
   it("two simultaneous manual Start requests produce exactly one game", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "DoubleStart", 3);
-    const p2 = await createPlayer(db, "s2");
+    const p2 = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, p2.id, "P2");
     for (const m of await listRoomMembers(db, room.id)) {
       await setRoomMemberReady(db, m.id, true);
@@ -345,12 +346,12 @@ describe("concurrency (Phase 4)", () => {
 
   it("repeated auto-start attempts on an already-started room are all safely rejected", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "AlreadyStartedRepeat", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest"); // auto-starts
 
-    const late = await createPlayer(db, "s3");
+    const late = await createTestAccount(db);
     const results = await Promise.all([
       joinRoomAndMaybeAutoStart(db, room.id, late.id, "Late"),
       manualStartRoom(db, room.id),
@@ -384,7 +385,7 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it("rejects a rematch when the room is not between_games", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "NotBetween", 2);
     const outcome = await manualRematchRoom(db, room.id);
     expect(outcome).toEqual({ kind: "not_between_games" });
@@ -392,9 +393,9 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it("deals seq 2 seating every current member, without requiring anyone to be ready", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "Rematch2", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest"); // auto-starts, seq 1
     await completeFirstGame(db, room.id);
 
@@ -424,11 +425,11 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
   for (const capacity of [2, 3, 4] as const) {
     it(`rematches a full ${capacity}-player room, seating every member regardless of readiness`, async () => {
       const db = await getTestDb();
-      const host = await createPlayer(db, "s1");
+      const host = await createTestAccount(db);
       const room = await createTestRoom(db, host.id, `Rematch${capacity}`, capacity);
       const others = [];
       for (let i = 1; i < capacity; i++) {
-        const p = await createPlayer(db, `s${i + 1}`);
+        const p = await createTestAccount(db);
         await joinRoomAndMaybeAutoStart(db, room.id, p.id, `P${i + 1}`);
         others.push(p);
       }
@@ -451,10 +452,10 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it("excludes a member who explicitly left the room", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "LeftExcluded", 3);
-    const p2 = await createPlayer(db, "s2");
-    const p3 = await createPlayer(db, "s3");
+    const p2 = await createTestAccount(db);
+    const p3 = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, p2.id, "P2");
     const p2Member = (await listRoomMembers(db, room.id)).find((m) => m.player_id === p2.id)!;
     await addRoomMember(db, room.id, p3.id, "P3");
@@ -479,9 +480,9 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it("a player who resigned from the completed game remains eligible (resignation is per-game, not per-membership)", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "ResignedEligible", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const joinOutcome = await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     if (joinOutcome.kind !== "joined" || !joinOutcome.gameId) throw new Error("unreachable");
 
@@ -508,9 +509,9 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it(`rejects a rematch with fewer than ${MIN_REMATCH_MEMBERS} eligible members remaining after everyone but the host leaves`, async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "SoleSurvivor", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     await completeFirstGame(db, room.id);
 
@@ -527,9 +528,9 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it("resets human readiness after dealing the rematch, exactly like a fresh Start", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "ReadyResetRematch", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     await completeFirstGame(db, room.id);
     for (const m of await listRoomMembers(db, room.id)) {
@@ -544,9 +545,9 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it("preserves the prior completed game and its result untouched", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "PriorGamePreserved", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     const joinOutcome = await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     if (joinOutcome.kind !== "joined" || !joinOutcome.gameId) throw new Error("unreachable");
     const firstGameId = joinOutcome.gameId;
@@ -579,9 +580,9 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
 
   it("does not touch room_scores -- cumulative scores survive a rematch untouched", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "ScoresPreserved", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     await completeFirstGame(db, room.id);
     await recordGameResult(db, room.id, [
@@ -600,7 +601,7 @@ describe("manualRematchRoom -- one-click rematch (Phase 5)", () => {
   it("Play vs Computer: one-click rematch reseats the human and the computer, no readiness needed", async () => {
     const db = await getTestDb();
     await ensureComputerPlayer(db);
-    const human = await createPlayer(db, "s1");
+    const human = await createTestAccount(db);
     const { room } = await createComputerRoom(db, {
       humanPlayerId: human.id,
       humanUsername: "Solo",
@@ -633,9 +634,9 @@ describe("manualRematchRoom concurrency (Phase 5)", () => {
 
   it("two simultaneous rematch requests produce exactly one new game", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "DoubleRematch", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     await completeFirstGame(db, room.id);
 
@@ -654,9 +655,9 @@ describe("manualRematchRoom concurrency (Phase 5)", () => {
 
   it("a rematch request after the room already transitioned to in_game is safely rejected", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "AlreadyRematched", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await joinRoomAndMaybeAutoStart(db, room.id, guest.id, "Guest");
     await completeFirstGame(db, room.id);
     await manualRematchRoom(db, room.id); // room is now in_game again
@@ -680,9 +681,9 @@ describe("unique (room_id, seq) constraint remains a secondary backstop", () => 
 
   it("the games table itself still rejects a duplicate seq for the same room, independent of any lock", async () => {
     const db = await getTestDb();
-    const host = await createPlayer(db, "s1");
+    const host = await createTestAccount(db);
     const room = await createTestRoom(db, host.id, "SeqBackstop", 2);
-    const guest = await createPlayer(db, "s2");
+    const guest = await createTestAccount(db);
     await addRoomMember(db, room.id, guest.id, "Guest");
     const members = await listRoomMembers(db, room.id);
     const readyMembers = members.map((m) => ({
@@ -716,7 +717,7 @@ describe("Play vs Computer does not auto-start at creation", () => {
   it("createComputerRoom leaves the room open despite both seats being filled immediately", async () => {
     const db = await getTestDb();
     await ensureComputerPlayer(db);
-    const human = await createPlayer(db, "s1");
+    const human = await createTestAccount(db);
     const { room } = await createComputerRoom(db, {
       humanPlayerId: human.id,
       humanUsername: "Solo",

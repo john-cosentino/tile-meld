@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { sql } from "kysely";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { createPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { createRoom, createComputerRoom, findRoomByName } from "../../src/db/repositories/rooms.js";
 import { ensureComputerPlayer } from "../../src/db/repositories/players.js";
 
@@ -10,8 +10,8 @@ import { ensureComputerPlayer } from "../../src/db/repositories/players.js";
 // algorithm; HTTP-level coverage (username_required, response shape) lives
 // in test/http/rooms.test.ts and test/http/vsComputer.test.ts.
 
-async function createHostPlayer(db: Awaited<ReturnType<typeof getTestDb>>, secret: string) {
-  return createPlayer(db, secret);
+async function createHostPlayer(db: Awaited<ReturnType<typeof getTestDb>>) {
+  return createTestAccount(db);
 }
 
 describe("room name allocation (repository)", () => {
@@ -25,7 +25,7 @@ describe("room name allocation (repository)", () => {
 
   it("names the first private room after the bare username", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "John",
@@ -38,7 +38,7 @@ describe("room name allocation (repository)", () => {
 
   it("numbers subsequent private rooms from the same creator with the smallest available suffix", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const names: (string | null)[] = [];
     for (let i = 0; i < 3; i++) {
       const { room } = await createRoom(db, {
@@ -55,7 +55,7 @@ describe("room name allocation (repository)", () => {
 
   it("prefixes public rooms with public_ and numbers them independently", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const names: (string | null)[] = [];
     for (let i = 0; i < 2; i++) {
       const { room } = await createRoom(db, {
@@ -72,7 +72,7 @@ describe("room name allocation (repository)", () => {
 
   it("keeps private and public namespaces distinct for the same creator", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room: privateRoom } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "John",
@@ -96,7 +96,7 @@ describe("room name allocation (repository)", () => {
   it("Play vs Computer rooms follow the private naming convention", async () => {
     const db = await getTestDb();
     await ensureComputerPlayer(db);
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room } = await createComputerRoom(db, {
       humanPlayerId: player.id,
       humanUsername: "Solo",
@@ -107,7 +107,7 @@ describe("room name allocation (repository)", () => {
 
   it("reuses the smallest suffix once an older room is no longer relevant (abandoned)", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room: first } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "John",
@@ -152,7 +152,7 @@ describe("room name allocation (repository)", () => {
 
   it("closed rooms also free their name (same terminal treatment as abandoned)", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room: first } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "Jane",
@@ -174,7 +174,7 @@ describe("room name allocation (repository)", () => {
 
   it("two concurrent creations by the same identity/base produce distinct names", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
 
     const [a, b] = await Promise.all([
       createRoom(db, {
@@ -299,7 +299,7 @@ describe("findRoomByName (Phase 3 -- repository-level exact-match behavior)", ()
 
   it("finds a room by its exact name", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "Exacto",
@@ -314,7 +314,7 @@ describe("findRoomByName (Phase 3 -- repository-level exact-match behavior)", ()
 
   it("is case-insensitive", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "CaseTest",
@@ -329,7 +329,7 @@ describe("findRoomByName (Phase 3 -- repository-level exact-match behavior)", ()
 
   it("does not match a prefix or substring", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "PrefixMatch",
@@ -354,7 +354,7 @@ describe("findRoomByName (Phase 3 -- repository-level exact-match behavior)", ()
 
   it("finds both public and private rooms identically -- visibility is not a lookup filter", async () => {
     const db = await getTestDb();
-    const player = await createHostPlayer(db, "s1");
+    const player = await createHostPlayer(db);
     const { room: privateRoom } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "VisTest",

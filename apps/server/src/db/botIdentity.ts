@@ -3,7 +3,7 @@
 // `players.kind = 'computer'`; this fixed id is the one bot player row every
 // bot room member and game seat points at. No recovery secret, password, or
 // session token ever exists for it -- the schema CHECK on `players` enforces
-// that a computer player's `recovery_hash` is NULL (migration 0018).
+// that a computer player carries no credential columns (migrations 0018/0024).
 export const COMPUTER_PLAYER_ID = "00000000-0000-0000-0000-000000000b01";
 
 /** Default per-room display name for the computer opponent. Room-scoped

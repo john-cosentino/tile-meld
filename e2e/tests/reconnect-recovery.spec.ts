@@ -21,7 +21,7 @@ test("refresh mid-game discards the local draft but keeps server-committed state
   // useDraftState -- nothing was committed to the server (no "Commit turn"
   // click), so a reload must restore exactly the last server-canonical
   // state: the full 14-tile rack, no table sets. A reload also re-runs the
-  // identity bootstrap (session recovery), which is why this tolerates a
+  // identity bootstrap (GET /api/identity/me), which is why this tolerates a
   // transient rate limit like every other cross-reload wait in this suite.
   await reloadUntilReady(activePage, activePage.getByRole("heading", { name: "Your rack (14)" }));
   await expect(activePage.getByText(/^Set 1 --/)).toHaveCount(0);
@@ -30,14 +30,10 @@ test("refresh mid-game discards the local draft but keeps server-committed state
 test("login: the same account signed in from a fresh browser context sees the exact same private game state", async ({
   browser,
 }) => {
-  // Accounts mode replaced recovery-code portability with plain login
-  // (accounts plan, Phase E): signing in on a second device is now
-  // username+password. This is the same cross-context identity-resume
-  // guarantee the old recovery test proved, exercised through the real
-  // login endpoint (10 req/min bucket) instead of the retired recovery
-  // form. The legacy recovery/upgrade path itself stays covered by the
-  // server and web unit suites -- an accepted e2e gap, documented in
-  // docs/task.md.
+  // Signing in on a second device is username+password (accounts are the
+  // only identity system since Phase F). This is the same cross-context
+  // identity-resume guarantee the old recovery-code test proved,
+  // exercised through the real login endpoint (10 req/min bucket).
   test.setTimeout(180000);
   const { activePage, hostPage, hostUsername, guestUsername } = await startTwoPlayerGame(browser);
   const gameUrl = activePage.url();

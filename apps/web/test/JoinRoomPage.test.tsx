@@ -54,11 +54,11 @@ describe("JoinRoomPage", () => {
     expect(screen.getByRole("heading", { name: "Join Room by Name" })).toBeInTheDocument();
   });
 
-  it("prompts to claim a username instead of showing the form when none is set", () => {
+  it("hides the form when no username is available", () => {
     mockUsername = null;
     renderPage();
 
-    expect(screen.getByText(/claim a username/i)).toBeInTheDocument();
+    expect(screen.getByText(/signed in to join/i)).toBeInTheDocument();
     expect(screen.queryByLabelText("Room name")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /join room/i })).not.toBeInTheDocument();
   });

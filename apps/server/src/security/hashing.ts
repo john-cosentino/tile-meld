@@ -1,23 +1,9 @@
 import { hash, verify } from "@node-rs/argon2";
 import { createHmac, randomBytes } from "node:crypto";
 
-/** Long-term recovery secret hashing. Argon2id (memory-hard, deliberately
- * slow) -- never used for anything requiring indexed/deterministic lookup.
+/** Account passwords: Argon2id (memory-hard, deliberately slow) -- a
+ * long-term credential verified one row at a time, never looked up by.
  * See docs/opus-implementation-plan.md D-IDENTITY. */
-export async function hashRecoverySecret(secret: string): Promise<string> {
-  return hash(secret);
-}
-
-export async function verifyRecoverySecret(hashValue: string, secret: string): Promise<boolean> {
-  return verify(hashValue, secret);
-}
-
-export function generateRecoverySecret(): string {
-  return randomBytes(32).toString("base64url");
-}
-
-/** Account passwords: same Argon2id treatment as recovery secrets (both are
- * long-term credentials verified one row at a time, never looked up by). */
 export async function hashPassword(password: string): Promise<string> {
   return hash(password);
 }
@@ -26,9 +12,9 @@ export async function verifyPassword(hashValue: string, password: string): Promi
   return verify(hashValue, password);
 }
 
-/** Password-reset tokens: 32-byte CSPRNG like recovery secrets; stored only
- * as a keyed HMAC (hashSessionToken) because confirm must look the row up by
- * token_hash through an index. */
+/** Password-reset tokens: 32-byte CSPRNG; stored only as a keyed HMAC
+ * (hashSessionToken) because confirm must look the row up by token_hash
+ * through an index. */
 export function generateResetToken(): string {
   return randomBytes(32).toString("base64url");
 }

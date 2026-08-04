@@ -1,7 +1,8 @@
 import { createTileCatalog, shuffle, type RandomInt, type Tile } from "@tile-meld/engine";
 import type { Kysely } from "kysely";
 import type { Database } from "../../src/db/types.js";
-import { createPlayer, ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { ensureComputerPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "./test-account.js";
 import { createSession } from "../../src/db/repositories/sessions.js";
 import { createRoom } from "../../src/db/repositories/rooms.js";
 import { addRoomMember, listRoomMembers } from "../../src/db/repositories/roomMembers.js";
@@ -47,7 +48,7 @@ export async function dealDeterministicGame(
 ): Promise<DealtGame> {
   const players: FixturePlayer[] = [];
   for (let i = 0; i < seatCount; i++) {
-    const player = await createPlayer(db, `recovery-secret-${i}`);
+    const player = await createTestAccount(db);
     const { token } = await createSession(db, player.id, TEST_HMAC_SECRET, 3_600_000);
     players.push({ playerId: player.id, token, cookie: `${SESSION_COOKIE_NAME}=${token}` });
   }
@@ -100,7 +101,7 @@ export async function dealComputerGame(
 ): Promise<DealtComputerGame> {
   await ensureComputerPlayer(db);
 
-  const humanPlayer = await createPlayer(db, "human-recovery-secret");
+  const humanPlayer = await createTestAccount(db);
   const { token } = await createSession(db, humanPlayer.id, TEST_HMAC_SECRET, 3_600_000);
   const human: FixturePlayer = {
     playerId: humanPlayer.id,

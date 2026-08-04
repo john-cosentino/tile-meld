@@ -5,7 +5,7 @@ import { NotificationsControl } from "../push/NotificationsControl.js";
 import monogramSrc from "../assets/brand/meld-masters-monogram-header.png";
 
 export function RootLayout() {
-  const { state, accountsRequired } = useAuth();
+  const { state } = useAuth();
   // The tabletop's arcade-cabinet composition needs the full viewport width
   // -- every other screen keeps the shared centered .page column untouched.
   // TabletopPage owns its own max-width/padding/grid once .page's own
@@ -91,30 +91,11 @@ export function RootLayout() {
             <Link to="/rooms/new">Create Room</Link>
             <Link to="/rooms/join">Join Room by Name</Link>
             <Link to="/lobby">Public Lobby</Link>
-            {/* Accounts mode replaces the recovery-code screen with the
-                account screen; legacy mode keeps the original link. */}
-            {accountsRequired ? (
-              <Link to="/account">Account</Link>
-            ) : (
-              <Link to="/recovery">Recovery</Link>
-            )}
+            <Link to="/account">Account</Link>
           </nav>
         </div>
         <NotificationsControl />
       </header>
-      {/* On home the arcade composition owns this guidance: HomePage
-          renders the same alert inside its Recovery Access panel, so the
-          banner would double up (and break the concept layout) there. */}
-      {state.newRecoverySecret && !isHome && (
-        <div
-          className="error-banner"
-          role="alert"
-          style={{ margin: "var(--space-4) auto", maxWidth: 960 }}
-        >
-          You're new here -- <Link to="/recovery">save your recovery code</Link> so you can get back
-          into your games from another device or if this browser forgets you.
-        </div>
-      )}
       {/* tabIndex={-1} so activating the skip link above actually moves
           focus here -- an in-page fragment link only scrolls without it,
           leaving keyboard/AT users with no indication anything happened. */}

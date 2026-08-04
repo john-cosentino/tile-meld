@@ -47,7 +47,7 @@ describe("RootLayout -- app shell (Phase 2 arcade header)", () => {
     expect(nav.querySelector('a[href="/rooms/new"]')).not.toBeNull();
     expect(nav.querySelector('a[href="/rooms/join"]')).not.toBeNull();
     expect(nav.querySelector('a[href="/lobby"]')).not.toBeNull();
-    expect(nav.querySelector('a[href="/recovery"]')).not.toBeNull();
+    expect(nav.querySelector('a[href="/account"]')).not.toBeNull();
   });
 
   it("still renders the routed child content via Outlet", () => {

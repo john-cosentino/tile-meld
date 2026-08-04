@@ -20,7 +20,7 @@
 :root {
   /* Body/UI font: unchanged system stack, used for everything except the
      display contexts below (§10.3 -- legibility for body copy, forms,
-     chat, tile numbers, and recovery codes is a hard requirement, not a
+     chat, and tile numbers is a hard requirement, not a
      style preference). */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   /* Display font (D5): the wordmark, major headings, panel titles, and

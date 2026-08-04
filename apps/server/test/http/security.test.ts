@@ -18,27 +18,27 @@ describe("security: rate limiting, secure headers, CORS", () => {
     await truncateAll(await getTestDb());
   });
 
-  it("rate-limits /api/session/recover (the strictest limit) after repeated attempts", async () => {
+  it("rate-limits /api/account/login after repeated attempts", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: BASE_ENV, logger: false });
 
     const attempt = () =>
       app.inject({
         method: "POST",
-        url: "/api/session/recover",
-        payload: { playerId: "00000000-0000-0000-0000-000000000000", recoverySecret: "x" },
+        url: "/api/account/login",
+        payload: { username: "NoSuchUser", password: "wrong-password-x" },
       });
 
     const responses = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 14; i++) {
       responses.push(await attempt());
     }
     const statusCodes = responses.map((r) => r.statusCode);
-    // The configured limit is 5/minute -- expect at least one 429 among 8
+    // The configured limit is 10/minute -- expect at least one 429 among 14
     // rapid attempts, proving the limiter is actually active, not just
     // configured and silently doing nothing.
     expect(statusCodes).toContain(429);
-    expect(statusCodes.filter((c) => c === 401)).toHaveLength(5);
+    expect(statusCodes.filter((c) => c === 401)).toHaveLength(10);
 
     await app.close();
   });
@@ -101,11 +101,11 @@ describe("E2E_DISABLE_RATE_LIMITS bypass", () => {
     await truncateAll(await getTestDb());
   });
 
-  const attemptRecovery = (app: Awaited<ReturnType<typeof buildApp>>) =>
+  const attemptLogin = (app: Awaited<ReturnType<typeof buildApp>>) =>
     app.inject({
       method: "POST",
-      url: "/api/session/recover",
-      payload: { playerId: "00000000-0000-0000-0000-000000000000", recoverySecret: "x" },
+      url: "/api/account/login",
+      payload: { username: "NoSuchUser", password: "wrong-password-x" },
     });
 
   it("production cannot disable limits through the E2E flag -- still rate-limits even with it set", async () => {
@@ -117,10 +117,10 @@ describe("E2E_DISABLE_RATE_LIMITS bypass", () => {
     });
 
     const statusCodes = [];
-    for (let i = 0; i < 8; i++) {
-      statusCodes.push((await attemptRecovery(app)).statusCode);
+    for (let i = 0; i < 14; i++) {
+      statusCodes.push((await attemptLogin(app)).statusCode);
     }
-    // Same assertion as the default-env test above: a 429 shows up among 8
+    // Same assertion as the default-env test above: a 429 shows up among 14
     // rapid attempts, proving the limiter is still fully active -- the E2E
     // flag had no effect because NODE_ENV is "production".
     expect(statusCodes).toContain(429);
@@ -137,12 +137,12 @@ describe("E2E_DISABLE_RATE_LIMITS bypass", () => {
     });
 
     const statusCodes = [];
-    for (let i = 0; i < 8; i++) {
-      statusCodes.push((await attemptRecovery(app)).statusCode);
+    for (let i = 0; i < 14; i++) {
+      statusCodes.push((await attemptLogin(app)).statusCode);
     }
-    // Every attempt reaches the real route handler (401 for a bad
-    // recovery secret) instead of being throttled -- zero 429s among 8
-    // rapid attempts against the tightest production limit (5/minute).
+    // Every attempt reaches the real route handler (401 for bad
+    // credentials) instead of being throttled -- zero 429s among 14
+    // rapid attempts past the login limit (10/minute).
     expect(statusCodes).not.toContain(429);
     expect(statusCodes.every((code) => code === 401)).toBe(true);
 

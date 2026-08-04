@@ -16,7 +16,7 @@ vi.mock("web-push", () => ({
 import { sendPushToPlayer } from "../../src/push/pushSender.js";
 import { buildApp } from "../../src/app.js";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { createPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import { upsertPushSubscription } from "../../src/db/repositories/pushSubscriptions.js";
 
 const TEST_ENV_NO_VAPID = {
@@ -47,7 +47,7 @@ describe("pushSender", () => {
   it("is a silent no-op when VAPID is not configured -- push is a progressive enhancement", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV_NO_VAPID, logger: false });
-    const player = await createPlayer(db, "secret");
+    const player = await createTestAccount(db);
     await upsertPushSubscription(db, player.id, "https://example.com/ep", "p256dh", "auth");
 
     await sendPushToPlayer(app, player.id, { title: "t", body: "b", gameId: "g", tag: "tag" });
@@ -59,7 +59,7 @@ describe("pushSender", () => {
   it("is a no-op when the player has no subscriptions", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV_WITH_VAPID, logger: false });
-    const player = await createPlayer(db, "secret");
+    const player = await createTestAccount(db);
 
     await sendPushToPlayer(app, player.id, { title: "t", body: "b", gameId: "g", tag: "tag" });
     expect(sendNotification).not.toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe("pushSender", () => {
   it("sends to every subscription for the player with the given payload", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV_WITH_VAPID, logger: false });
-    const player = await createPlayer(db, "secret");
+    const player = await createTestAccount(db);
     await upsertPushSubscription(db, player.id, "https://example.com/ep1", "p1", "a1");
     await upsertPushSubscription(db, player.id, "https://example.com/ep2", "p2", "a2");
     sendNotification.mockResolvedValue(undefined);
@@ -106,7 +106,7 @@ describe("pushSender", () => {
   it("deletes the subscription on a 410 Gone response, rather than retrying", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV_WITH_VAPID, logger: false });
-    const player = await createPlayer(db, "secret");
+    const player = await createTestAccount(db);
     await upsertPushSubscription(db, player.id, "https://example.com/gone", "p", "a");
     sendNotification.mockRejectedValueOnce(Object.assign(new Error("gone"), { statusCode: 410 }));
 
@@ -125,7 +125,7 @@ describe("pushSender", () => {
   it("records a failure (not a deletion) on a non-410 error", async () => {
     const db = await getTestDb();
     const app = await buildApp({ db, env: TEST_ENV_WITH_VAPID, logger: false });
-    const player = await createPlayer(db, "secret");
+    const player = await createTestAccount(db);
     await upsertPushSubscription(db, player.id, "https://example.com/flaky", "p", "a");
     sendNotification.mockRejectedValueOnce(new Error("network blip"));
 

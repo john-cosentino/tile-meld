@@ -1,5 +1,5 @@
 {
-  "$comment": "Composition contract for the Home screen at desktop. Originally measured from the concept spec in source pixels; since the accounts-era rearrangement (user decision 2026-08-04) the right rail deviates deliberately from the concept: the signed-in badge and recovery-access panel are retired, the profile panel holds the top-right slot, and activity/rail-extra spread over the freed space. Regions become percent rects (rect / sourceSize) consumed by BOTH the home-arcade--accounts CSS overrides and e2e/tests/arcade-regions.spec.ts (which runs in accounts mode). The legacy-mode layout keeps the pre-accounts rects in CSS until Phase F retires it, uncontracted.",
+  "$comment": "Composition contract for the Home screen at desktop. Originally measured from the concept spec in source pixels; since the accounts-era rearrangement (user decision 2026-08-04, the only layout since Phase F) the right rail deviates deliberately from the concept: the signed-in badge and recovery-access panel are retired, the profile panel holds the top-right slot, and activity/rail-extra spread over the freed space. Regions become percent rects (rect / sourceSize) consumed by BOTH the home CSS region rects in arcade-kit.css and e2e/tests/arcade-regions.spec.ts.",
   "screen": "home",
   "path": "/",
   "viewport": {

@@ -2,11 +2,6 @@
 // route's `config.rateLimit`. Recovery gets the tightest limit + backoff
 // per docs/opus-implementation-plan.md §9.2.
 
-export const identityCreateLimit = { max: 10, timeWindow: "1 minute" };
-export const recoveryLimit = { max: 5, timeWindow: "1 minute" };
-// A claim is a rare, once-per-identity action; kept tight (like recovery)
-// against username-availability probing.
-export const usernameClaimLimit = { max: 10, timeWindow: "1 minute" };
 // Account endpoints (accounts plan, Phase B). Registration is as cheap to
 // abuse as identity creation was, so it inherits similar tightness; login
 // is the online-guessing surface (generic errors + this limit are the v1

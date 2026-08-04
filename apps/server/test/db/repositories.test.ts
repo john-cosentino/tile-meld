@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeTestDb, getTestDb, truncateAll } from "../setup/test-db.js";
-import { createPlayer } from "../../src/db/repositories/players.js";
+import { createTestAccount } from "../setup/test-account.js";
 import {
   createSession,
   findActiveSessionByToken,
@@ -32,7 +32,7 @@ describe("repositories -- basic correctness", () => {
 
   it("sessions: creates, finds by token, and revokes", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "recovery-secret");
+    const player = await createTestAccount(db);
 
     const { token, session } = await createSession(db, player.id, HMAC_SECRET, 3_600_000);
     expect(session.player_id).toBe(player.id);
@@ -50,7 +50,7 @@ describe("repositories -- basic correctness", () => {
 
   it("chat: is game-scoped and returned in chronological order", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "recovery-secret");
+    const player = await createTestAccount(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "Host",
@@ -84,7 +84,7 @@ describe("repositories -- basic correctness", () => {
 
   it("chat: rejects an over-length body", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "recovery-secret");
+    const player = await createTestAccount(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: player.id,
       creatorUsername: "Host",
@@ -103,7 +103,7 @@ describe("repositories -- basic correctness", () => {
 
   it("push subscriptions: upserts by endpoint and can be removed on 410", async () => {
     const db = await getTestDb();
-    const player = await createPlayer(db, "recovery-secret");
+    const player = await createTestAccount(db);
 
     await upsertPushSubscription(db, player.id, "https://push.example/1", "p256dh-1", "auth-1");
     // Same endpoint again -- updates in place, does not duplicate.
@@ -119,8 +119,8 @@ describe("repositories -- basic correctness", () => {
 
   it("room scores: accumulates cumulative totals across multiple games", async () => {
     const db = await getTestDb();
-    const winner = await createPlayer(db, "winner-secret");
-    const loser = await createPlayer(db, "loser-secret");
+    const winner = await createTestAccount(db);
+    const loser = await createTestAccount(db);
     const { room } = await createRoom(db, {
       creatorPlayerId: winner.id,
       creatorUsername: "Winner",
@@ -148,8 +148,8 @@ describe("repositories -- basic correctness", () => {
 
   it("idempotency keys: scoped per player, persists the full result for replay", async () => {
     const db = await getTestDb();
-    const playerA = await createPlayer(db, "a-secret");
-    const playerB = await createPlayer(db, "b-secret");
+    const playerA = await createTestAccount(db);
+    const playerB = await createTestAccount(db);
 
     await recordIdempotentResult(db, playerA.id, "same-key", null, {
       outcome: "committed",

@@ -36,6 +36,16 @@ email, the flag flipped, and post-flip production verification green —
 accounts are LIVE (guest minting 403; login gate for all visitors).
 Runbook: `docs/deploy-render.md` §11; status: `docs/task.md`.
 
+**Phase F — legacy retirement (2026-08-04):** with accounts live and the
+user's explicit approval to drop old identities and games, migration 0024
+purged every passwordless human (plus their rooms/game subtrees), dropped
+the recovery columns, and now requires a password on every human row. The
+guest-mint/recover/rotate/claim routes, `GET /api/config`,
+`/account/upgrade`, the `ENABLE_ACCOUNTS` flag, and the entire web legacy
+branch (localStorage identity, RecoveryPage, UpgradeAccountPage,
+dual-mode AuthProvider/guards/home layout) are deleted. Accounts are the
+only identity system; suites and e2e are accounts-only.
+
 **Full verification pass, 2026-08-02 evening (tip `8025445`):** all
 workspace unit tests green — shared 45, engine 115, bot 36, web 505,
 server 317 (the long-stale RedactedGameView fixture fixed the same day) —
