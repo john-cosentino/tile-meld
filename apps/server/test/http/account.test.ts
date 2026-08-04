@@ -326,7 +326,7 @@ describe("account routes", () => {
       method: "POST",
       url: "/api/account/portrait",
       headers: { cookie },
-      payload: { portraitId: 12 },
+      payload: { portraitId: 13 },
     });
     expect(outOfRange.statusCode).toBe(400);
 

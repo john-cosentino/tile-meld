@@ -24,8 +24,8 @@ from PIL import Image, ImageDraw
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = REPO_ROOT / "docs" / "design-reference" / "meld-masters"
-# Roster expansion pack (user-supplied, 2026-08-04): four additional
-# characters. Kept under their delivery directory; shipped under the same
+# Roster expansion pack (user-supplied, 2026-08-04, plus john 2026-08-04):
+# additional characters. Kept under their delivery directory; shipped under the same
 # portrait-rival-NN convention so bundle filenames stay uniform and the
 # roster order (which persisted portrait ids index into) is explicit here.
 EXPANSION_SRC_DIR = REPO_ROOT / "docs" / "design-reference" / "chatgpt"
@@ -39,6 +39,7 @@ SOURCES: list[tuple[Path, str]] = (
         (EXPANSION_SRC_DIR / "amber.png", "portrait-rival-10.png"),
         (EXPANSION_SRC_DIR / "jason.png", "portrait-rival-11.png"),
         (EXPANSION_SRC_DIR / "emily.png", "portrait-rival-12.png"),
+        (EXPANSION_SRC_DIR / "john.png", "portrait-rival-13.png"),
     ]
 )
 

@@ -20,7 +20,7 @@ export const EmailSchema = z.string().trim().toLowerCase().email().max(254);
  * portrait_id >= 0; this constant is the real upper bound so growing the
  * roster is a code change, not a migration -- as with the 2026-08-04
  * expansion from 8 to 12. Append-only: persisted ids index the roster. */
-export const PORTRAIT_COUNT = 12;
+export const PORTRAIT_COUNT = 13;
 
 export const PortraitIdSchema = z
   .number()

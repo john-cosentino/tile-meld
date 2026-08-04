@@ -32,10 +32,11 @@ import rival09 from "../assets/portraits/portrait-rival-09.png";
 import rival10 from "../assets/portraits/portrait-rival-10.png";
 import rival11 from "../assets/portraits/portrait-rival-11.png";
 import rival12 from "../assets/portraits/portrait-rival-12.png";
+import rival13 from "../assets/portraits/portrait-rival-13.png";
 import fallback from "../assets/portraits/portrait-fallback.png";
 
-/** The approved rival portraits, in a stable order -- indexes 0..11 (the
- * original 8-portrait pack plus the 2026-08-04 expansion four). Persisted
+/** The approved rival portraits, in a stable order -- indexes 0..12 (the
+ * original 8-portrait pack plus the 2026-08-04 expansions). Persisted
  * portrait ids index into this array, so entries are APPEND-ONLY: never
  * reordered, never removed. */
 export const PORTRAIT_ROSTER: readonly string[] = [
@@ -51,6 +52,7 @@ export const PORTRAIT_ROSTER: readonly string[] = [
   rival10,
   rival11,
   rival12,
+  rival13,
 ];
 
 /** Used whenever a specific portrait can't be resolved (out-of-range

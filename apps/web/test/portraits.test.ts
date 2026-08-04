@@ -13,8 +13,8 @@ import {
 // render any component.
 
 describe("PORTRAIT_ROSTER / PORTRAIT_FALLBACK", () => {
-  it("exposes 12 rival portraits (the original 8 plus the 2026-08-04 expansion)", () => {
-    expect(PORTRAIT_ROSTER).toHaveLength(12);
+  it("exposes 13 rival portraits (the original 8 plus the 2026-08-04 expansions)", () => {
+    expect(PORTRAIT_ROSTER).toHaveLength(13);
   });
 
   it("every roster entry is a distinct, non-empty asset URL", () => {
@@ -48,8 +48,8 @@ describe("portraitForSeat", () => {
   });
 
   it("wraps around (modulo) for a seat index beyond the roster length, never crashing or going out of range", () => {
-    expect(portraitForSeat(12, false)).toBe(PORTRAIT_ROSTER[0]);
-    expect(portraitForSeat(15, false)).toBe(PORTRAIT_ROSTER[3]);
+    expect(portraitForSeat(13, false)).toBe(PORTRAIT_ROSTER[0]);
+    expect(portraitForSeat(15, false)).toBe(PORTRAIT_ROSTER[2]);
   });
 
   it("falls back for a negative or non-integer seat index instead of crashing", () => {
@@ -82,7 +82,7 @@ describe("portraitForPlayer", () => {
   });
 
   it("out-of-range or malformed picks fall back to the seat mapping, never crash", () => {
-    expect(portraitForPlayer(12, 1, false)).toBe(portraitForSeat(1, false));
+    expect(portraitForPlayer(13, 1, false)).toBe(portraitForSeat(1, false));
     expect(portraitForPlayer(-1, 1, false)).toBe(portraitForSeat(1, false));
     expect(portraitForPlayer(2.5, 1, false)).toBe(portraitForSeat(1, false));
   });
