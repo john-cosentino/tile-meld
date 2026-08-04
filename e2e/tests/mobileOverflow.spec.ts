@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { waitForReady, claimUsername, clickUntilSettled } from "./helpers.js";
+import { registerAccount, clickUntilSettled } from "./helpers.js";
 
 // Phase 7 §13.2 "Phone portrait 390×844: zero horizontal overflow
 // (e2e-enforced)" -- automated across every pre-game/identity route in one
@@ -18,35 +18,38 @@ test.describe("390px mobile viewport: no horizontal overflow", () => {
   });
 
   test("Home", async ({ page }) => {
-    await waitForReady(page);
+    await registerAccount(page, "MobHome");
     expect(await hasHorizontalOverflow(page)).toBe(false);
   });
 
   test("Public Lobby", async ({ page }) => {
-    await waitForReady(page);
+    await registerAccount(page, "MobLobby");
     await page.getByRole("navigation").getByRole("link", { name: "Public Lobby" }).click();
     await expect(page.getByRole("heading", { name: "Public lobby" })).toBeVisible();
     expect(await hasHorizontalOverflow(page)).toBe(false);
   });
 
   test("Create Room", async ({ page }) => {
-    await waitForReady(page);
+    await registerAccount(page, "MobCreate");
     await page.getByRole("link", { name: "New Game" }).click();
     await expect(page.getByRole("heading", { name: "Create a room" })).toBeVisible();
     expect(await hasHorizontalOverflow(page)).toBe(false);
   });
 
-  test("Recovery", async ({ page }) => {
-    await waitForReady(page);
-    await page.getByRole("navigation").getByRole("link", { name: "Recovery" }).click();
-    await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
+  test("Login and Account", async ({ page }) => {
+    // Pre-auth: the login gate itself must fit a phone.
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Log in" })).toBeVisible();
+    expect(await hasHorizontalOverflow(page)).toBe(false);
+    // Post-auth: the account page (portrait picker grid) must fit too.
+    await registerAccount(page, "MobAcct");
+    await page.goto("/account");
+    await expect(page.getByRole("heading", { name: "Your account" })).toBeVisible();
     expect(await hasHorizontalOverflow(page)).toBe(false);
   });
 
   test("Waiting Room with a portrait", async ({ page }) => {
-    await waitForReady(page);
-    const username = await claimUsername(page, "MobileOverflowWait");
-    await waitForReady(page);
+    const username = await registerAccount(page, "MobileOverflowWait");
     await page.getByRole("link", { name: "New Game" }).click();
     await page.getByRole("radio", { name: "2 players" }).check();
     await page.getByRole("radio", { name: "Private (invite by code)" }).check();

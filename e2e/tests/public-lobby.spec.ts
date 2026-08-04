@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForReady, clickUntilSettled, claimUsername, readRoomCode } from "./helpers.js";
+import { waitForReady, clickUntilSettled, registerAccount, readRoomCode } from "./helpers.js";
 
 // Distinct from every other room-entry path already covered elsewhere
 // (private room by code, in two-player-smoke.spec.ts /multi-player.spec.ts):
@@ -21,17 +21,12 @@ test("public lobby: create a public room, join it via the lobby listing, and Qui
   const quickJoinHostPage = await quickJoinHostContext.newPage();
   const quickJoinPage = await quickJoinContext.newPage();
 
-  await waitForReady(hostPage);
-  await waitForReady(guestPage);
-  await waitForReady(quickJoinHostPage);
-  await waitForReady(quickJoinPage);
-
   // Room creation AND joining (Phase 2/3) both require a claimed username --
   // every identity here needs one.
-  const hostUsername = await claimUsername(hostPage, "PubHost");
-  await claimUsername(guestPage, "PubGuest");
-  const quickHostUsername = await claimUsername(quickJoinHostPage, "QuickHost");
-  await claimUsername(quickJoinPage, "PubQuick");
+  const hostUsername = await registerAccount(hostPage, "PubHost");
+  await registerAccount(guestPage, "PubGuest");
+  const quickHostUsername = await registerAccount(quickJoinHostPage, "QuickHost");
+  await registerAccount(quickJoinPage, "PubQuick");
 
   // Capacity 4 (not 2, Phase 4): a capacity-2 room would auto-start the
   // instant the guest below joins, racing this test's own waiting-room

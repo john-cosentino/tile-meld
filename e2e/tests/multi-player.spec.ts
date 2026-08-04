@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   startNPlayerGame,
   waitForReady,
-  claimUsername,
+  registerAccount,
   clickUntilSettled,
   joinRoomByName,
 } from "./helpers.js";
@@ -68,10 +68,8 @@ test("3-player room: host manually starts early with only 2 of 3 seats filled", 
   const hostPage = await hostContext.newPage();
   const guestPage = await guestContext.newPage();
 
-  await waitForReady(hostPage);
-  await waitForReady(guestPage);
-  const hostUsername = await claimUsername(hostPage, "Early3Host");
-  await claimUsername(guestPage, "Early3Guest");
+  const hostUsername = await registerAccount(hostPage, "Early3Host");
+  await registerAccount(guestPage, "Early3Guest");
 
   await waitForReady(hostPage);
 

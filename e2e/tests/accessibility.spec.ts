@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { waitForReady, startTwoPlayerGame, clickUntilSettled, claimUsername } from "./helpers.js";
+import { startTwoPlayerGame, clickUntilSettled, registerAccount } from "./helpers.js";
 
 // Automated accessibility checks (plan Sec 11.3: "automated accessibility
 // checks (axe) where practical") across every screen a player can reach
@@ -20,12 +20,12 @@ async function assertNoSeriousViolations(page: Page, label: string): Promise<voi
 }
 
 test("Home page has no serious/critical accessibility violations", async ({ page }) => {
-  await waitForReady(page);
+  await registerAccount(page, "A11yHome");
   await assertNoSeriousViolations(page, "Home");
 });
 
 test("Create Room page has no serious/critical accessibility violations", async ({ page }) => {
-  await waitForReady(page);
+  await registerAccount(page, "A11yCreate");
   await page.getByRole("link", { name: "New Game" }).click();
   await expect(page.getByRole("heading", { name: "Create a room" })).toBeVisible();
   await assertNoSeriousViolations(page, "Create Room");
@@ -34,29 +34,40 @@ test("Create Room page has no serious/critical accessibility violations", async 
 test("Join Room by Name page has no serious/critical accessibility violations", async ({
   page,
 }) => {
-  await waitForReady(page);
+  await registerAccount(page, "A11yJoin");
   await page.getByRole("navigation").getByRole("link", { name: "Join Room by Name" }).click();
   await assertNoSeriousViolations(page, "Join Room by Name");
 });
 
 test("Public Lobby page has no serious/critical accessibility violations", async ({ page }) => {
-  await waitForReady(page);
+  await registerAccount(page, "A11yLobby");
   await page.getByRole("navigation").getByRole("link", { name: "Public Lobby" }).click();
   await expect(page.getByRole("heading", { name: "Public lobby" })).toBeVisible();
   await assertNoSeriousViolations(page, "Public Lobby");
 });
 
-test("Recovery page has no serious/critical accessibility violations", async ({ page }) => {
-  await waitForReady(page);
-  await page.getByRole("navigation").getByRole("link", { name: "Recovery" }).click();
-  await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
-  await assertNoSeriousViolations(page, "Recovery");
+test("Login and Register pages have no serious/critical accessibility violations", async ({
+  page,
+}) => {
+  // Pre-auth surfaces (accounts plan, Phase E): an unauthenticated visit
+  // lands on /login; the register link reaches the sign-up form.
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Log in" })).toBeVisible();
+  await assertNoSeriousViolations(page, "Login");
+  await page.getByRole("link", { name: "Create an account" }).click();
+  await expect(page.getByRole("heading", { name: "Create an account" })).toBeVisible();
+  await assertNoSeriousViolations(page, "Register");
+});
+
+test("Account page has no serious/critical accessibility violations", async ({ page }) => {
+  await registerAccount(page, "A11yAcct");
+  await page.goto("/account");
+  await expect(page.getByRole("heading", { name: "Your account" })).toBeVisible();
+  await assertNoSeriousViolations(page, "Account");
 });
 
 test("Waiting Room page has no serious/critical accessibility violations", async ({ page }) => {
-  await waitForReady(page);
-  const username = await claimUsername(page, "A11y");
-  await waitForReady(page);
+  const username = await registerAccount(page, "A11y");
   await page.getByRole("link", { name: "New Game" }).click();
   await page.getByRole("radio", { name: "2 players" }).check();
   await page.getByRole("radio", { name: "Private (invite by code)" }).check();
@@ -76,7 +87,11 @@ test("Tabletop page has no serious/critical accessibility violations", async ({ 
 test("skip-to-content link reveals on focus and moves focus to main content on activation", async ({
   page,
 }) => {
-  await waitForReady(page);
+  await registerAccount(page, "A11ySkip");
+  // A real page load (not the registration flow's client-side navigation)
+  // so document focus starts at the top -- the skip link must be the very
+  // first Tab stop of a freshly loaded page, which is what this verifies.
+  await page.goto("/");
   await page.getByRole("navigation", { name: "Main navigation" }).waitFor();
 
   await page.keyboard.press("Tab");
@@ -100,7 +115,7 @@ test("prefers-reduced-motion: reduce clamps every transition/animation duration 
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await waitForReady(page);
+  await registerAccount(page, "A11yMotion");
   const durations = await page.evaluate(() => {
     const els = document.querySelectorAll("button, a, .arcade-panel, .skip-link, .tile");
     return Array.from(els).map((el) => {

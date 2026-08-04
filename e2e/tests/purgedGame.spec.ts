@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { waitForReady, claimUsername } from "./helpers.js";
+import { registerAccount } from "./helpers.js";
 
 // Phase 7 -- a purged (retention-deleted) game is server-indistinguishable
 // from a gameId that never existed at all: both fail the exact same
@@ -13,8 +13,7 @@ import { waitForReady, claimUsername } from "./helpers.js";
 test("direct navigation to a nonexistent/unavailable game shows a clear message and a route home, with no serious accessibility violations", async ({
   page,
 }) => {
-  await waitForReady(page);
-  await claimUsername(page, "PurgedNav");
+  await registerAccount(page, "PurgedNav");
 
   await page.goto("/games/00000000-0000-0000-0000-000000000000");
 

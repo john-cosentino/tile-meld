@@ -150,6 +150,13 @@ The authoritative list is `.env.example`.
 | `ENABLE_COMPUTER_OPPONENT` | enabled by default; set `"false"` as an operational kill switch |
 | `BOT_TURN_DELAY_MS` | UX-only delay before the bot acts, default ~1000 |
 | `ENABLE_RETENTION_SWEEP` | completed-game retention sweep |
+| `ENABLE_ACCOUNTS` | the accounts cutover flag, OFF by default — `"true"` requires register/login and stops guest minting; runbook in `docs/deploy-render.md` |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | password-reset email delivery (the only email sent); unset = dev logs the link, production logs an error |
+| `APP_BASE_URL` | absolute origin for links in reset emails; unset falls back to the Vite dev origin |
+
+Note: the local e2e suite runs the server with `ENABLE_ACCOUNTS=true`
+(`e2e/playwright.config.ts` webServer env) — its helpers register accounts.
+Legacy guest-mode behavior stays covered by the web and server unit suites.
 
 ## Deployment
 

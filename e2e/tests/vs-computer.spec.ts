@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { claimUsername, clickUntilSettled, reloadUntilReady, waitForReady } from "./helpers.js";
+import { registerAccount, clickUntilSettled, reloadUntilReady } from "./helpers.js";
 
 // End-to-end Play vs Computer coverage (docs/opus-implementation-plan.md §12).
 // Runs across the whole project matrix in playwright.config.ts -- desktop
@@ -16,13 +16,12 @@ import { claimUsername, clickUntilSettled, reloadUntilReady, waitForReady } from
  * lands on the tabletop with the human's 14-tile rack visible. Returns once
  * the tabletop is ready. */
 async function startVsComputerGame(page: Page): Promise<void> {
-  await waitForReady(page);
-  // Room creation (including Play vs Computer, Phase 2) requires a claimed
-  // username; the resulting private room is named after it. A plain
-  // client-side nav link back to Home avoids an extra rate-limited
-  // full-page identity round trip.
-  const username = await claimUsername(page, "Solo");
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  // Registration is the whole identity bootstrap in accounts mode; the
+  // resulting private room is named after the registered username.
+  // registerAccount already lands on the Home dashboard, signed in (and
+  // Home's arcade composition hides the header nav/brand, so there is no
+  // brand link to click back through anyway).
+  const username = await registerAccount(page, "Solo");
   await expect(page.getByRole("heading", { name: "Meld Masters", level: 1 })).toBeVisible();
 
   await clickUntilSettled(
@@ -81,13 +80,11 @@ test("waiting room fits a narrow phone viewport even with a max-length username"
   // realistic max-length (24-char) username previously overflowed the
   // page horizontally at a narrow phone width because .page-title had no
   // wrap handling. Phase 7 finding, fixed in global.css.
-  await waitForReady(page);
   // An 18-char base plus uniqueUsername's 6-char random suffix always
   // lands exactly on USERNAME_MAX_LENGTH (24) while staying unique across
   // repeated runs against a non-truncated database.
-  const username = await claimUsername(page, "PhaseSevenOverflow");
+  const username = await registerAccount(page, "PhaseSevenOverflow");
   expect(username.length).toBe(24);
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Meld Masters", level: 1 })).toBeVisible();
 
   await clickUntilSettled(

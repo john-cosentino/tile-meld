@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { startTwoPlayerGame, claimUsername, clickUntilSettled, waitForReady } from "./helpers.js";
+import { startTwoPlayerGame, registerAccount, clickUntilSettled } from "./helpers.js";
 
 // Phase 5 -- one-click rematch, exercised directly from the completed-game
 // (Game Over) screen rather than by navigating back to the Waiting Room
@@ -65,9 +65,7 @@ test("play vs computer: one-click rematch from Game Over reseats the human and t
   page,
 }) => {
   test.setTimeout(60000);
-  await waitForReady(page);
-  const username = await claimUsername(page, "SoloRematch");
-  await page.getByRole("link", { name: "Meld Masters", exact: true }).click();
+  const username = await registerAccount(page, "SoloRematch");
   await expect(page.getByRole("heading", { name: "Meld Masters", level: 1 })).toBeVisible();
 
   await clickUntilSettled(

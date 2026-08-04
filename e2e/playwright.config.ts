@@ -85,6 +85,12 @@ export default defineConfig({
         // Postgres instance that's discarded after the run, never a real
         // deployment's secret (see .env.example for the real one).
         SESSION_TOKEN_HMAC_SECRET: "e2e-test-only-secret-not-for-production-use-32chars",
+        // Accounts mode (accounts plan, Phase E): the suite exercises the
+        // register/login world -- the production cutover target. Legacy
+        // guest-mode behavior stays covered by the web/server unit suites.
+        // SMTP stays unset: reset links are logged, not sent, and no spec
+        // needs them.
+        ENABLE_ACCOUNTS: "true",
         // A modest, fixed computer-opponent delay: long enough that the
         // "Computer is playing…" turn state is reliably observable in the UI
         // across every browser engine, short enough that a game of several

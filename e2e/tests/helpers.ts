@@ -10,9 +10,8 @@ const GAME_ENTRY_TIMEOUT = 30000;
 
 /** Builds a short, human-readable dump of `page`'s current state for a
  * failure message: URL, the first visible heading, whether the
- * username-claim prompt is showing (the exact state JoinRoomPage.tsx
- * renders instead of its form when identity bootstrap hasn't resolved a
- * username yet), and a short body-text excerpt. Every `.catch` here
+ * accounts-mode login gate is showing (RequireAuth redirects an
+ * unauthenticated context to /login), and a short body-text excerpt. Every `.catch` here
  * exists because this itself only runs while something has ALREADY gone
  * wrong -- it must never throw a second, more confusing error on top of
  * the original failure it's trying to explain. */
@@ -23,8 +22,8 @@ async function describePageState(page: Page): Promise<string> {
     .first()
     .textContent()
     .catch(() => null);
-  const usernamePromptVisible = await page
-    .getByText(/you need a username/i)
+  const loginGateVisible = await page
+    .getByRole("heading", { name: "Log in" })
     .isVisible()
     .catch(() => false);
   const bodyExcerpt = (
@@ -39,7 +38,7 @@ async function describePageState(page: Page): Promise<string> {
   return (
     `  URL: ${url}\n` +
     `  Heading: ${heading ?? "(none found)"}\n` +
-    `  Username-claim prompt present: ${usernamePromptVisible}\n` +
+    `  Login gate present: ${loginGateVisible}\n` +
     `  Body excerpt: "${bodyExcerpt}"`
   );
 }
@@ -171,42 +170,38 @@ function uniqueUsername(base: string): string {
   return `${base}${suffix}`.slice(0, 24);
 }
 
-/** Claims a username for `page`'s identity via the Recovery page -- room
- * creation (Phase 2) now requires one. Returns the actual claimed username
- * (suffixed for uniqueness -- see uniqueUsername) so callers can assert
- * against the friendly room name it produces. Tolerates a transient rate
- * limit like every other mutating action in this file.
+/** The one fixed password every e2e-registered account uses -- these are
+ * throwaway identities in a rate-limit-bypassed local/CI server, never a
+ * real deployment's credentials. Exported so specs that log back in (e.g.
+ * reconnect-recovery) share it rather than repeating a literal. */
+export const E2E_PASSWORD = "e2e-password-123";
+
+/** Registers a fresh account for `page`'s context (accounts plan, Phase E:
+ * the suite runs with ENABLE_ACCOUNTS=true, so registration replaced the
+ * old guest-mint + claim-username two-step). Self-contained: navigates to
+ * /register itself (a fresh context resolves to "unauthenticated" and
+ * RequireAnon renders the form; the username `<input>` does not exist in
+ * the DOM until the bootstrap resolves, so waiting for it via
+ * retryOnRateLimit's `target` is an authoritative wait for both). Returns
+ * the actual registered username (suffixed for uniqueness -- see
+ * uniqueUsername) so callers can assert against the friendly room name it
+ * produces.
  *
- * Navigates straight to "/recovery" rather than clicking the nav bar's
- * "Recovery" link: the previous version's click depended on the nav being
- * already rendered and immediately clickable on whatever page the caller
- * happened to be on, which is one more thing that can transiently fail
- * under load for no reason related to what this helper is actually
- * establishing. AuthProvider (apps/web/src/auth/AuthProvider.tsx) mounts
- * at the app root and bootstraps identity on every page, "/recovery"
- * included, so this loses nothing -- and RecoveryPage's username `<input>`
- * literally does not exist in the DOM until that bootstrap resolves
- * (UsernameSection returns null before `state.status === "ready"`), so
- * waiting for it via retryOnRateLimit's `target` is itself an explicit,
- * authoritative wait for both identity bootstrap AND the form being ready
- * -- not two separate waits bolted together.
- *
- * Only returns once `clickUntilSettled` has confirmed the "your username
- * is <name>" confirmation text is showing, not merely once the claim
- * request was sent -- that text is rendered from AuthProvider's own
- * `state.username`, the same shared context every other page (including
- * the "/rooms/join" form this claim usually precedes) reads, so seeing it
- * IS proof the authenticated client state has actually updated, not a
- * separate, weaker signal bolted on afterward. */
-export async function claimUsername(page: Page, base: string): Promise<string> {
+ * Only returns once the Home dashboard's h1 is visible: RegisterPage
+ * navigates to "/" after AuthProvider's own state refresh resolves, and
+ * RequireAuth only renders Home for an authenticated session -- so seeing
+ * it IS proof the shared client auth state has actually updated. */
+export async function registerAccount(page: Page, base: string): Promise<string> {
   const username = uniqueUsername(base);
   const usernameField = page.getByLabel("Username");
-  await retryOnRateLimit(page, () => page.goto("/recovery"), usernameField);
+  await retryOnRateLimit(page, () => page.goto("/register"), usernameField);
   await usernameField.fill(username);
+  await page.getByLabel("Email").fill(`${username.toLowerCase()}@example.test`);
+  await page.getByLabel("Password").fill(E2E_PASSWORD);
   await clickUntilSettled(
     page,
-    page.getByRole("button", { name: "Claim username" }),
-    page.getByText(/your username is/i),
+    page.getByRole("button", { name: "Create account" }),
+    page.getByRole("heading", { name: "Meld Masters", level: 1 }),
   );
   return username;
 }
@@ -268,7 +263,7 @@ export async function clickUntilSettled(
  * shows the SAME "Join Room by Name" <h1> with no form at all), but the
  * actual "Room name" input and an enabled "Join room" submit button.
  * Never relies on the nav bar's own link being already rendered and
- * clickable (same reasoning as claimUsername's direct "/recovery"
+ * clickable (same reasoning as registerAccount's direct "/register"
  * navigation). `page.goto` here is itself a full page reload -- it
  * re-runs identity bootstrap via session recovery -- so waiting on the
  * form fields specifically (not just the heading) is what actually
@@ -358,6 +353,8 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   waitingPage: Page;
   hostPage: Page;
   guestPage: Page;
+  hostUsername: string;
+  guestUsername: string;
   roomId: string;
 }> {
   const hostContext = await browser.newContext();
@@ -365,13 +362,11 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
   const hostPage = await hostContext.newPage();
   const guestPage = await guestContext.newPage();
 
-  await waitForReady(hostPage);
-  await waitForReady(guestPage);
-
-  // Room creation now requires a claimed username (Phase 2), and the
-  // resulting room is named after it.
-  const hostUsername = await claimUsername(hostPage, "Host");
-  await claimUsername(guestPage, "Guest");
+  // Registration is the whole identity bootstrap now (accounts mode) --
+  // it ends on the Home dashboard, signed in, username claimed. The
+  // resulting room is named after the host's username.
+  const hostUsername = await registerAccount(hostPage, "Host");
+  const guestUsername = await registerAccount(guestPage, "Guest");
 
   await waitForReady(hostPage);
 
@@ -430,9 +425,10 @@ export async function startTwoPlayerGame(browser: Browser): Promise<{
       .or(hostPage.getByText(/Waiting on seat|Computer is playing/)),
   ).toBeVisible({ timeout: GAME_ENTRY_TIMEOUT });
   const hostIsActive = await hostPage.getByText("Your turn", { exact: true }).isVisible();
+  const identities = { hostUsername, guestUsername, roomId };
   return hostIsActive
-    ? { activePage: hostPage, waitingPage: guestPage, hostPage, guestPage, roomId }
-    : { activePage: guestPage, waitingPage: hostPage, hostPage, guestPage, roomId };
+    ? { activePage: hostPage, waitingPage: guestPage, hostPage, guestPage, ...identities }
+    : { activePage: guestPage, waitingPage: hostPage, hostPage, guestPage, ...identities };
 }
 
 /** Gets `capacity` pages (3 or 4) seated in a fresh, started private game,
@@ -446,16 +442,15 @@ export async function startNPlayerGame(
 ): Promise<{ pages: Page[]; activePage: Page }> {
   const contexts = await Promise.all(Array.from({ length: capacity }, () => browser.newContext()));
   const pages = await Promise.all(contexts.map((c) => c.newPage()));
-  await Promise.all(pages.map((p) => waitForReady(p)));
 
   const hostPage = pages[0]!;
   const guestPages = pages.slice(1);
 
-  // Room creation now requires a claimed username (Phase 2), and the
-  // resulting room is named after it.
-  const hostUsername = await claimUsername(hostPage, "P1");
+  // Registration is the whole identity bootstrap now (accounts mode); the
+  // resulting room is named after the host's username.
+  const hostUsername = await registerAccount(hostPage, "P1");
   for (const [index, guestPage] of guestPages.entries()) {
-    await claimUsername(guestPage, `P${index + 2}`);
+    await registerAccount(guestPage, `P${index + 2}`);
   }
 
   await waitForReady(hostPage);

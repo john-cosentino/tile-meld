@@ -1,4 +1,39 @@
-# Current task — concept-art fidelity rebuild (complete, pending review/merge)
+# Current task — user accounts (feature/accounts branch, in progress)
+
+**Active initiative (2026-08-03):** username+password accounts replace the
+guest + recovery-code flow (user decisions: accounts REQUIRED; email used
+only for password reset; portraits picked from the existing 8-portrait
+gallery; existing players upgrade in place). Plan of record: the approved
+accounts plan of 2026-08-03 (session plan file); phases A–E on
+`feature/accounts`, one commit each, all gated on the full unit suites and
+the full chromium e2e:
+
+- **A** — schema (migrations 0022/0023: password/email/portrait columns,
+  relaxed credential CHECK, HMAC-hashed single-use reset tokens),
+  repositories, argon2id password hashing, `ENABLE_ACCOUNTS` + SMTP env,
+  nodemailer mailer with dev/prod fallbacks.
+- **B** — account endpoints (register/login/logout/me/change-password/
+  reset request+confirm/upgrade/portrait, `GET /api/config`), shared zod
+  schemas, session revocation semantics, log redaction, rate limits.
+- **C** — `portraitId` on room-member and seat wire schemas, resolved live
+  from `players.portrait_id`; client `portraitForPlayer` with seat-order
+  fallback.
+- **D** — web auth rework: dual-mode AuthProvider, route guards, login/
+  register/reset/account/upgrade pages, portrait picker; legacy mode
+  byte-for-byte when the flag is off.
+- **E** — e2e migrated to accounts mode (`registerAccount` helper replaces
+  the guest+claim flow; recovery portability test became a login test;
+  legacy upgrade covered by unit suites only — accepted gap), docs,
+  `.env.example`/`render.yaml`, and the staged cutover runbook in
+  `docs/deploy-render.md` §11. Production ships with the flag OFF.
+
+Deferred (Phase F, explicitly not scheduled): removing the legacy
+guest/recovery code paths and the flag once all production identities are
+upgraded.
+
+---
+
+# Previous task — concept-art fidelity rebuild (complete, pending review/merge)
 
 **Active initiative (2026-08-01):** make the app visually identical to the
 pixel-art arcade concept art, after the 2026-07 visual refresh below and

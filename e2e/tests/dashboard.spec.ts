@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForReady, claimUsername, clickUntilSettled, readRoomCode } from "./helpers.js";
+import { waitForReady, registerAccount, clickUntilSettled, readRoomCode } from "./helpers.js";
 
 // Phase 6 -- Home dashboard layout and game-status cards. Covers the
 // hierarchy/labels/empty-state a brand-new player sees, then drives real
@@ -7,35 +7,36 @@ import { waitForReady, claimUsername, clickUntilSettled, readRoomCode } from "./
 // rematch) and asserts the dashboard card reflects each transition, purely
 // by navigating Home and reading what's on screen -- no direct API calls.
 
-test("new user: empty Your Games section, full dashboard hierarchy, and username-gated actions", async ({
+test("new user: the login gate, then a fresh account sees the full dashboard with every action enabled", async ({
   page,
 }) => {
-  await waitForReady(page);
+  // Accounts mode: an unauthenticated visitor never reaches the dashboard
+  // -- RequireAuth sends them to /login with a return path.
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByRole("heading", { name: "Log in" })).toBeVisible();
+
+  await registerAccount(page, "DashNew");
 
   await expect(page.getByRole("heading", { level: 1, name: "Meld Masters" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Create a Game" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Your Games" })).toBeVisible();
   await expect(page.getByText(/no rooms yet/i)).toBeVisible();
 
-  // Every creation action is present, with Play vs Computer gated on a
-  // claimed username (no username has been claimed yet in this context).
-  const playVsComputer = page.getByRole("button", { name: /play vs computer/i });
-  await expect(playVsComputer).toBeDisabled();
-  await expect(page.getByText(/claim a username/i)).toBeVisible();
+  // Registration claims a username, so nothing is gated: every creation
+  // action is present and enabled (the legacy claim-a-username prompt is
+  // a guest-mode artifact that must not appear here).
+  await expect(page.getByRole("button", { name: /play vs computer/i })).toBeEnabled();
+  await expect(page.getByText(/claim a username/i)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "New Game" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Join Room by Name" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Browse Public Lobby" })).toBeVisible();
-
-  await claimUsername(page, "DashNew");
-  await waitForReady(page);
-  await expect(page.getByRole("button", { name: /play vs computer/i })).toBeEnabled();
 });
 
 test("New Game, Join Room by Name, and Browse Public Lobby navigate to their routes", async ({
   page,
 }) => {
-  await waitForReady(page);
-  await claimUsername(page, "DashNav");
+  await registerAccount(page, "DashNav");
 
   await waitForReady(page);
   await page.getByRole("link", { name: "New Game" }).click();
@@ -58,10 +59,8 @@ test("a private room shows Open before it fills, then Active once the host manua
   const guestContext = await browser.newContext();
   const hostPage = await hostContext.newPage();
   const guestPage = await guestContext.newPage();
-  await waitForReady(hostPage);
-  await waitForReady(guestPage);
-  const hostUsername = await claimUsername(hostPage, "DashOpen");
-  await claimUsername(guestPage, "DashOpenGuest");
+  const hostUsername = await registerAccount(hostPage, "DashOpen");
+  await registerAccount(guestPage, "DashOpenGuest");
 
   // Capacity 3: two members joining leaves it below capacity, so it stays
   // "open" until the host explicitly starts early -- auto-start only fires
@@ -115,10 +114,8 @@ test("a 2-player room shows Active on the dashboard immediately after capacity a
   const guestContext = await browser.newContext();
   const hostPage = await hostContext.newPage();
   const guestPage = await guestContext.newPage();
-  await waitForReady(hostPage);
-  await waitForReady(guestPage);
-  const hostUsername = await claimUsername(hostPage, "DashAuto");
-  await claimUsername(guestPage, "DashAutoGuest");
+  const hostUsername = await registerAccount(hostPage, "DashAuto");
+  await registerAccount(guestPage, "DashAutoGuest");
 
   await waitForReady(hostPage);
   await hostPage.getByRole("link", { name: "New Game" }).click();
@@ -155,10 +152,8 @@ test("Completed vs Resigned: the resigning player sees Resigned, the other sees 
   const guestContext = await browser.newContext();
   const hostPage = await hostContext.newPage();
   const guestPage = await guestContext.newPage();
-  await waitForReady(hostPage);
-  await waitForReady(guestPage);
-  const hostUsername = await claimUsername(hostPage, "DashEnd");
-  await claimUsername(guestPage, "DashEndGuest");
+  const hostUsername = await registerAccount(hostPage, "DashEnd");
+  await registerAccount(guestPage, "DashEndGuest");
 
   await waitForReady(hostPage);
   await hostPage.getByRole("link", { name: "New Game" }).click();
@@ -254,9 +249,7 @@ test("a Play vs Computer room shows its computer indicator on the dashboard card
   page,
 }) => {
   test.setTimeout(60000);
-  await waitForReady(page);
-  await claimUsername(page, "DashBot");
-  await waitForReady(page);
+  await registerAccount(page, "DashBot");
 
   await clickUntilSettled(
     page,
@@ -272,7 +265,7 @@ test("a Play vs Computer room shows its computer indicator on the dashboard card
 
 test("dashboard fits a narrow mobile viewport without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await waitForReady(page);
+  await registerAccount(page, "DashMobile");
 
   await expect(page.getByRole("heading", { level: 1, name: "Meld Masters" })).toBeVisible();
   await expect(page.getByRole("link", { name: "New Game" })).toBeVisible();

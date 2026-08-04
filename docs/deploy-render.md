@@ -208,3 +208,39 @@ else in the database to that point in time too, which is a last-resort recovery 
 routine rollback. A code-level rollback of the *feature* is reverting the application code
 that added it, same as the forward-only migration policy already requires for any schema
 change (Decision D-MIGRATE, §5 above).
+
+## 11. Accounts cutover (`ENABLE_ACCOUNTS`)
+
+User accounts (username+password sign-in, email password-reset, portrait
+picker — accounts plan, 2026-08-03) ship dark: all endpoints deploy live,
+but `ENABLE_ACCOUNTS` stays `"false"` in `render.yaml`, which keeps the
+guest + recovery-code flow byte-for-byte. The cutover is an env change,
+not a deploy:
+
+1. **Deploy the code with the flag off.** Migrations 0022/0023 run
+   pre-traffic via the existing `preDeployCommand`; nothing user-visible
+   changes. Verify `/build-info.json` and `/api/config` →
+   `{"accountsRequired":false}`.
+2. **Configure email in the dashboard**: `SMTP_HOST`, `SMTP_PORT`,
+   `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` (any SMTP provider), and check
+   `APP_BASE_URL` is the real public origin. The reset endpoint answers a
+   generic 200 whether or not SMTP works, so this must be verified
+   actively, not assumed.
+3. **Verify a real reset email** while the flag is still off: register a
+   throwaway account via curl against `/api/account/register`, request a
+   reset via `/api/account/reset/request`, and confirm the email arrives
+   and its link works. (The endpoints are deliberately live with the flag
+   off — only guest minting is gated.)
+4. **Flip `ENABLE_ACCOUNTS` to `"true"`** in the dashboard (env change =
+   restart, no build). Verify `/api/config` → `{"accountsRequired":true}`,
+   a fresh browser lands on `/login`, registration works, and a legacy
+   identity's recovery code redeems into the finish-setup screen.
+5. **Announce to existing players**: their recovery code is now redeemed
+   on the login page ("Use your recovery code") and upgrades them in
+   place — same username, same games.
+
+**Rollback** is flipping the flag back to `"false"`. Known wart (accepted
+in the plan): accounts registered during the ON window have no recovery
+code, so in legacy mode those browsers mint fresh guest identities; the
+accounts themselves keep their data and work again when the flag is
+re-enabled.
