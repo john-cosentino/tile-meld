@@ -10,7 +10,7 @@ import { GameStatusCard, type DashboardRoomSummary } from "../dashboard/GameStat
 import { ArcadePanel } from "../arcade/ArcadePanel.js";
 import { ArcadePlate, ArcadePlateLink } from "../arcade/ArcadePlate.js";
 import { frameStyle } from "../arcade/frameStyle.js";
-import { portraitForSeat } from "../branding/portraits.js";
+import { portraitForPlayer } from "../branding/portraits.js";
 import { arcadeAssets } from "../assets/arcade/manifest.js";
 
 // The Home screen is composed to the concept spec new_layout1.png; every
@@ -24,6 +24,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const { state: authState } = useAuth();
   const username = authState.status === "ready" ? authState.username : null;
+  const portraitId = authState.status === "ready" ? authState.portraitId : null;
   const hasFreshRecoverySecret =
     authState.status === "ready" && authState.newRecoverySecret !== null;
   const [rooms, setRooms] = useState<DashboardRoomSummary[] | undefined>(undefined);
@@ -249,7 +250,7 @@ export function HomePage() {
         <div className="home-profile-body">
           <span className="home-profile-window">
             <img
-              src={portraitForSeat(-1, false)}
+              src={portraitForPlayer(portraitId, -1, false)}
               alt=""
               aria-hidden="true"
               className="home-profile-portrait"
@@ -258,6 +259,9 @@ export function HomePage() {
           </span>
           <div className="home-profile-facts">
             <span className="home-profile-name">{username ?? "Guest"}</span>
+            <Link className="home-profile-fact" to="/account">
+              Profile &amp; portrait
+            </Link>
             <span className="home-profile-fact">
               {rooms ? `${rooms.length} game${rooms.length === 1 ? "" : "s"}` : "—"}
             </span>

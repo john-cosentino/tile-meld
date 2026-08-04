@@ -2498,3 +2498,61 @@ button.danger:disabled {
     padding: 0.5rem 0.75rem;
   }
 }
+
+/* --------------------------- accounts (Phase D) */
+
+/* Inline "act like a link" button (the login page's recovery-code
+   discloser) -- a real button for keyboard/AT semantics, styled to sit in
+   running text. */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--neon-cyan);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Portrait picker: the 8 roster portraits plus a "Default" tile, as an
+   accessible radiogroup of buttons. */
+.portrait-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.portrait-choice {
+  background: #04121c;
+  border: 2px solid var(--neon-cyan-dim);
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 108px;
+}
+
+.portrait-choice img {
+  image-rendering: pixelated;
+  display: block;
+}
+
+.portrait-choice--selected {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 8px rgba(63, 224, 255, 0.6);
+}
+
+.portrait-choice:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+.portrait-choice-none {
+  font-family: var(--font-arcade);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

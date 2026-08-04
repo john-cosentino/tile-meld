@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import { UsernameSchema } from "@tile-meld/shared";
-import { useAuth } from "../auth/AuthProvider.js";
+import { IDENTITY_STORAGE_KEY, useAuth } from "../auth/AuthProvider.js";
 import { api, ApiError } from "../api/client.js";
 
 /** Minimal claim UI (Phase 1): lets an anonymous or legacy identity claim a
@@ -115,13 +115,17 @@ function RecoveryCodeDisplay({
 }
 
 export function RecoveryPage() {
-  const { state, acknowledgeRecoverySecret, rotateRecovery } = useAuth();
+  const { state, accountsRequired, acknowledgeRecoverySecret, rotateRecovery } = useAuth();
   const navigate = useNavigate();
   const [recoverPlayerId, setRecoverPlayerId] = useState("");
   const [recoverSecret, setRecoverSecret] = useState("");
   const [recoverError, setRecoverError] = useState<string | undefined>(undefined);
   const [rotated, setRotated] = useState<string | undefined>(undefined);
   const [rotateError, setRotateError] = useState<string | undefined>(undefined);
+
+  // Accounts mode retires this screen: identity management lives on
+  // /account (recovery-code redemption moved to the login page).
+  if (accountsRequired) return <Navigate to="/account" replace />;
 
   if (state.status !== "ready") return null;
 
@@ -131,7 +135,7 @@ export function RecoveryPage() {
     try {
       await api.recoverSession(recoverPlayerId.trim(), recoverSecret.trim());
       localStorage.setItem(
-        "tilemeld.identity",
+        IDENTITY_STORAGE_KEY,
         JSON.stringify({ playerId: recoverPlayerId.trim(), recoverySecret: recoverSecret.trim() }),
       );
       navigate("/");

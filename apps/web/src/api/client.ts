@@ -1,8 +1,13 @@
 import {
+  AuthSessionResponseSchema,
   ClaimUsernameResponseSchema,
+  ConfigResponseSchema,
   CreateIdentityResponseSchema,
+  MeResponseSchema,
   RecoverSessionResponseSchema,
+  ResetRequestResponseSchema,
   RotateRecoveryResponseSchema,
+  SetPortraitRequestSchema,
   CreateRoomResponseSchema,
   JoinRoomResponseSchema,
   QuickJoinResponseSchema,
@@ -76,6 +81,37 @@ async function request<T>(
 }
 
 export const api = {
+  // Accounts (accounts plan, Phase D).
+  getConfig: () => request("GET", "/config", ConfigResponseSchema),
+
+  me: () => request("GET", "/identity/me", MeResponseSchema),
+
+  register: (username: string, email: string, password: string) =>
+    request("POST", "/account/register", AuthSessionResponseSchema, { username, email, password }),
+
+  login: (username: string, password: string) =>
+    request("POST", "/account/login", AuthSessionResponseSchema, { username, password }),
+
+  logout: () => request("POST", "/account/logout", z.void()),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request("POST", "/account/password", AuthSessionResponseSchema, {
+      currentPassword,
+      newPassword,
+    }),
+
+  resetRequest: (username: string) =>
+    request("POST", "/account/reset/request", ResetRequestResponseSchema, { username }),
+
+  resetConfirm: (token: string, newPassword: string) =>
+    request("POST", "/account/reset/confirm", AuthSessionResponseSchema, { token, newPassword }),
+
+  upgradeAccount: (email: string, password: string) =>
+    request("POST", "/account/upgrade", AuthSessionResponseSchema, { email, password }),
+
+  setPortrait: (portraitId: number | null) =>
+    request("POST", "/account/portrait", SetPortraitRequestSchema, { portraitId }),
+
   createIdentity: () => request("POST", "/identity", CreateIdentityResponseSchema),
 
   recoverSession: (playerId: string, recoverySecret: string) =>

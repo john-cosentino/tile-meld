@@ -5,7 +5,7 @@ import { NotificationsControl } from "../push/NotificationsControl.js";
 import monogramSrc from "../assets/brand/meld-masters-monogram-header.png";
 
 export function RootLayout() {
-  const { state } = useAuth();
+  const { state, accountsRequired } = useAuth();
   // The tabletop's arcade-cabinet composition needs the full viewport width
   // -- every other screen keeps the shared centered .page column untouched.
   // TabletopPage owns its own max-width/padding/grid once .page's own
@@ -42,6 +42,33 @@ export function RootLayout() {
     );
   }
 
+  // Accounts mode, signed out: minimal chrome (brand + log in), with the
+  // outlet rendering the login/register/reset pages via RequireAnon.
+  if (state.status === "unauthenticated") {
+    return (
+      <>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <header className="app-header row" style={{ justifyContent: "space-between" }}>
+          <div className="row">
+            <Link to="/login" className="brand-wordmark">
+              <img src={monogramSrc} alt="" width={32} height={32} className="brand-monogram" />
+              <span className="brand-wordmark-text">{PRODUCT_NAME}</span>
+            </Link>
+          </div>
+          <nav className="app-nav row" aria-label="Main navigation">
+            <Link to="/login">Log in</Link>
+            <Link to="/register">Create account</Link>
+          </nav>
+        </header>
+        <main id="main-content" className="page" tabIndex={-1}>
+          <Outlet />
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
       <a href="#main-content" className="skip-link">
@@ -64,7 +91,13 @@ export function RootLayout() {
             <Link to="/rooms/new">Create Room</Link>
             <Link to="/rooms/join">Join Room by Name</Link>
             <Link to="/lobby">Public Lobby</Link>
-            <Link to="/recovery">Recovery</Link>
+            {/* Accounts mode replaces the recovery-code screen with the
+                account screen; legacy mode keeps the original link. */}
+            {accountsRequired ? (
+              <Link to="/account">Account</Link>
+            ) : (
+              <Link to="/recovery">Recovery</Link>
+            )}
           </nav>
         </div>
         <NotificationsControl />

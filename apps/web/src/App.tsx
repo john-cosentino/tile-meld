@@ -10,6 +10,13 @@ import { PublicLobbyPage } from "./pages/PublicLobbyPage.js";
 import { WaitingRoomPage } from "./pages/WaitingRoomPage.js";
 import { TabletopPage } from "./pages/TabletopPage.js";
 import { RecoveryPage } from "./pages/RecoveryPage.js";
+import { LoginPage } from "./pages/LoginPage.js";
+import { RegisterPage } from "./pages/RegisterPage.js";
+import { ResetRequestPage } from "./pages/ResetRequestPage.js";
+import { ResetConfirmPage } from "./pages/ResetConfirmPage.js";
+import { AccountPage } from "./pages/AccountPage.js";
+import { UpgradeAccountPage } from "./pages/UpgradeAccountPage.js";
+import { RequireAuth, RequireAnon } from "./auth/guards.js";
 
 // AuthProvider fires POST /api/identity on mount and AnnouncerProvider is
 // app-wide plumbing -- both belong only to the real, server-backed routes.
@@ -69,13 +76,28 @@ export function App() {
         )}
         <Route element={<AppProviders />}>
           <Route element={<RootLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/rooms/new" element={<CreateRoomPage />} />
-            <Route path="/rooms/join" element={<JoinRoomPage />} />
-            <Route path="/lobby" element={<PublicLobbyPage />} />
-            <Route path="/rooms/:roomId" element={<WaitingRoomPage />} />
-            <Route path="/games/:gameId" element={<TabletopPage />} />
-            <Route path="/recovery" element={<RecoveryPage />} />
+            {/* Game routes: gated only when accounts are required (see
+                RequireAuth) -- with the flag off this wrapper is inert. */}
+            <Route element={<RequireAuth />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/rooms/new" element={<CreateRoomPage />} />
+              <Route path="/rooms/join" element={<JoinRoomPage />} />
+              <Route path="/lobby" element={<PublicLobbyPage />} />
+              <Route path="/rooms/:roomId" element={<WaitingRoomPage />} />
+              <Route path="/games/:gameId" element={<TabletopPage />} />
+              <Route path="/recovery" element={<RecoveryPage />} />
+              <Route path="/account" element={<AccountPage />} />
+            </Route>
+            {/* Deliberately outside RequireAuth: it IS the finish-setup
+                target RequireAuth redirects to (inside would loop), and it
+                guards itself. */}
+            <Route path="/account/upgrade" element={<UpgradeAccountPage />} />
+            <Route element={<RequireAnon />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/reset" element={<ResetRequestPage />} />
+              <Route path="/reset/confirm" element={<ResetConfirmPage />} />
+            </Route>
           </Route>
         </Route>
       </Routes>
