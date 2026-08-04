@@ -31,8 +31,10 @@ five phases on `feature/accounts` and merged to `main` (fast-forward, tip
 production still runs the guest + recovery-code flow byte-for-byte while
 all account endpoints, migrations (0022/0023), and UI ship latent. The
 e2e suite now runs in accounts mode (46 green + 1 documented skip);
-legacy mode stays covered by the unit suites (1,075). Cutover runbook:
-`docs/deploy-render.md` §11; status: `docs/task.md`.
+legacy mode stays covered by the unit suites (1,075). **Cutover completed 2026-08-04**: SMTP verified with a real reset
+email, the flag flipped, and post-flip production verification green —
+accounts are LIVE (guest minting 403; login gate for all visitors).
+Runbook: `docs/deploy-render.md` §11; status: `docs/task.md`.
 
 **Full verification pass, 2026-08-02 evening (tip `8025445`):** all
 workspace unit tests green — shared 45, engine 115, bot 36, web 505,

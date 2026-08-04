@@ -1,4 +1,4 @@
-# Current task — user accounts (merged; deployed dark; cutover pending)
+# Current task — user accounts (LIVE in production since 2026-08-04)
 
 **Active initiative (2026-08-03):** username+password accounts replace the
 guest + recovery-code flow (user decisions: accounts REQUIRED; email used
@@ -13,6 +13,17 @@ deployed 2026-08-04 with `ENABLE_ACCOUNTS="false"`** — verified live:
 0022/0023 applied pre-traffic). The cutover itself (SMTP configuration in
 the Render dashboard, a verified real reset email, then flipping the flag)
 is a manual runbook the user performs — `docs/deploy-render.md` §11.
+
+**Cutover completed 2026-08-04.** SMTP (Gmail app password) configured in
+the Render dashboard and verified with a real reset email; the user
+flipped `ENABLE_ACCOUNTS=true`. Post-flip verification against
+production: `/api/config` = `{"accountsRequired":true}`, guest minting
+403, a fresh browser lands on the login gate with the recovery-redemption
+entry present, the reset page renders and rejects a bogus token cleanly,
+and a live registration reached the rearranged home. Remaining before
+Phase F (retiring the legacy code paths): wait for existing legacy
+players to redeem their recovery codes and upgrade — the redemption and
+upgrade paths must survive until then.
 
 - **A** — schema (migrations 0022/0023: password/email/portrait columns,
   relaxed credential CHECK, HMAC-hashed single-use reset tokens),
