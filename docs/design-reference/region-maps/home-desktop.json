@@ -1,8 +1,11 @@
 {
-  "$comment": "Composition contract for the Home screen at desktop, measured from the concept spec in source pixels. Regions become percent rects (rect / sourceSize) consumed by BOTH the CSS grid that lays the screen out and e2e/tests/arcade-regions.spec.ts, which asserts each [data-region] element's bounding box matches within tolerance. Fictional concept panels are re-purposed for real content but keep the concept's geometry.",
+  "$comment": "Composition contract for the Home screen at desktop. Originally measured from the concept spec in source pixels; since the accounts-era rearrangement (user decision 2026-08-04) the right rail deviates deliberately from the concept: the signed-in badge and recovery-access panel are retired, the profile panel holds the top-right slot, and activity/rail-extra spread over the freed space. Regions become percent rects (rect / sourceSize) consumed by BOTH the home-arcade--accounts CSS overrides and e2e/tests/arcade-regions.spec.ts (which runs in accounts mode). The legacy-mode layout keeps the pre-accounts rects in CSS until Phase F retires it, uncontracted.",
   "screen": "home",
   "path": "/",
-  "viewport": { "width": 1440, "height": 900 },
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
   "source": "docs/design-reference/v2/new_layout1.png",
   "sourceSize": [1536, 1024],
   "tolerance": 0.03,
@@ -13,11 +16,9 @@
     "masthead": [400, 8, 680, 210],
     "browser": [374, 226, 762, 552],
     "bottom-strip": [510, 785, 626, 160],
-    "signed-in": [1134, 8, 380, 100],
-    "profile": [1154, 126, 362, 266],
-    "recovery-access": [1154, 400, 362, 136],
-    "activity": [1148, 546, 368, 200],
-    "rail-extra": [1148, 756, 368, 160],
+    "profile": [1134, 8, 380, 250],
+    "activity": [1148, 300, 368, 260],
+    "rail-extra": [1148, 600, 368, 316],
     "tip-strip": [10, 952, 1046, 62]
   }
 }

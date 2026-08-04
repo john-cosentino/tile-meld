@@ -422,6 +422,34 @@
   height: 6.055%;
 }
 
+/* Accounts-mode home rearrangement (user decision 2026-08-04): the
+   signed-in badge and both recovery surfaces are gone, the profile panel
+   takes the badge's top-right slot, and the remaining right-rail panels
+   spread over the freed space. Rects mirror the accounts-era regions in
+   docs/design-reference/region-maps/home-desktop.json -- change the map,
+   then these values, never just one side. The base rects above remain
+   the legacy-mode layout until Phase F retires it. */
+@media (min-width: 901px) {
+  .home-arcade--accounts .home-region--profile {
+    left: 73.828%;
+    top: 0.781%;
+    width: 24.74%;
+    height: 24.414%;
+  }
+  .home-arcade--accounts .home-region--activity {
+    left: 74.74%;
+    top: 29.297%;
+    width: 23.958%;
+    height: 25.391%;
+  }
+  .home-arcade--accounts .home-region--rail-extra {
+    left: 74.74%;
+    top: 58.594%;
+    width: 23.958%;
+    height: 30.859%;
+  }
+}
+
 .home-masthead-heading {
   margin: 0;
   height: 100%;
@@ -765,6 +793,12 @@
   }
   .home-region--info-badge {
     display: none;
+  }
+
+  /* Accounts mode: the profile panel opens the page where the signed-in
+     badge used to sit. */
+  .home-arcade--accounts .home-region--profile {
+    order: 1;
   }
 }
 

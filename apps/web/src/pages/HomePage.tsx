@@ -22,7 +22,7 @@ import { arcadeAssets } from "../assets/arcade/manifest.js";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { state: authState } = useAuth();
+  const { state: authState, accountsRequired } = useAuth();
   const username = authState.status === "ready" ? authState.username : null;
   const portraitId = authState.status === "ready" ? authState.portraitId : null;
   const hasFreshRecoverySecret =
@@ -105,7 +105,10 @@ export function HomePage() {
     : [];
 
   return (
-    <div className="home-arcade arcade-scanlines" data-region-root>
+    <div
+      className={`home-arcade arcade-scanlines${accountsRequired ? " home-arcade--accounts" : ""}`}
+      data-region-root
+    >
       <header className="home-region home-region--masthead" data-region="masthead">
         <h1 className="home-masthead-heading">
           <img
@@ -149,7 +152,7 @@ export function HomePage() {
           className="home-menu-plate"
         />
         <ArcadePlateLink
-          plate="plate-menu-gold"
+          plate={accountsRequired ? "plate-menu-red" : "plate-menu-gold"}
           icon="icon-plus-gold"
           iconScale={0.7}
           to="/rooms/new"
@@ -175,15 +178,17 @@ export function HomePage() {
           sublabel="Find an open public room"
           className="home-menu-plate"
         />
-        <ArcadePlateLink
-          plate="plate-menu-red"
-          icon="icon-recycle-red"
-          iconScale={0.7}
-          to="/recovery"
-          label="Recovery"
-          sublabel="Restore your recovery code"
-          className="home-menu-plate"
-        />
+        {!accountsRequired && (
+          <ArcadePlateLink
+            plate="plate-menu-red"
+            icon="icon-recycle-red"
+            iconScale={0.7}
+            to="/recovery"
+            label="Recovery"
+            sublabel="Restore your recovery code"
+            className="home-menu-plate"
+          />
+        )}
       </nav>
 
       <ArcadePanel
@@ -230,14 +235,16 @@ export function HomePage() {
         )}
       </section>
 
-      <div
-        className="home-region home-region--signed-in home-signed-in"
-        data-region="signed-in"
-        style={frameStyle("badge-signed-in")}
-      >
-        <span className="home-signed-in-eyebrow">{username ? "Signed in" : "Guest"}</span>
-        <span className="home-signed-in-name">{username ?? "No username yet"}</span>
-      </div>
+      {!accountsRequired && (
+        <div
+          className="home-region home-region--signed-in home-signed-in"
+          data-region="signed-in"
+          style={frameStyle("badge-signed-in")}
+        >
+          <span className="home-signed-in-eyebrow">{username ? "Signed in" : "Guest"}</span>
+          <span className="home-signed-in-name">{username ?? "No username yet"}</span>
+        </div>
+      )}
 
       <ArcadePanel
         frame="panel-profile"
@@ -269,26 +276,28 @@ export function HomePage() {
         </div>
       </ArcadePanel>
 
-      <ArcadePanel
-        frame="panel-recovery"
-        scrollable
-        title="Recovery Access"
-        titleColor="var(--neon-purple)"
-        className="home-region home-region--recovery home-recovery"
-        data-region="recovery-access"
-      >
-        {hasFreshRecoverySecret ? (
-          <p className="home-recovery-alert" role="status">
-            You're new here — <Link to="/recovery">save your recovery code</Link> so you can get
-            back into your games from another device.
-          </p>
-        ) : (
-          <p className="home-recovery-text">
-            Save or rotate your recovery code to get back into your games.{" "}
-            <Link to="/recovery">Manage recovery code</Link>
-          </p>
-        )}
-      </ArcadePanel>
+      {!accountsRequired && (
+        <ArcadePanel
+          frame="panel-recovery"
+          scrollable
+          title="Recovery Access"
+          titleColor="var(--neon-purple)"
+          className="home-region home-region--recovery home-recovery"
+          data-region="recovery-access"
+        >
+          {hasFreshRecoverySecret ? (
+            <p className="home-recovery-alert" role="status">
+              You're new here — <Link to="/recovery">save your recovery code</Link> so you can get
+              back into your games from another device.
+            </p>
+          ) : (
+            <p className="home-recovery-text">
+              Save or rotate your recovery code to get back into your games.{" "}
+              <Link to="/recovery">Manage recovery code</Link>
+            </p>
+          )}
+        </ArcadePanel>
+      )}
 
       <ArcadePanel
         frame="panel-activity"
@@ -336,7 +345,11 @@ export function HomePage() {
         <h2 className="home-notice-title">Notice Board</h2>
         <ul className="home-notice-list">
           <li>Games stay live until every seat finishes.</li>
-          <li>Save your recovery code — it's the only way back in.</li>
+          {accountsRequired ? (
+            <li>Pick your profile picture on the Account page.</li>
+          ) : (
+            <li>Save your recovery code — it's the only way back in.</li>
+          )}
           <li>Play vs Computer is in beta.</li>
         </ul>
       </section>

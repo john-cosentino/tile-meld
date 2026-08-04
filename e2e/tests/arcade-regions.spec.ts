@@ -40,17 +40,21 @@ for (const map of maps) {
 
   test(`region layout: ${name}`, async ({ page }) => {
     await page.setViewportSize(map.viewport);
+    // Accounts mode gates every composed screen behind login, so ALWAYS
+    // register a fresh account first (an unauthenticated goto would
+    // land on /login, whose zero [data-region] elements used to trip the
+    // "screen not rebuilt yet" skip below and silently skip the contract).
+    await page.goto("/register");
+    const username = `Region${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+    await page.getByLabel("Username").fill(username);
+    await page.getByLabel("Email").fill(`${username.toLowerCase()}@example.test`);
+    await page.getByLabel("Password").fill("e2e-password-123");
+    await page.getByRole("button", { name: "Create account" }).click();
+    await page.getByRole("heading", { name: "Meld Masters", level: 1 }).waitFor();
     if (map.screen === "tabletop") {
       // Seed a vs-computer game (rate limits are disabled under the e2e
       // server config; usernames must be unique against the long-lived
       // dev database).
-      await page.goto("/register");
-      const username = `Region${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
-      await page.getByLabel("Username").fill(username);
-      await page.getByLabel("Email").fill(`${username.toLowerCase()}@example.test`);
-      await page.getByLabel("Password").fill("e2e-password-123");
-      await page.getByRole("button", { name: "Create account" }).click();
-      await page.getByRole("heading", { name: "Meld Masters", level: 1 }).waitFor();
       await page.getByRole("button", { name: /play vs computer/i }).click();
       await page.waitForURL(/\/rooms\//);
       await page.getByRole("button", { name: "Mark ready" }).click();
